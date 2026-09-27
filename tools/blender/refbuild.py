@@ -15,7 +15,7 @@ import bmesh
 import numpy as np
 from mathutils import Matrix, Vector
 from PIL import Image
-from scipy import sparse
+from scipy import ndimage, sparse
 
 import refmodel as rm
 
@@ -44,11 +44,17 @@ class Atlas:
         self.ref, self.size, self.pad = ref, size, pad
         self.cells = {}
 
-    def add(self, name, mask, keep=None, margin=14, band=9, dark=50):
+    def add(self, name, mask, keep=None, margin=14, band=9, dark=50, soft=False):
+        """soft=True also adds a cell "<name>~soft": the same drawing without small details (spots, painted
+        lines), for the faces that look forward, back, up or down. Those faces take their colors from a line
+        in the drawing, and small details on that line would be smeared into stripes."""
         ys, xs = np.nonzero(mask)
         box = (max(xs.min() - margin, 0), max(ys.min() - margin, 0),
                min(xs.max() + margin, mask.shape[1]), min(ys.max() + margin, mask.shape[0]))
-        self.cells[name] = {"mask": mask, "keep": keep, "box": box, "band": band, "dark": dark}
+        self.cells[name] = {"mask": mask, "keep": keep, "box": box, "band": band, "dark": dark, "soft": False,
+                            "res": 1.0}
+        if soft:
+            self.cells[name + "~soft"] = dict(self.cells[name], soft=True, res=0.5)
         return name
 
     def _layout(self, s):
@@ -57,7 +63,8 @@ class Atlas:
         order = sorted(self.cells, key=lambda n: -(self.cells[n]["box"][3] - self.cells[n]["box"][1]))
         for n in order:
             x0, y0, x1, y1 = self.cells[n]["box"]
-            w, h = int(np.ceil((x1 - x0) * s)) + 2 * self.pad, int(np.ceil((y1 - y0) * s)) + 2 * self.pad
+            r = s * self.cells[n]["res"]
+            w, h = int(np.ceil((x1 - x0) * r)) + 2 * self.pad, int(np.ceil((y1 - y0) * r)) + 2 * self.pad
             if x + w > self.size:
                 x, y, shelf = 0, y + shelf, 0
             if w > self.size or y + h > self.size:
@@ -80,6 +87,16 @@ class Atlas:
             img = self.ref.clean(c["mask"], keep=c["keep"], band=c["band"], dark=c["dark"])[y0:y1, x0:x1]
             img = np.asarray(Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).resize((rw, rh), Image.LANCZOS),
                              np.float32)
+            if c["soft"]:
+                size = int(30 * self.scale * c["res"]) | 1                    # about 30 wp: wider than a spot
+                soft = np.stack([ndimage.median_filter(img[..., i], size=size) for i in range(3)], -1)
+                soft = ndimage.gaussian_filter(soft, sigma=(size / 6, size / 6, 0))
+                if c["keep"] is not None:
+                    # details that must stay (a black nose, dark hooves) keep their own colors
+                    keep = np.asarray(Image.fromarray(c["keep"][y0:y1, x0:x1].astype(np.uint8) * 255).resize(
+                        (rw, rh), Image.BILINEAR), np.float32)[..., None] / 255
+                    soft = soft * (1 - keep) + img * keep
+                img = soft
             # the padding repeats the edge of the cell, so texture filtering never mixes in a neighbour
             img = np.pad(img, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode="edge")
             tex[ry - self.pad:ry + rh + self.pad, rx - self.pad:rx + rw + self.pad] = img
@@ -126,14 +143,23 @@ def new_object(name, verts, faces):
     return obj
 
 
+def _ranks(totals):
+    """0, 1, .., n-1 for every polygon, one after the other (the position of each corner in its polygon)."""
+    return np.arange(totals.sum()) - np.repeat(np.cumsum(totals) - totals, totals)
+
+
 class Piece:
     def __init__(self, name, mask, frame, atlas, cell, step=2.0, width=0.8, min_half=0.0, smooth=12, tris=2000,
-                 inset=0.0):
+                 inset=0.0, profile="round", bevel=0.3, bevel_max=18.0, sharp=None, soft=False):
         """inset: how far (wp) inside the outline surfaces that face forward, back, up or down take their color
         from (a number, or a map the size of the working image). The edge of a drawing has outline strokes
-        and rim light that would otherwise be stretched into stripes over those surfaces."""
+        and rim light that would otherwise be stretched into stripes over those surfaces.
+        profile/bevel/bevel_max: see refmodel.inflate. sharp: angle (degrees) above which edges are shaded
+        hard, for the faceted low-poly look (None = smooth everywhere)."""
         self.name, self.frame, self.atlas, self.cell, self.inset = name, frame, atlas, cell, inset
-        v, f = rm.inflate(mask, step=step, width=width, min_half=min_half)
+        self.soft = soft          # faces that don't look sideways use the "~soft" atlas cell (see Atlas.add)
+        v, f = rm.inflate(mask, step=step, width=width, min_half=min_half, profile=profile, bevel=bevel,
+                          bevel_max=bevel_max)
         v = frame.to_studs(v)
         v = taubin(v, f, iterations=smooth)
         a, b, c = v[f[:, 0]], v[f[:, 1]], v[f[:, 2]]
@@ -141,6 +167,8 @@ class Piece:
             f = f[:, ::-1]
         self.obj = new_object(name, v, f)
         self.decimate(tris)
+        if sharp is not None:
+            self.obj.data.set_sharp_from_angle(angle=math.radians(sharp))
         self.set_uv()
 
     def decimate(self, tris):
@@ -161,26 +189,46 @@ class Piece:
             p.use_smooth = True
 
     def set_uv(self):
+        """Planar projection from the side view. Every face corner gets its own UV, so a face that looks
+        forward or up can take its color from further inside the drawing (and from the soft cell)."""
         mesh = self.obj.data
         co = np.zeros(len(mesh.vertices) * 3, np.float32)
         mesh.vertices.foreach_get("co", co)
         co = co.reshape(-1, 3).astype(float)
-        n = np.zeros(len(mesh.vertices) * 3, np.float32)
-        mesh.vertices.foreach_get("normal", n)
-        n = n.reshape(-1, 3).astype(float)
-        inset = self.inset
-        if np.ndim(inset):
-            x, y = self.frame.to_pixels(co)
-            inset = inset[np.clip(y.astype(int), 0, inset.shape[0] - 1), np.clip(x.astype(int), 0, inset.shape[1] - 1)]
-        side_on = (1 - np.abs(n[:, 0])) ** 1.5              # 0 = faces the side, 1 = faces front/back/up/down
-        n2 = n[:, 1:] / np.maximum(np.linalg.norm(n[:, 1:], axis=1, keepdims=True), 1e-6)
-        sample = co.copy()
-        sample[:, 1:] -= n2 * (inset * side_on * self.frame.k)[:, None]
-        uv = self.atlas.uv(self.cell, *self.frame.to_pixels(sample))
         idx = np.zeros(len(mesh.loops), np.int32)
         mesh.loops.foreach_get("vertex_index", idx)
+        if self.soft:
+            pn = np.zeros(len(mesh.polygons) * 3, np.float32)
+            mesh.polygons.foreach_get("normal", pn)
+            starts = np.zeros(len(mesh.polygons), np.int32)
+            mesh.polygons.foreach_get("loop_start", starts)
+            totals = np.zeros(len(mesh.polygons), np.int32)
+            mesh.polygons.foreach_get("loop_total", totals)
+            poly_of_loop = np.empty(len(mesh.loops), np.int64)
+            poly_of_loop[np.repeat(starts, totals) + _ranks(totals)] = np.repeat(np.arange(len(totals)), totals)
+            n = pn.reshape(-1, 3)[poly_of_loop]
+        else:
+            vn = np.zeros(len(mesh.vertices) * 3, np.float32)
+            mesh.vertices.foreach_get("normal", vn)
+            n = vn.reshape(-1, 3)[idx]
+        n = n.astype(float)
+        p = co[idx]
+        inset = self.inset
+        if np.ndim(inset):
+            x, y = self.frame.to_pixels(p)
+            inset = inset[np.clip(y.astype(int), 0, inset.shape[0] - 1), np.clip(x.astype(int), 0, inset.shape[1] - 1)]
+        side_on = (1 - np.abs(n[:, 0])) ** 1.5              # 0 = faces the side, 1 = faces front/back/up/down
+        soft = self.soft & (np.abs(n[:, 0]) < 0.85)
+        side_on = np.where(soft, 1.0, side_on)
+        n2 = n[:, 1:] / np.maximum(np.linalg.norm(n[:, 1:], axis=1, keepdims=True), 1e-6)
+        sample = p.copy()
+        sample[:, 1:] -= n2 * (inset * side_on * self.frame.k)[:, None]
+        x, y = self.frame.to_pixels(sample)
+        uv = self.atlas.uv(self.cell, x, y)
+        if self.soft:
+            uv[soft] = self.atlas.uv(self.cell + "~soft", x[soft], y[soft])
         layer = mesh.uv_layers.new(name="UVMap")
-        layer.data.foreach_set("uv", uv[idx].astype(np.float32).ravel())
+        layer.data.foreach_set("uv", uv.astype(np.float32).ravel())
 
     def copy(self, name):
         other = Piece.__new__(Piece)

@@ -1,6 +1,7 @@
 """The Deer, modeled from its side view on the Forest Biome reference sheet.
 
 Run: python3 tools/blender/deer.py tools/blender/reference/forest_side_views.webp <out_dir> [--debug]
+(reference/forest_3_4_views.webp, the sheet with the animals at an angle, is only used on the check picture.)
 (--debug only writes deer_parts.png, the reference with every part tinted, to check the part outlines.)
 Coordinates below are working pixels: the sheet crop (40, 105)-(340, 335) enlarged 4x.
 """
@@ -26,6 +27,12 @@ def parts(ref):
     # the gaps between the tines are real holes, so this outline is not hole-filled
     antler = rm.tidy(ref.silhouette(fill=False) & antler_zone & ~ref.ellipse((797, 259), (37, 50), angle=-18))
     ear = rm.tidy(ref.ellipse((797, 259), (34, 47), angle=-18) & full & ~antler, radius=3, keep_largest=True)
+    # The drawing shows two antlers: one sweeping back (3 tines) and one sweeping forward. Each becomes one
+    # side of the head, so the side view is still exactly the drawing and each antler has 3 tines like in
+    # the 3/4 picture.
+    split = ref.polygon([(640, 0), (868, 0), (868, 150), (862, 262), (640, 262)])
+    antler_back = rm.tidy(antler & split, keep_largest=True)
+    antler_front = rm.tidy(antler & ~split, keep_largest=True)
 
     back_legs = ref.polygon([(140, BACK_CUT), (300, 640), (440, 628), (440, 900), (140, 900)])
     front_legs = ref.polygon([(585, FRONT_CUT), (820, FRONT_CUT), (820, 900), (585, 900)])
@@ -49,7 +56,8 @@ def parts(ref):
     # dark paint that is not an outline stroke: hooves and nose
     keep = ref.polygon([(0, 822), (1200, 822), (1200, 920), (0, 920)]) | ref.ellipse((1008, 347), (22, 16))
     return {
-        "keep": keep, "full": full, "body": body, "ear": ear, "antler": antler,
+        "keep": keep, "full": full, "body": body, "ear": ear, "antler": antler, "antler_back": antler_back,
+        "antler_front": antler_front,
         "leg_front_a": leg_front_a, "leg_front_b": leg_front_b, "leg_back_a": leg_back_a, "leg_back_b": leg_back_b,
     }
 
@@ -62,33 +70,28 @@ def build(ref, out):
     p = parts(ref)
     frame = rb.Frame(ground=GROUND, height_studs=9.0, top=35, center_x=600)
     atlas = rb.Atlas(ref)
-    for key in ("body", "ear", "leg_front_a", "leg_front_b", "leg_back_a", "leg_back_b"):
-        atlas.add(key, p[key], keep=p["keep"])
-    atlas.add("antler", p["antler"], band=12, dark=115)      # pale antlers have a thick dark outline
+    atlas.add("ear", p["ear"], keep=p["keep"])
+    for key in ("body", "leg_front_a", "leg_front_b", "leg_back_a", "leg_back_b"):
+        atlas.add(key, p[key], keep=p["keep"], soft=True)
+    for key in ("antler_back", "antler_front"):
+        atlas.add(key, p[key], band=12, dark=115)      # pale antlers have a thick dark outline
     mat = rb.material("DeerCoat", atlas.build(str(out / "DeerCoat.png")))
     k = frame.k
 
-    # thickness seen from the front, measured on the front view of the turnaround (1 = round)
-    width = rm.soft_map(p["full"].shape, 0.85, [((770, 470), 70, 0.9), ((890, 315), 60, 1.35), ((995, 345), 28, 1.0),
-                                                ((215, 480), 30, 0.65)])
+    # Blocky low-poly look like the reference: flat sides, a flat back and chest, bevelled edges.
+    # Width = how wide (seen from the front) compared to how thick the outline is there (1 = square),
+    # checked against the front and back views of the turnaround.
+    width = rm.soft_map(p["full"].shape, 0.82, [((770, 470), 70, 0.85), ((890, 315), 60, 1.05),
+                                                ((995, 345), 28, 0.95), ((215, 480), 30, 0.8)])
     inset = rm.soft_map(p["full"].shape, 28, [((1012, 347), 18, 6)])     # keep the black nose tip on the nose
-    body = rb.Piece("Body", p["body"], frame, atlas, "body", step=2.5, width=width, smooth=15, tris=7000, inset=inset)
-    # legs are slimmer at the top, so they tuck into the body without a crease
-    rows = np.interp(np.arange(p["full"].shape[0]), [560, 660, 730], [0.75, 0.95, 1.15])
-    leg_width = np.repeat(rows[:, None], p["full"].shape[1], axis=1)
+    body = rb.Piece("Body", p["body"], frame, atlas, "body", step=2.0, width=width, smooth=3, tris=4500, inset=inset,
+                    profile="box", bevel=0.3, bevel_max=22, sharp=32, soft=True)
     legs = {}
-
-    def tuck(side):
-        """Legs stand straight below the belly and lean in towards the middle inside the body."""
-        def fn(v):
-            img_y = frame.ground - v[:, 2] / k
-            return np.stack([v[:, 0] + side * k * np.interp(img_y, [560, 665], [0.5, 1.0]), v[:, 1], v[:, 2]], 1)
-        return fn
-
-    for key, name, side in (("leg_front_a", "LegFL", -62), ("leg_front_b", "LegFR", 62),
-                            ("leg_back_a", "LegBR", 60), ("leg_back_b", "LegBL", -60)):
-        leg = rb.Piece(name, p[key], frame, atlas, key, step=1.5, width=leg_width, smooth=10, tris=900, inset=12)
-        legs[name] = leg.deform(tuck(side))
+    for key, name, side in (("leg_front_a", "LegFL", -54), ("leg_front_b", "LegFR", 54),
+                            ("leg_back_a", "LegBR", 54), ("leg_back_b", "LegBL", -54)):
+        leg = rb.Piece(name, p[key], frame, atlas, key, step=1.5, width=1.05, smooth=3, tris=600, inset=10,
+                       profile="box", bevel=0.28, bevel_max=9, sharp=32, soft=True)
+        legs[name] = leg.transform(rb.pose(rb.Vector((0, 0, 0)), move=(side * k, 0, 0)))
 
     ear = rb.Piece("Ear", p["ear"], frame, atlas, "ear", step=1.0, width=0.25, min_half=2.5, smooth=8, tris=400, inset=4)
     ear_pose = rb.pose(rb.pixel_point(frame, 812, 292), rotate=(0, 50, 32), move=(50 * k, 0, 0), scale=1.3)
@@ -106,8 +109,10 @@ def build(ref, out):
             return np.stack([v[:, 0] + sign * out * k, v[:, 1], v[:, 2]], 1)
         return fn
 
-    antler = rb.Piece("Antler", p["antler"], frame, atlas, "antler", step=1.0, width=1.0, smooth=8, tris=2000, inset=6)
-    antlers = [antler.copy("AntlerR").deform(spread(1)), antler.deform(spread(-1))]
+    antlers = []
+    for key, sign in (("antler_back", 1), ("antler_front", -1)):
+        a = rb.Piece(key, p[key], frame, atlas, key, step=1.0, width=1.0, smooth=8, tris=1500, inset=6)
+        antlers.append(a.deform(spread(sign)))
 
     objs = [rb.join([body.obj] + [e.obj for e in ears] + [a.obj for a in antlers], "Body", mat)]
     for name, leg in legs.items():
@@ -126,8 +131,8 @@ def renders(frame, out):
     rb.render(cam, str(out / "r_side.png"), target, (1, 0, 0), ortho=1200 * k)
     bpy_scene_size(1000, 1000)
     rb.render(cam, str(out / "r_front.png"), (0, 0, 4.6), (0, 1, 0.04), ortho=10.5)
-    rb.render(cam, str(out / "r_34.png"), (0, 0.2, 4.4), (0.85, 1.0, 0.3), distance=21, lens=55)
-    rb.render(cam, str(out / "r_back34.png"), (0, 0.0, 4.4), (0.9, -0.85, 0.42), distance=21, lens=55)
+    rb.render(cam, str(out / "r_34.png"), (0, 0.4, 4.6), (0.75, 1.0, 0.25), distance=17, lens=55)
+    rb.render(cam, str(out / "r_back34.png"), (0, -0.3, 4.2), (0.9, -0.85, 0.4), distance=19, lens=55)
 
 
 def bpy_scene_size(w, h):
@@ -135,31 +140,35 @@ def bpy_scene_size(w, h):
     bpy.context.scene.render.resolution_x, bpy.context.scene.render.resolution_y = w, h
 
 
-def sheet(ref, out):
-    """Reference next to the model, for checking."""
+def sheet(ref, out, ref34=None):
+    """Reference next to the model, for checking. ref34: the 3/4 reference sheet (optional)."""
     from PIL import Image, ImageDraw, ImageFont
     navy, green, panel = (3, 28, 40), (56, 92, 62), (14, 22, 30)
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 30)
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 28)
     ref_img = Image.fromarray(ref.image.clip(0, 255).astype("uint8"))
 
     def on_bg(path, color):
         im = Image.open(path).convert("RGBA")
         return Image.alpha_composite(Image.new("RGBA", im.size, color + (255,)), im).convert("RGB")
 
-    W, top_h, view = 1860, 690, 600
+    W, top_h, view = 1860, 690, 450
     canvas = Image.new("RGB", (W, 60 + top_h + 70 + view + 20), panel)
     d = ImageDraw.Draw(canvas)
     for i, (img, label) in enumerate(((ref_img, "Jouw plaatje (zijaanzicht)"),
-                                      (on_bg(out / "r_side.png", navy), "3D-model in Blender (zelfde hoek)"))):
+                                      (on_bg(out / "r_side.png", navy), "3D-model (zelfde hoek)"))):
         x = 20 + i * 920
         canvas.paste(img.resize((900, top_h), Image.LANCZOS), (x, 60))
         d.text((x, 14), label, font=font, fill=(255, 255, 255))
+    views = [(on_bg(out / n, green), label) for n, label in (("r_34.png", "3D: schuin voor"),
+                                                             ("r_front.png", "3D: van voren"),
+                                                             ("r_back34.png", "3D: schuin achter"))]
+    if ref34:
+        views.insert(0, (Image.open(ref34).convert("RGB").crop((60, 150, 265, 355)), "Jouw plaatje (schuin)"))
     y = 60 + top_h + 70
-    for i, (name, label) in enumerate((("r_34.png", "Schuin van voren"), ("r_front.png", "Van voren"),
-                                       ("r_back34.png", "Schuin van achteren"))):
-        x = 20 + i * 610
-        canvas.paste(on_bg(out / name, green).resize((view, view), Image.LANCZOS), (x, y))
-        d.text((x, y - 44), label, font=font, fill=(255, 255, 255))
+    for i, (img, label) in enumerate(views):
+        x = 20 + i * (view + 15)
+        canvas.paste(img.resize((view, view), Image.LANCZOS), (x, y))
+        d.text((x, y - 42), label, font=font, fill=(255, 255, 255))
     canvas.save(out / "deer_check.png")
 
 
@@ -169,9 +178,9 @@ if __name__ == "__main__":
     out.mkdir(parents=True, exist_ok=True)
     if "--debug" in sys.argv:
         p = parts(ref)
-        rm.overlay(ref, [p[k] for k in ("body", "ear", "antler", "leg_front_a", "leg_front_b", "leg_back_a",
-                                       "leg_back_b")], str(out / "deer_parts.png"))
+        rm.overlay(ref, [p[k] for k in ("body", "ear", "antler_back", "antler_front", "leg_front_a", "leg_front_b",
+                                       "leg_back_a", "leg_back_b")], str(out / "deer_parts.png"))
     else:
         frame, objs = build(ref, out)
         renders(frame, out)
-        sheet(ref, out)
+        sheet(ref, out, Path(__file__).resolve().parent / "reference" / "forest_3_4_views.webp")

@@ -89,28 +89,51 @@ def tidy(mask, radius=2, min_size=200, keep_largest=False):
     return np.isin(lab, np.nonzero(sizes >= min_size)[0] + 1)
 
 
-def height_field(small, step):
-    """Half-thickness (in wp) of the union-of-balls inflation of a boolean grid with `step` wp per cell.
-    Outside the shape the value is minus the distance to it, so the result can be contoured at 0."""
+def _medial_balls(small):
+    """Centers and radii (in cells) of the largest circles that fit inside the shape."""
     skel, dist = morphology.medial_axis(small, return_distance=True)
-    h2 = np.zeros(small.shape, np.float32)
     ii, jj = np.nonzero(skel)
-    rr = dist[ii, jj]
-    for i, j, r in zip(ii, jj, rr):
+    return ii, jj, dist[ii, jj]
+
+
+def _disks(shape, balls, value):
+    """For every cell, the largest value(di, dj, r) over the medial circles that contain it."""
+    out = np.zeros(shape, np.float32)
+    for i, j, r in zip(*balls):
         R = int(np.ceil(r))
-        i0, i1, j0, j1 = max(i - R, 0), min(i + R + 1, h2.shape[0]), max(j - R, 0), min(j + R + 1, h2.shape[1])
+        i0, i1, j0, j1 = max(i - R, 0), min(i + R + 1, shape[0]), max(j - R, 0), min(j + R + 1, shape[1])
         di = (np.arange(i0, i1) - i)[:, None]
         dj = (np.arange(j0, j1) - j)[None, :]
-        np.maximum(h2[i0:i1, j0:j1], r * r - di * di - dj * dj, out=h2[i0:i1, j0:j1])
-    h = np.sqrt(np.maximum(h2, 0)) * step
+        np.maximum(out[i0:i1, j0:j1], value(di, dj, r), out=out[i0:i1, j0:j1])
+    return out
+
+
+def height_field(small, step):
+    """Round profile: half-thickness (in wp) of the union of balls. Outside the shape the value is minus
+    the distance to it, so the result can be contoured at 0."""
+    h2 = _disks(small.shape, _medial_balls(small), lambda di, dj, r: r * r - di * di - dj * dj)
     outside = ndimage.distance_transform_edt(~small) * step
-    return np.where(small, h, -outside)
+    return np.where(small, np.sqrt(np.maximum(h2, 0)) * step, -outside)
 
 
-def inflate(mask, step=2.0, width=0.8, min_half=0.0):
-    """Mesh (verts, faces) of the inflated mask. `width` scales the thickness (1 = round cross-sections);
-    it may also be an array the size of the working image (thickness per spot).
-    Vertices are (side, img_x, img_y) in wp."""
+def local_thickness(small, step, blur=10.0):
+    """For every cell the radius (wp) of the largest circle inside the shape that covers it, smoothed so
+    neighbouring parts (neck into body) blend instead of stepping."""
+    R = _disks(small.shape, _medial_balls(small), lambda di, dj, r: np.where(di * di + dj * dj <= r * r, r, 0))
+    s = blur / step
+    num = ndimage.gaussian_filter(R * small, s)
+    den = ndimage.gaussian_filter(small.astype(np.float32), s)
+    return np.where(small, num / np.maximum(den, 1e-6), 0) * step
+
+
+def inflate(mask, step=2.0, width=0.8, min_half=0.0, profile="round", bevel=0.3, bevel_max=18.0):
+    """Mesh (verts, faces) of the inflated mask. Vertices are (side, img_x, img_y) in wp.
+
+    profile "round": cross-sections are circles (squashed by `width`), good for antlers and ears.
+    profile "box": flat sides and a flat rim with slanted edges, the blocky low-poly look. The half-width at
+    a spot is `width` times the local thickness of the outline there (1 = square cross-sections), and the
+    edges are cut off at 45 degrees over `bevel` times that half-width (at most `bevel_max` wp).
+    `width` may also be an array the size of the working image (a value per spot)."""
     ys, xs = np.nonzero(mask)
     pad = 4 * step
     y0, x0 = ys.min() - pad, xs.min() - pad
@@ -118,14 +141,28 @@ def inflate(mask, step=2.0, width=0.8, min_half=0.0):
     gx = x0 + np.arange(int((xs.max() + pad - x0) / step) + 1) * step
     GY, GX = np.meshgrid(gy, gx, indexing="ij")
     small = ndimage.map_coordinates(mask.astype(np.float32), [GY, GX], order=1, cval=0) > 0.5
-    H = height_field(small, step)
     w = ndimage.map_coordinates(np.asarray(width, np.float32), [GY, GX], order=1, mode="nearest") \
         if np.ndim(width) else width
-    Hs = np.where(small, np.maximum(H * w, min_half), H)
-    xmax = Hs.max() + 3 * step
-    side_grid = np.arange(-xmax, xmax + step / 2, step, dtype=np.float32)
-    field = Hs[None, :, :] - np.abs(side_grid)[:, None, None]
-    verts, faces, _, _ = measure.marching_cubes(field, level=0.0, spacing=(step, step, step))
+    if profile == "box":
+        # signed distance to the outline (positive inside), measured on the full-size mask for smooth rims
+        m = np.pad(mask, int(pad) + 2)
+        sd_full = ndimage.distance_transform_edt(m) - ndimage.distance_transform_edt(~m)
+        sd = ndimage.map_coordinates(sd_full, [GY + int(pad) + 2, GX + int(pad) + 2], order=1, mode="nearest")
+        half = np.maximum(w * local_thickness(small, step), min_half)
+        half = ndimage.grey_dilation(half, size=3)            # so the rim reaches the outline everywhere
+        b = np.minimum(bevel * half, bevel_max)
+        xmax = half.max() + 3 * step
+        side_grid = np.abs(np.arange(-xmax, xmax + step / 2, step, dtype=np.float32))[:, None, None]
+        # a bevelled box: inside the outline, within the side walls, and inside the 45 degree corner cut
+        field = np.minimum(np.minimum(sd[None], half[None] - side_grid),
+                           (half[None] - b[None] + sd[None] - side_grid) / np.sqrt(2))
+    else:
+        outside = -ndimage.distance_transform_edt(~small) * step
+        Hs = np.where(small, np.maximum(height_field(small, step) * w, min_half), outside)
+        xmax = Hs.max() + 3 * step
+        side_grid = np.abs(np.arange(-xmax, xmax + step / 2, step, dtype=np.float32))[:, None, None]
+        field = Hs[None, :, :] - side_grid
+    verts, faces, _, _ = measure.marching_cubes(field.astype(np.float32), level=0.0, spacing=(step, step, step))
     return np.stack([verts[:, 0] - xmax, x0 + verts[:, 2], y0 + verts[:, 1]], axis=1), faces
 
 
