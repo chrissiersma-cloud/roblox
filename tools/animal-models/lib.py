@@ -128,6 +128,7 @@ class Animal:
         self.display_name = display_name
         self.rarity = rarity
         self.parts = []
+        self._names = set()
         self.bones = {"Body": {"parent": None, "pivot": None}}
         self.current_bone = "Body"
         self.ride_height = None
@@ -162,7 +163,8 @@ class Animal:
             role = "Glow"
         if shadow is None:
             shadow = size[0] * size[1] * size[2] > 0.6 and transparency < 0.5
-        assert all(p["name"] != name for p in self.parts), f"{self.id}: duplicate part {name}"
+        assert name not in self._names, f"{self.id}: duplicate part {name}"
+        self._names.add(name)
         part = {
             "name": name, "shape": shape, "size": tuple(size), "R": R, "p": tuple(pos),
             "color": color, "material": material, "role": role, "transparency": transparency,

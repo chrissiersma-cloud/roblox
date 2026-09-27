@@ -17,3 +17,9 @@ __pycache__/
 # Keep the delivered models and the tool lockfile
 !models/*.rbxm
 !tools/rbxm-writer/Cargo.lock
+
+# Viewer dependencies and copied scene data
+tools/viewer/node_modules/
+tools/viewer/*.json
+!tools/viewer/package.json
+tools/concept-art/build/

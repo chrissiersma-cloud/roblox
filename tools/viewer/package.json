@@ -1,0 +1,10 @@
+{
+  "name": "hunt-an-animal-viewer",
+  "private": true,
+  "description": "Renders the animal models and concept-art scenes in headless Chromium (Playwright).",
+  "dependencies": {
+    "@fontsource/fredoka": "^5.0.0",
+    "@fontsource/luckiest-guy": "^5.0.0",
+    "three": "0.170.0"
+  }
+}

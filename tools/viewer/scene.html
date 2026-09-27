@@ -1,0 +1,286 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @font-face { font-family: "Luckiest Guy"; src: url(node_modules/@fontsource/luckiest-guy/files/luckiest-guy-latin-400-normal.woff2); }
+  @font-face { font-family: "Fredoka"; font-weight: 700; src: url(node_modules/@fontsource/fredoka/files/fredoka-latin-700-normal.woff2); }
+  @font-face { font-family: "Fredoka"; font-weight: 600; src: url(node_modules/@fontsource/fredoka/files/fredoka-latin-600-normal.woff2); }
+  html, body { margin: 0; overflow: hidden; background: #000; }
+  #wrap { position: relative; }
+  #hud { position: absolute; inset: 0; pointer-events: none; font-family: "Fredoka", sans-serif; color: #fff; }
+  .game { font-family: "Luckiest Guy", sans-serif; letter-spacing: 1px; -webkit-text-stroke: 2px #1b1530;
+          paint-order: stroke fill; text-shadow: 0 4px 0 #1b1530; }
+  .pill { position: absolute; background: rgba(20, 16, 40, .72); border: 3px solid #fff; border-radius: 18px;
+          padding: 8px 18px; box-shadow: 0 5px 0 rgba(0,0,0,.35); }
+  .bar { position: absolute; height: 22px; background: rgba(20,16,40,.7); border: 3px solid #fff; border-radius: 14px; overflow: hidden; }
+  .bar > div { height: 100%; }
+  .bracket { position: absolute; width: 90px; height: 90px; border: 0 solid #fff; filter: drop-shadow(0 0 4px rgba(0,0,0,.6)); }
+  .btn { position: absolute; border-radius: 50%; border: 5px solid #fff; box-shadow: 0 6px 0 rgba(0,0,0,.35); }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="c"></canvas><div id="hud"></div></div>
+<script type="importmap">{ "imports": {
+  "three": "./node_modules/three/build/three.module.js",
+  "three/addons/": "./node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from "three";
+import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
+import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
+import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+
+await document.fonts.load('40px "Luckiest Guy"');
+await document.fonts.load('700 40px "Fredoka"');
+await document.fonts.load('600 40px "Fredoka"');
+
+const params = new URLSearchParams(location.search);
+const W = +(params.get("w") || 1600), H = +(params.get("h") || 900);
+const sceneData = await (await fetch(params.get("scene"))).json();
+const animals = await (await fetch("animals.json")).json();
+const templates = Object.fromEntries(animals[0].children.map(m => [m.name, m]));
+const shot = sceneData.shots[params.get("shot")];
+const env = { ...sceneData.env, ...(shot.env || {}) };
+
+// ------------------------------------------------------------ geometry --
+function wedgeGeometry() {
+  const g = new THREE.BufferGeometry();
+  const v = [[-.5,-.5,-.5],[.5,-.5,-.5],[-.5,-.5,.5],[.5,-.5,.5],[-.5,.5,.5],[.5,.5,.5]];
+  const tris = [[0,2,1],[1,2,3],[2,4,3],[3,4,5],[0,1,4],[1,5,4],[0,4,2],[1,3,5]];
+  const pos = [];
+  for (const t of tris) for (const i of t) pos.push(...v[i]);
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
+const box = new THREE.BoxGeometry(1, 1, 1).toNonIndexed();
+const sphere = new THREE.SphereGeometry(0.5, 32, 20);
+const cyl = new THREE.CylinderGeometry(0.5, 0.5, 1, 40).rotateZ(Math.PI / 2);
+const wedge = wedgeGeometry();
+
+function studTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d");
+  g.fillStyle = "#ececec"; g.fillRect(0, 0, 128, 128);
+  g.fillStyle = "#cfcfcf"; g.beginPath(); g.arc(67, 68, 37, 0, Math.PI * 2); g.fill();
+  const grad = g.createRadialGradient(56, 54, 4, 64, 64, 38);
+  grad.addColorStop(0, "#ffffff"); grad.addColorStop(1, "#f0f0f0");
+  g.fillStyle = grad; g.beginPath(); g.arc(64, 64, 36, 0, Math.PI * 2); g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 16;
+  return t;
+}
+const studs = studTexture();
+
+function studGeometry(base, size) {
+  const g = base.clone();
+  const pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setXYZ(i, pos.getX(i) * size[0], pos.getY(i) * size[1], pos.getZ(i) * size[2]);
+  g.computeVertexNormals();
+  const uv = new Float32Array(pos.count * 2);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3(), e = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i += 3) {
+    a.fromBufferAttribute(pos, i); b.fromBufferAttribute(pos, i + 1); c.fromBufferAttribute(pos, i + 2);
+    n.subVectors(c, b).cross(e.subVectors(a, b)).normalize();
+    const ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
+    [a, b, c].forEach((v, k) => {
+      let u, w;
+      if (ax >= ay && ax >= az) { u = v.z + size[2] / 2; w = v.y + size[1] / 2; }
+      else if (ay >= az) { u = v.x + size[0] / 2; w = v.z + size[2] / 2; }
+      else { u = v.x + size[0] / 2; w = v.y + size[1] / 2; }
+      uv[(i + k) * 2] = u; uv[(i + k) * 2 + 1] = w;
+    });
+  }
+  g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  return g;
+}
+
+const srgb = c => new THREE.Color().setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace);
+
+function material(color, mat, t, refl) {
+  const col = srgb(color || [0.64, 0.64, 0.64]);
+  const common = { color: col, transparent: t > 0, opacity: 1 - t };
+  switch (mat) {
+    case "Neon": return new THREE.MeshBasicMaterial({ color: col.clone().multiplyScalar(1.6), transparent: t > 0, opacity: 1 - t, depthWrite: t < 0.3 });
+    case "Glass": return new THREE.MeshStandardMaterial({ ...common, roughness: 0.05, metalness: 0.3, transparent: true, opacity: Math.min(1 - t, 0.7) });
+    case "Ice": return new THREE.MeshStandardMaterial({ ...common, roughness: 0.1, metalness: 0.1 });
+    case "Water": return new THREE.MeshStandardMaterial({ ...common, roughness: 0.05, metalness: 0.2, transparent: true, opacity: 0.8 });
+    default: return new THREE.MeshStandardMaterial({ ...common, roughness: refl ? 0.25 : 0.55, metalness: refl ? 0.45 : 0 });
+  }
+}
+
+function cfMatrix(cf, size) {
+  const m = new THREE.Matrix4().set(cf[3], cf[4], cf[5], cf[0], cf[6], cf[7], cf[8], cf[1], cf[9], cf[10], cf[11], cf[2], 0, 0, 0, 1);
+  if (size) m.multiply(new THREE.Matrix4().makeScale(size[0], size[1], size[2]));
+  return m;
+}
+
+function makePart(shape, size, cf, color, mat, t, refl, withStuds, castShadow) {
+  let geo, s = size.slice();
+  if (shape === "wedge") geo = wedge;
+  else if (shape === "ellipsoid") geo = sphere;
+  else if (shape === "ball") { const d = Math.min(...s); s = [d, d, d]; geo = sphere; }
+  else if (shape === "cylinder") { const d = Math.min(s[1], s[2]); s = [s[0], d, d]; geo = cyl; }
+  else geo = box;
+  const m = material(color, mat, t, refl);
+  let matrixSize = s;
+  if (withStuds && (geo === box || geo === wedge)) {
+    geo = studGeometry(geo, s); matrixSize = null; m.map = studs;
+  }
+  const mesh = new THREE.Mesh(geo, m);
+  mesh.matrixAutoUpdate = false;
+  mesh.matrix.copy(cfMatrix(cf, matrixSize));
+  mesh.castShadow = castShadow && t < 0.5 && mat !== "Neon";
+  mesh.receiveShadow = mat !== "Neon";
+  return mesh;
+}
+
+// Animal models from animals.json (instance format).
+function buildModel(model) {
+  const group = new THREE.Group();
+  const visit = (node) => {
+    if ((node.class === "Part" || node.class === "WedgePart") && (node.props.Transparency || 0) < 1) {
+      const p = node.props;
+      const mesh = (node.children || []).find(c => c.class === "SpecialMesh");
+      const shape = node.class === "WedgePart" ? "wedge" : mesh ? "ellipsoid" : p.Shape === "Ball" ? "ball" :
+        p.Shape === "Cylinder" ? "cylinder" : "block";
+      group.add(makePart(shape, p.Size, p.CFrame, p.Color, p.Material, p.Transparency || 0, p.Reflectance || 0,
+        p.TopSurface === "Studs", p.CastShadow !== false));
+    }
+    (node.children || []).forEach(visit);
+  };
+  model.children.forEach(visit);
+  return group;
+}
+
+// ---------------------------------------------------------------- text --
+function textCanvas(lines, pxW, pxH, opts = {}) {
+  const c = document.createElement("canvas");
+  c.width = pxW; c.height = pxH;
+  const g = c.getContext("2d");
+  if (opts.bg) { g.fillStyle = opts.bg; g.fillRect(0, 0, pxW, pxH); }
+  const weights = lines.map(l => l.size || 1);
+  const total = weights.reduce((a, b) => a + b, 0);
+  let y = pxH * (opts.pad ?? 0.08);
+  const usable = pxH * (1 - 2 * (opts.pad ?? 0.08));
+  for (const l of lines) {
+    const lineH = usable * (l.size || 1) / total;
+    let size = lineH * 0.82;
+    const font = l.font === "body" ? "700 SIZEpx Fredoka" : "SIZEpx 'Luckiest Guy'";
+    g.font = font.replace("SIZE", size);
+    const maxW = pxW * 0.92;
+    const w = g.measureText(l.text).width;
+    if (w > maxW) { size *= maxW / w; g.font = font.replace("SIZE", size); }
+    g.textAlign = "center"; g.textBaseline = "middle";
+    const cy = y + lineH / 2 + size * 0.06;
+    if (l.stroke !== false) {
+      g.lineJoin = "round"; g.lineWidth = size * 0.16; g.strokeStyle = l.strokeColor || "#1b1530";
+      g.strokeText(l.text, pxW / 2, cy);
+    }
+    g.fillStyle = l.color || "#ffffff";
+    g.fillText(l.text, pxW / 2, cy);
+    y += lineH;
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+
+// --------------------------------------------------------------- scene --
+const scene = new THREE.Scene();
+{
+  const c = document.createElement("canvas"); c.width = 4; c.height = 512;
+  const g = c.getContext("2d");
+  const grad = g.createLinearGradient(0, 0, 0, 512);
+  env.sky.forEach(([stop, col]) => grad.addColorStop(stop, col));
+  g.fillStyle = grad; g.fillRect(0, 0, 4, 512);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
+  scene.background = t;
+}
+if (env.fog) scene.fog = new THREE.Fog(env.fog[0], env.fog[1], env.fog[2]);
+scene.add(new THREE.HemisphereLight(env.hemi?.[0] || "#ffffff", env.hemi?.[1] || "#7a9a6a", env.hemi?.[2] ?? 1.5));
+const sun = new THREE.DirectionalLight(env.sun?.color || "#ffffff", env.sun?.intensity ?? 2.2);
+const sunDir = new THREE.Vector3(...(env.sun?.dir || [-0.5, 1, 0.4])).normalize();
+const shadow = shot.shadow || { center: shot.camera.target, radius: 150 };
+const sc = new THREE.Vector3(...shadow.center);
+sun.position.copy(sc).addScaledVector(sunDir, shadow.radius * 3);
+sun.target.position.copy(sc);
+sun.castShadow = true;
+Object.assign(sun.shadow.camera, { left: -shadow.radius, right: shadow.radius, top: shadow.radius, bottom: -shadow.radius,
+  near: 1, far: shadow.radius * 7 });
+sun.shadow.mapSize.set(4096, 4096);
+sun.shadow.bias = -0.0004;
+sun.shadow.normalBias = 0.05;
+scene.add(sun, sun.target);
+
+const partMeshes = {};
+for (const p of sceneData.parts) {
+  const mesh = makePart(p.s, p.z, p.cf, p.c, p.m, p.t || 0, p.r || 0, p.st, p.sh !== false);
+  partMeshes[p.n] = { mesh, p };
+  scene.add(mesh);
+}
+for (const m of sceneData.models) {
+  const tpl = templates[m.id];
+  if (!tpl) { console.error("missing model " + m.id); continue; }
+  const g = buildModel(tpl);
+  g.matrixAutoUpdate = false;
+  g.matrix.compose(new THREE.Vector3(...m.pos), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, m.yaw * Math.PI / 180, 0)),
+    new THREE.Vector3(m.scale, m.scale, m.scale));
+  scene.add(g);
+}
+for (const tx of sceneData.texts) {
+  const { mesh, p } = partMeshes[tx.part];
+  const [sx, sy, sz] = p.z;
+  const ppu = Math.min(96, 2048 / Math.max(sx, sy));
+  const tex = textCanvas(tx.lines, Math.round(sx * ppu), Math.round(sy * ppu), tx);
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(sx, sy),
+    tx.glow ? new THREE.MeshBasicMaterial({ map: tex, transparent: true, color: new THREE.Color(1.5, 1.5, 1.5) })
+            : new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.6 }));
+  plane.matrixAutoUpdate = false;
+  const local = new THREE.Matrix4().makeRotationY(Math.PI).setPosition(0, 0, -sz / 2 - 0.04);
+  plane.matrix.copy(cfMatrix(p.cf)).multiply(local);
+  scene.add(plane);
+}
+for (const sp of sceneData.sprites) {
+  const n = sp.lines.length;
+  const aspect = sp.aspect || 3.2;
+  const tex = textCanvas(sp.lines, 512 * aspect, 512 * n, { pad: 0.02 });
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+  s.position.set(...sp.pos);
+  s.scale.set(sp.h * aspect, sp.h * n, 1);
+  scene.add(s);
+}
+
+// -------------------------------------------------------------- render --
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+const cam = new THREE.PerspectiveCamera(shot.camera.fov || 50, W / H, 0.5, 5000);
+cam.position.set(...shot.camera.pos);
+cam.lookAt(new THREE.Vector3(...shot.camera.target));
+
+const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(W, H, { samples: 4, type: THREE.HalfFloatType }));
+composer.addPass(new RenderPass(scene, cam));
+composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), env.bloom?.[0] ?? 0.55, env.bloom?.[1] ?? 0.5, env.bloom?.[2] ?? 0.92));
+composer.addPass(new OutputPass());
+composer.render();
+
+// ----------------------------------------------------------------- hud --
+const hud = document.getElementById("hud");
+document.getElementById("wrap").style.width = W + "px";
+document.getElementById("wrap").style.height = H + "px";
+if (shot.hud) hud.innerHTML = shot.hud;
+document.title = "done";
+</script>
+</body>
+</html>

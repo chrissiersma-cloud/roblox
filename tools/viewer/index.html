@@ -1,0 +1,222 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; background: #9fd3f7; font-family: sans-serif; }
+  #labels div { position: absolute; color: #123; font-weight: bold; font-size: 15px;
+    background: rgba(255,255,255,.75); padding: 2px 6px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="labels"></div>
+<script type="importmap">{ "imports": { "three": "./node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import * as THREE from "three";
+
+const params = new URLSearchParams(location.search);
+const file = params.get("file") || "animals.json";
+const only = params.get("only") ? params.get("only").split(",") : null;
+const cols = +(params.get("cols") || 4);
+const cell = +(params.get("cell") || 360);
+const yaw = +(params.get("yaw") || 35) * Math.PI / 180;
+const pitch = +(params.get("pitch") || 18) * Math.PI / 180;
+
+const data = await (await fetch(file)).json();
+const folder = data[0];
+let models = folder.children.filter(m => m.class === "Model");
+if (only) models = models.filter(m => only.includes(m.name));
+
+const rows = Math.ceil(models.length / cols);
+const W = cols * cell, H = rows * cell;
+const canvas = document.getElementById("c");
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1);
+renderer.setSize(W, H);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.setScissorTest(true);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+
+function wedgeGeometry() {
+  // Roblox WedgePart: slope faces -Z/+Y, tall face at +Z.
+  const g = new THREE.BufferGeometry();
+  const v = [
+    [-.5,-.5,-.5],[.5,-.5,-.5],[-.5,-.5,.5],[.5,-.5,.5],[-.5,.5,.5],[.5,.5,.5],
+  ];
+  const tris = [
+    [0,2,1],[1,2,3],      // bottom
+    [2,4,3],[3,4,5],      // back (+Z)
+    [0,1,4],[1,5,4],      // slope
+    [0,4,2],              // left
+    [1,3,5],              // right
+  ];
+  const pos = [];
+  for (const t of tris) for (const i of t) pos.push(...v[i]);
+  g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  g.computeVertexNormals();
+  return g;
+}
+const box = new THREE.BoxGeometry(1, 1, 1);
+const sphere = new THREE.SphereGeometry(0.5, 40, 28);
+const cyl = new THREE.CylinderGeometry(0.5, 0.5, 1, 40).rotateZ(Math.PI / 2);
+const wedge = wedgeGeometry();
+const boxFlat = box.toNonIndexed();
+
+// Roblox "Studs" surface: one stud per stud of surface.
+function studTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 128;
+  const g = c.getContext("2d");
+  g.fillStyle = "#ececec"; g.fillRect(0, 0, 128, 128);
+  g.fillStyle = "#cfcfcf"; g.beginPath(); g.arc(67, 68, 37, 0, Math.PI * 2); g.fill();
+  const grad = g.createRadialGradient(56, 54, 4, 64, 64, 38);
+  grad.addColorStop(0, "#ffffff"); grad.addColorStop(1, "#f0f0f0");
+  g.fillStyle = grad; g.beginPath(); g.arc(64, 64, 36, 0, Math.PI * 2); g.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
+  return t;
+}
+const studs = studTexture();
+
+// Geometry in stud units with box-projected UVs so studs tile at 1 per stud.
+function studGeometry(base, size) {
+  const g = base.clone();
+  const pos = g.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setXYZ(i, pos.getX(i) * size[0], pos.getY(i) * size[1], pos.getZ(i) * size[2]);
+  g.computeVertexNormals();
+  const uv = new Float32Array(pos.count * 2);
+  const a = new THREE.Vector3(), b = new THREE.Vector3(), c = new THREE.Vector3(), n = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i += 3) {
+    a.fromBufferAttribute(pos, i); b.fromBufferAttribute(pos, i + 1); c.fromBufferAttribute(pos, i + 2);
+    n.subVectors(c, b).cross(new THREE.Vector3().subVectors(a, b)).normalize();
+    const ax = Math.abs(n.x), ay = Math.abs(n.y), az = Math.abs(n.z);
+    for (let k = 0; k < 3; k++) {
+      const v = [a, b, c][k];
+      let u, w;
+      if (ax >= ay && ax >= az) { u = v.z + size[2] / 2; w = v.y + size[1] / 2; }
+      else if (ay >= az) { u = v.x + size[0] / 2; w = v.z + size[2] / 2; }
+      else { u = v.x + size[0] / 2; w = v.y + size[1] / 2; }
+      uv[(i + k) * 2] = u; uv[(i + k) * 2 + 1] = w;
+    }
+  }
+  g.setAttribute("uv", new THREE.BufferAttribute(uv, 2));
+  return g;
+}
+
+function srgb(c) { return new THREE.Color().setRGB(c[0], c[1], c[2], THREE.SRGBColorSpace); }
+
+function material(p) {
+  const color = srgb(p.Color || [0.64, 0.64, 0.64]);
+  const t = p.Transparency || 0;
+  const common = { color, transparent: t > 0, opacity: 1 - t };
+  switch (p.Material) {
+    case "Neon": return new THREE.MeshBasicMaterial({ color: color.clone().multiplyScalar(1.35), transparent: t > 0, opacity: 1 - t });
+    case "Glass": return new THREE.MeshStandardMaterial({ ...common, roughness: 0.05, metalness: 0.2, transparent: true, opacity: Math.min(1 - t, 0.75) });
+    case "Metal": case "DiamondPlate": return new THREE.MeshStandardMaterial({ ...common, roughness: 0.3, metalness: 0.6 });
+    case "Ice": return new THREE.MeshStandardMaterial({ ...common, roughness: 0.15, metalness: 0.05 });
+    case "Fabric": case "Sand": case "Grass": return new THREE.MeshStandardMaterial({ ...common, roughness: 0.95 });
+    default: return new THREE.MeshStandardMaterial({ ...common, roughness: 0.5, metalness: 0.0 });
+  }
+}
+
+function toMatrix(cf, size) {
+  const m = new THREE.Matrix4().set(
+    cf[3], cf[4], cf[5], cf[0],
+    cf[6], cf[7], cf[8], cf[1],
+    cf[9], cf[10], cf[11], cf[2],
+    0, 0, 0, 1);
+  return m.multiply(new THREE.Matrix4().makeScale(size[0], size[1], size[2]));
+}
+
+function buildModel(model) {
+  const group = new THREE.Group();
+  const visit = (node) => {
+    if ((node.class === "Part" || node.class === "WedgePart") && (node.props.Transparency || 0) < 1) {
+      const p = node.props;
+      let size = p.Size.slice();
+      let geo = box;
+      const mesh = (node.children || []).find(c => c.class === "SpecialMesh");
+      if (node.class === "WedgePart") geo = wedge;
+      else if (mesh && mesh.props.MeshType === "Sphere") geo = sphere;
+      else if (p.Shape === "Ball") { const d = Math.min(...size); size = [d, d, d]; geo = sphere; }
+      else if (p.Shape === "Cylinder") { const d = Math.min(size[1], size[2]); size = [size[0], d, d]; geo = cyl; }
+      let mat = material(p);
+      let matrixSize = size;
+      if (p.TopSurface === "Studs" && (geo === box || geo === wedge)) {
+        geo = studGeometry(geo === box ? boxFlat : wedge, size);
+        matrixSize = [1, 1, 1];
+        mat.map = studs;
+        mat.needsUpdate = true;
+      }
+      const obj = new THREE.Mesh(geo, mat);
+      obj.matrixAutoUpdate = false;
+      obj.matrix.copy(toMatrix(p.CFrame, matrixSize));
+      obj.castShadow = p.CastShadow !== false;
+      obj.receiveShadow = true;
+      group.add(obj);
+    }
+    (node.children || []).forEach(visit);
+  };
+  model.children.forEach(visit);
+  return group;
+}
+
+const labels = document.getElementById("labels");
+models.forEach((model, i) => {
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(0x9fd3f7);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6f9f5f, 1.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.2);
+  scene.add(sun);
+  const group = buildModel(model);
+  scene.add(group);
+
+  const bbox = new THREE.Box3().setFromObject(group);
+  const center = bbox.getCenter(new THREE.Vector3());
+  const radius = bbox.getSize(new THREE.Vector3()).length() / 2;
+
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(radius * 8, radius * 8),
+    new THREE.MeshStandardMaterial({ color: 0x6cc36a, roughness: 1 }));
+  ground.rotation.x = -Math.PI / 2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+
+  sun.position.set(center.x + radius * 2, center.y + radius * 4, center.z - radius * 3);
+  sun.target.position.copy(center);
+  scene.add(sun.target);
+  sun.castShadow = true;
+  const sc = sun.shadow.camera;
+  sc.left = sc.bottom = -radius * 1.5; sc.right = sc.top = radius * 1.5;
+  sc.near = 0.1; sc.far = radius * 12;
+  sun.shadow.mapSize.set(2048, 2048);
+  sun.shadow.bias = -0.0005;
+
+  const camera = new THREE.PerspectiveCamera(30, 1, 0.1, radius * 50);
+  const dist = radius / Math.sin(15 * Math.PI / 180) * (+(params.get("zoom") || 0.85));
+  camera.position.set(
+    center.x + dist * Math.sin(yaw) * Math.cos(pitch),
+    center.y + dist * Math.sin(pitch),
+    center.z - dist * Math.cos(yaw) * Math.cos(pitch));
+  camera.lookAt(center);
+
+  const x = (i % cols) * cell, y = Math.floor(i / cols) * cell;
+  renderer.setViewport(x, H - y - cell, cell, cell);
+  renderer.setScissor(x, H - y - cell, cell, cell);
+  renderer.render(scene, camera);
+
+  const parts = [];
+  const count = (n) => { if (n.class === "Part" || n.class === "WedgePart") parts.push(n); (n.children || []).forEach(count); };
+  model.children.forEach(count);
+  const label = document.createElement("div");
+  label.style.left = x + 6 + "px"; label.style.top = y + 6 + "px";
+  label.textContent = `${model.name} · ${parts.length} parts`;
+  labels.appendChild(label);
+});
+document.title = "done";
+</script>
+</body>
+</html>
