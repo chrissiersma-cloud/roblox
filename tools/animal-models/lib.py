@@ -208,19 +208,29 @@ class Animal:
         """Crystal: a square prism with a pointed top, turned 45 degrees."""
         R = matmul(R, angles(0, 45, 0))
         body_h = height * (1 - tip)
-        self.box(name, (width, body_h, width), add(base, apply(R, (0, body_h / 2, 0))), color, R=R, **kw)
+        effects = kw.pop("effects", None)
+        main = self.box(name, (width, body_h, width), add(base, apply(R, (0, body_h / 2, 0))), color, R=R,
+                        effects=effects, **kw)
         top = add(base, apply(R, (0, body_h, 0)))
         for i, turn in enumerate((0, 90) if cross else (0,)):
             self.tri(f"{name}Tip{i}", top, width, height * tip, width * 0.999, color,
                      R=matmul(R, angles(0, turn, 0)), **kw)
+        return main
+
+    def beam(self, name, start, end, thickness, color, **kw):
+        """Square beam between two points."""
+        length = math.dist(start, end)
+        return self.box(name, (length, thickness, thickness), scale(add(start, end), 0.5), color,
+                        R=aim(sub(end, start)), **kw)
 
     def bevel(self, name, size, pos, color, b=0.6, R=IDENTITY, bottom=0.0, **kw):
         """Block with chamfered long edges along local Z (b = top bevel, bottom = lower bevel)."""
         w, h, d = size
+        effects = kw.pop("effects", None)
         core_h = h - b - bottom
         core_y = (bottom - b) / 2
         at = lambda x, y, z: add(pos, apply(R, (x, y, z)))
-        main = self.box(name, (w, core_h, d), at(0, core_y, 0), color, R=R, **kw)
+        main = self.box(name, (w, core_h, d), at(0, core_y, 0), color, R=R, effects=effects, **kw)
         if b > 0:
             self.box(f"{name}Top", (w - 2 * b, b, d), at(0, h / 2 - b / 2, 0), color, R=R, **kw)
             for sgn, S in ((-1, "L"), (1, "R")):
