@@ -13,3 +13,7 @@ Thumbs.db
 tools/animal-models/build/
 tools/rbxm-writer/target/
 __pycache__/
+
+# Keep the delivered models and the tool lockfile
+!models/*.rbxm
+!tools/rbxm-writer/Cargo.lock
