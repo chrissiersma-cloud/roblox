@@ -1,0 +1,55 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<style>html,body{margin:0;background:#9fd3f7;font-family:sans-serif}
+#labels div{position:absolute;color:#123;font-weight:bold;font-size:15px;background:rgba(255,255,255,.75);padding:2px 6px;border-radius:4px}</style>
+</head><body><canvas id="c"></canvas><div id="labels"></div>
+<script type="importmap">{ "imports": { "three": "./node_modules/three/build/three.module.js", "three/addons/": "./node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+const params = new URLSearchParams(location.search);
+const cols = +(params.get("cols") || 4), cell = +(params.get("cell") || 360);
+const yaw = +(params.get("yaw") || 35) * Math.PI / 180, pitch = +(params.get("pitch") || 16) * Math.PI / 180;
+const zoom = +(params.get("zoom") || 0.85);
+const rigs = await (await fetch((params.get("dir") || "meshes") + "/rigs.json")).json();
+let ids = rigs.map(r => r.id);
+if (params.get("only")) ids = params.get("only").split(",");
+const rows = Math.ceil(ids.length / cols), W = cols * cell, H = rows * cell;
+const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById("c"), antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H); renderer.setScissorTest(true);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+const loader = new GLTFLoader();
+for (let i = 0; i < ids.length; i++) {
+  const gltf = await loader.loadAsync(`${params.get("dir") || "meshes"}/${ids[i]}.glb`);
+  const scene = new THREE.Scene();
+  scene.background = new THREE.Color(params.get("sheet") ? 0xbfe3c8 : 0x9fd3f7);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0x6f9f5f, 1.6));
+  const sun = new THREE.DirectionalLight(0xffffff, 2.2); scene.add(sun);
+  let tris = 0, meshes = 0;
+  gltf.scene.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; meshes++;
+    tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+    if (o.material.map) { o.material.map.anisotropy = 8; } } });
+  scene.add(gltf.scene);
+  const bbox = new THREE.Box3().setFromObject(gltf.scene);
+  const center = bbox.getCenter(new THREE.Vector3()), radius = bbox.getSize(new THREE.Vector3()).length() / 2;
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(radius * 8, radius * 8), new THREE.MeshStandardMaterial({ color: 0x6cc36a, roughness: 1 }));
+  ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; scene.add(ground);
+  sun.position.set(center.x + radius * 2, center.y + radius * 4, center.z - radius * 3); sun.target.position.copy(center); scene.add(sun.target);
+  sun.castShadow = true; const sc = sun.shadow.camera; sc.left = sc.bottom = -radius * 1.5; sc.right = sc.top = radius * 1.5; sc.near = 0.1; sc.far = radius * 12;
+  sun.shadow.mapSize.set(2048, 2048); sun.shadow.bias = -0.0005;
+  const cam = new THREE.PerspectiveCamera(30, 1, 0.1, radius * 50);
+  const dist = radius / Math.sin(15 * Math.PI / 180) * zoom;
+  cam.position.set(center.x + dist * Math.sin(yaw) * Math.cos(pitch), center.y + dist * Math.sin(pitch), center.z - dist * Math.cos(yaw) * Math.cos(pitch));
+  cam.lookAt(center);
+  const x = (i % cols) * cell, y = Math.floor(i / cols) * cell;
+  renderer.setViewport(x, H - y - cell, cell, cell); renderer.setScissor(x, H - y - cell, cell, cell);
+  renderer.render(scene, cam);
+  const label = document.createElement("div"); label.style.left = x + 6 + "px"; label.style.top = y + 6 + "px";
+  const rig = rigs.find(r => r.id === ids[i]);
+  const colors = { Common: "#3fae4a", Uncommon: "#3fae4a", Rare: "#2f86e6", Epic: "#9b4de0", Legendary: "#e0a51a" };
+  label.innerHTML = params.get("sheet") ? `<span style="font-size:22px">${rig.display}</span> <span style="background:${colors[rig.rarity]};color:#fff;border-radius:10px;padding:1px 10px;font-size:16px">${rig.rarity}</span>`
+                                        : `${ids[i]} · ${meshes} meshes · ${tris} tris`; document.getElementById("labels").appendChild(label);
+}
+document.title = "done";
+</script></body></html>

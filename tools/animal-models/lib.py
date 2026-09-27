@@ -245,6 +245,61 @@ class Animal:
                            color, R=matmul(matmul(R, angles(0, 0, 180)), angles(0, 90 * sgn, 0)), **kw)
         return main
 
+    def oct(self, name, size, pos, color, b, R=IDENTITY, bottom=None, **kw):
+        """Octagonal prism along local Z: all four long edges chamfered."""
+        return self.bevel(name, size, pos, color, b=b, bottom=b if bottom is None else bottom, R=R, **kw)
+
+    def taper(self, name, back, front, length, pos, color, R=IDENTITY, r=0.3, **kw):
+        """Solid that narrows from `back` (w, h at local +Z) to `front` (w, h at local -Z)."""
+        w, h = max(back[0], front[0]), max(back[1], front[1])
+        rr = r * min(w, h)
+        return self.bevel(name, (w, h, length), pos, color, b=rr, bottom=rr, R=R, **kw)
+
+    def post(self, name, size, pos, color, b, R=IDENTITY, **kw):
+        """Upright octagonal prism (legs, necks); size is (x, y, z) before R."""
+        sx, sy, sz = size
+        return self.bevel(name, (sx, sz, sy), pos, color, b=b, bottom=b, R=matmul(R, angles(90, 0, 0)), **kw)
+
+    def eye2(self, name, pos, R=IDENTITY, w=1.0, h=1.2, iris=None, pupil=EYE, white=WHITE, glow=False,
+             look=(0, 0), lid=None, lid_tilt=0.0, lid_drop=0.0):
+        """Glossy eye facing local -Z: white, colored iris, pupil, two shines and an optional lid."""
+        at = lambda x, y, z: add(pos, apply(R, (x, y, z)))
+        detail = dict(material="SmoothPlastic", role="Eye", shadow=False)
+        self.box(name, (w, h, 0.12), pos, white, R=R, **detail)
+        px, py = look[0] * w * 0.12, -h * 0.05 + look[1] * h * 0.1
+        if iris:
+            self.box(f"{name}Iris", (w * 0.74, h * 0.8, 0.14), at(px, py, -0.02), iris, R=R,
+                     **dict(detail, material="Neon") if glow else detail)
+            self.box(f"{name}Pupil", (w * 0.4, h * 0.56, 0.16), at(px, py - h * 0.02, -0.04), pupil, R=R, **detail)
+        else:
+            self.box(f"{name}Pupil", (w * 0.64, h * 0.76, 0.16), at(px, py, -0.04), pupil, R=R, **detail)
+        self.box(f"{name}Shine", (w * 0.28, w * 0.28, 0.18), at(px - w * 0.15, py + h * 0.2, -0.06), WHITE, R=R,
+                 **detail)
+        self.box(f"{name}Glint", (w * 0.13, w * 0.13, 0.18), at(px + w * 0.16, py - h * 0.2, -0.06), WHITE, R=R,
+                 **detail)
+        if lid:
+            self.box(f"{name}Lid", (w * 1.12, h * 0.34 + lid_drop, 0.22),
+                     at(0, h * 0.42 - lid_drop / 2, -0.05), lid, R=matmul(R, angles(0, 0, lid_tilt)),
+                     material="SmoothPlastic", role="Primary", shadow=False)
+
+    def paw(self, name, center, w, d, color, claws=None, h=0.8, R=IDENTITY, toes=3):
+        """Chunky paw (bottom-center at `center`, toes point to local -Z) with toe grooves and claws."""
+        at = lambda x, y, z: add(center, apply(R, (x, y, z)))
+        self.bevel(name, (w, h, d), at(0, h / 2, 0), color, b=min(0.3, h * 0.35), R=R)
+        for i in range(1, toes):
+            x = -w / 2 + w * i / toes
+            self.box(f"{name}Groove{i}", (0.1, h * 0.55, 0.12), at(x, h * 0.3, -d / 2 - 0.02), EYE, R=R,
+                     material="SmoothPlastic", role="Accent", shadow=False, transparency=0.55)
+        if claws:
+            for i in range(toes):
+                x = -w / 2 + w * (i + 0.5) / toes
+                self.wedge(f"{name}Claw{i}", (w / toes * 0.42, h * 0.45, 0.55), at(x, h * 0.23, -d / 2 - 0.26),
+                           claws, R=R, material="SmoothPlastic", role="Accent", shadow=False)
+
+    def tuft(self, name, pos, size, color, R=IDENTITY, **kw):
+        """Fur tuft: a wedge whose point sweeps towards local +Z."""
+        return self.wedge(name, size, pos, color, R=matmul(R, angles(0, 180, 0)), **kw)
+
     def tooth(self, name, top, width, height, color=WHITE, R=IDENTITY, up=False, **kw):
         """Sawtooth tooth (single wedge) hanging from `top`; its triangle faces +-X before R."""
         flip = angles(0, 0, 0) if up else angles(0, 0, 180)

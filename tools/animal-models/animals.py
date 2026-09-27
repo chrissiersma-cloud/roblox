@@ -31,92 +31,123 @@ def fx(a, name, *effects):
 # ---------------------------------------------------------- templates ----
 
 def _bunny(a, fur, cream, inner=PINK, nose=C("#ff7fa6"), eye=None, ears=True, head_extra=None,
-           tail=WHITE, tail_kw=None):
-    a.bevel("Body", (3.6, 3.0, 4.4), (0, 2.6, 0.8), fur, b=0.8)
-    a.box("Belly", (2.4, 1.9, 0.2), (0, 2.35, -1.45), cream, role="Secondary")
+           tail=WHITE, tail_kw=None, ear_tip=None):
+    a.oct("Body", (3.6, 3.0, 4.4), (0, 2.6, 0.8), fur, b=0.9, bottom=0.6)
+    a.bevel("BellyLow", (3.66, 1.2, 3.8), (0, 1.7, 0.8), cream, b=0, bottom=0.63, role="Secondary")
+    a.oct("Belly", (2.4, 1.9, 0.3), (0, 2.35, -1.45), cream, b=0.3, role="Secondary")
+    a.tri("ChestTuft", (0, 1.55, -1.6), 1.1, 0.8, 0.4, cream, R=angles(0, 0, 180), role="Secondary")
 
     with a.bone("Head", "Body", (0, 3.8, -0.6)):
-        a.bevel("Head", (4.0, 3.4, 3.4), (0, 5.0, -1.0), fur, b=0.9)
-        a.box("Muzzle", (2.0, 1.1, 0.4), (0, 4.0, -2.8), cream, role="Secondary")
-        a.box("Nose", (0.7, 0.45, 0.2), (0, 4.5, -3.05), nose, **DETAIL)
+        a.oct("Head", (4.0, 3.4, 3.4), (0, 5.0, -1.0), fur, b=1.0, bottom=0.6)
+        a.oct("Muzzle", (2.2, 1.3, 0.8), (0, 4.05, -2.75), cream, b=0.4, role="Secondary")
+        a.bevel("Nose", (0.75, 0.5, 0.35), (0, 4.6, -3.18), nose, b=0.15, **DETAIL)
+        a.box("NoseShine", (0.22, 0.12, 0.08), (-0.15, 4.72, -3.38), WHITE, **DETAIL)
+        a.tri("Forelock", (0.35, 6.55, -2.3), 1.0, 0.8, 0.5, fur, R=angles(-20, 0, -20))
         for s, S in SIDES:
-            a.box(f"Tooth{S}", (0.36, 0.5, 0.14), (0.2 * s, 3.25, -2.9), WHITE, **DETAIL)
-            a.block_eye(f"Eye{S}", (1.05 * s, 5.3, -2.76), w=0.95, h=1.25, **(eye or {}))
-            a.box(f"Cheek{S}", (0.7, 0.4, 0.1), (1.5 * s, 4.35, -2.74), PINK, **DETAIL)
+            a.box(f"Mouth{S}", (0.42, 0.1, 0.08), (0.18 * s, 4.1, -3.17), C("#5a2a3a"), rot=(0, 0, -30 * s),
+                  **DETAIL)
+            a.box(f"Tooth{S}", (0.34, 0.45, 0.14), (0.19 * s, 3.25, -3.0), WHITE, **DETAIL)
+            a.eye2(f"Eye{S}", (1.05 * s, 5.35, -2.76), w=1.0, h=1.3, **({"iris": C("#6b4226")} | (eye or {})))
+            a.box(f"Cheek{S}", (0.7, 0.4, 0.1), (1.55 * s, 4.35, -2.74), PINK, **DETAIL)
+            a.tuft(f"CheekTuft{S}", (2.15 * s, 4.4, -1.3), (0.5, 1.0, 1.4), fur, R=angles(0, 25 * s, 0))
             if ears:
-                R = angles(0, 0, -10 * s)
-                ear_c = (1.0 * s, 8.25, -0.9)
-                a.bevel(f"Ear{S}", (1.0, 3.4, 0.7), ear_c, fur, b=0.35, R=R)
-                a.box(f"InnerEar{S}", (0.55, 2.5, 0.1), at(ear_c, R, (0, -0.2, -0.36)), inner, R=R, **DETAIL)
+                tilt = angles(0, 0, -10 * s)
+                ear_c = (1.0 * s, 8.3, -0.9)
+                a.taper(f"Ear{S}", (1.15, 0.75), (0.85, 0.6), 3.8, ear_c, fur, R=matmul(tilt, angles(90, 0, 0)), r=0.45)
+                a.box(f"InnerEar{S}", (0.55, 2.6, 0.1), at(ear_c, tilt, (0, -0.1, -0.33)), inner, R=tilt, **DETAIL)
+                if ear_tip:
+                    a.taper(f"EarTip{S}", (0.92, 0.64), (0.84, 0.58), 0.8, at(ear_c, tilt, (0, 1.55, 0)), ear_tip,
+                            R=matmul(tilt, angles(90, 0, 0)), r=0.45, role="Accent")
         if head_extra:
             head_extra(a)
 
     for s, S in SIDES:
-        with a.bone(f"LegF{S}", "Body", (0.95 * s, 1.3, -1.0)):
-            a.box(f"PawF{S}", (1.0, 1.3, 1.1), (0.95 * s, 0.65, -1.0), cream, role="Secondary")
+        with a.bone(f"LegF{S}", "Body", (0.95 * s, 1.6, -1.0)):
+            a.post(f"LegF{S}", (1.0, 1.1, 1.0), (0.95 * s, 1.25, -1.0), fur, b=0.3)
+            a.paw(f"PawF{S}", (0.95 * s, 0, -1.1), 1.1, 1.3, cream, h=0.85)
         with a.bone(f"LegB{S}", "Body", (1.6 * s, 2.2, 1.6)):
-            a.bevel(f"Haunch{S}", (1.2, 2.0, 2.4), (1.6 * s, 1.6, 1.6), fur, b=0.4)
-            a.box(f"FootB{S}", (1.2, 0.6, 2.4), (1.55 * s, 0.3, 1.0), cream, role="Secondary")
+            a.oct(f"Haunch{S}", (1.3, 2.1, 2.5), (1.6 * s, 1.7, 1.6), fur, b=0.55)
+            a.paw(f"FootB{S}", (1.55 * s, 0, 1.0), 1.25, 2.6, cream, h=0.6)
 
     if tail:
         with a.bone("Tail", "Body", (0, 2.8, 3.0)):
-            a.bevel("Tail", (1.4, 1.4, 1.0), (0, 2.8, 3.45), tail, b=0.35, bottom=0.35,
-                    **(tail_kw or dict(role="Secondary")))
+            a.oct("Tail", (1.5, 1.4, 1.1), (0, 2.8, 3.45), tail, b=0.5, **(tail_kw or dict(role="Secondary")))
+            a.tri("TailTuft", (0, 3.3, 3.9), 0.8, 0.6, 0.5, tail, R=angles(-60, 0, 0),
+                  **(tail_kw or dict(role="Secondary")))
 
     a.ride_height, a.ride_z = 4.1, 0.9
 
-
 def _canine(a, fur, light, dark=None, inner=PINK, eye=None, snout="wolf", ear=(1.6, 2.0), brows=True,
-            fangs=True, paws=None, head_extra=None, tail=None, brow_color=None):
+            fangs=True, paws=None, head_extra=None, tail=None, brow_color=None, mask=True):
     """Wolf-shaped body. snout: 'wolf', 'fox' or 'cat'."""
     paws = paws or light
-    a.bevel("Body", (4.2, 3.6, 7.2), (0, 4.6, 0.6), fur, b=1.0)
-    a.box("Belly", (4.3, 1.0, 6.4), (0, 3.3, 0.8), light, role="Secondary")
+    eye = {"iris": C("#ffb52e")} | (eye or {})
+    a.oct("Body", (4.2, 3.6, 7.2), (0, 4.6, 0.6), fur, b=1.0, bottom=0.7)
+    a.bevel("Belly", (4.26, 1.4, 6.4), (0, 3.5, 0.7), light, b=0, bottom=0.73, role="Secondary")
     if dark:
-        a.bevel("Saddle", (4.3, 1.7, 4.6), (0, 5.62, 1.3), dark, b=1.05, role="Secondary")
-    a.bevel("Chest", (3.8, 3.0, 1.4), (0, 4.4, -3.1), light, b=0.6, bottom=0.6, role="Secondary")
+        a.bevel("Saddle", (4.26, 1.8, 4.8), (0, 5.53, 1.3), dark, b=1.03, role="Secondary")
+    a.oct("Chest", (3.8, 3.0, 1.4), (0, 4.4, -3.1), light, b=0.6, role="Secondary")
+    for i, x in enumerate((-1.0, 0, 1.0)):
+        a.tri(f"ChestTuft{i}", (x, 2.95, -3.4), 1.2, 1.0 - 0.2 * abs(x), 0.7, light, R=angles(0, 0, 180),
+              role="Secondary")
 
     with a.bone("Head", "Body", (0, 6.0, -2.6)):
-        a.box("Neck", (3.0, 2.4, 2.2), (0, 6.0, -2.7), fur)
-        a.bevel("Head", (4.4, 3.6, 3.8), (0, 7.4, -3.8), fur, b=1.0)
+        a.post("Neck", (3.0, 2.4, 2.2), (0, 6.0, -2.7), fur, b=0.5)
+        a.oct("Head", (4.4, 3.6, 3.8), (0, 7.4, -3.8), fur, b=1.0, bottom=0.6)
+        if mask:
+            a.bevel("FaceMask", (4.46, 1.5, 3.4), (0, 6.33, -3.85), light, b=0, bottom=0.63, role="Secondary")
         if snout == "wolf":
-            a.bevel("Snout", (2.6, 1.7, 2.4), (0, 6.55, -6.7), fur, b=0.5)
-            a.box("Jaw", (2.7, 0.6, 2.2), (0, 5.95, -6.65), light, role="Secondary")
-            a.box("Nose", (1.1, 0.6, 0.5), (0, 7.1, -7.95), EYE, **DETAIL)
-            mouth_y, front = 6.3, -7.93
+            a.taper("Snout", (2.6, 1.75), (2.2, 1.45), 2.4, (0, 6.6, -6.7), fur, r=0.3)
+            a.taper("Jaw", (2.66, 0.85), (2.26, 0.75), 2.44, (0, 6.1, -6.7), light, r=0.3, role="Secondary")
+            a.bevel("Nose", (1.1, 0.6, 0.5), (0, 7.1, -7.95), EYE, b=0.18, **DETAIL)
+            a.box("NoseShine", (0.3, 0.15, 0.1), (-0.22, 7.3, -8.2), WHITE, **DETAIL)
+            mouth_y, front = 6.2, -7.93
         elif snout == "fox":
-            a.bevel("Snout", (2.2, 1.5, 2.8), (0, 6.5, -6.9), fur, b=0.5)
-            a.box("Jaw", (2.3, 0.55, 2.6), (0, 5.95, -6.85), light, role="Secondary")
-            a.box("Nose", (0.9, 0.55, 0.45), (0, 7.0, -8.35), EYE, **DETAIL)
-            mouth_y, front = 6.25, -8.33
+            a.taper("Snout", (2.2, 1.5), (1.6, 1.1), 2.8, (0, 6.5, -6.9), fur, r=0.3)
+            a.taper("Jaw", (2.26, 0.75), (1.66, 0.6), 2.84, (0, 6.1, -6.9), light, r=0.3, role="Secondary")
+            a.bevel("Nose", (0.9, 0.55, 0.45), (0, 6.95, -8.3), EYE, b=0.16, **DETAIL)
+            a.box("NoseShine", (0.25, 0.12, 0.1), (-0.18, 7.12, -8.54), WHITE, **DETAIL)
+            mouth_y, front = 6.2, -8.3
         else:
-            a.bevel("Snout", (2.4, 1.3, 1.0), (0, 6.4, -6.1), light, b=0.35, role="Secondary")
-            a.box("Nose", (0.6, 0.4, 0.2), (0, 6.85, -6.66), PINK, **DETAIL)
-            mouth_y, front = 6.2, -6.63
-        a.box("Mouth", (1.9 if snout == "wolf" else 1.0, 0.3, 0.14), (0, mouth_y, front), MOUTH, **DETAIL)
+            a.oct("Snout", (2.4, 1.3, 1.0), (0, 6.4, -6.1), light, b=0.45, role="Secondary")
+            a.bevel("Nose", (0.6, 0.4, 0.2), (0, 6.85, -6.66), PINK, b=0.12, **DETAIL)
+            mouth_y, front = 6.15, -6.62
+        if fangs:
+            a.box("Mouth", (1.7, 0.45, 0.25), (0, mouth_y - 0.1, front + 0.02), MOUTH, **DETAIL)
+            a.box("Tongue", (0.8, 0.18, 0.6), (0.25, mouth_y - 0.32, front - 0.05), TONGUE, **DETAIL)
         for s, S in SIDES:
             if fangs:
-                a.tooth(f"Fang{S}", (0.6 * s, mouth_y, front - 0.06), 0.45, 0.55, R=angles(0, 90, 0))
-            a.block_eye(f"Eye{S}", (1.1 * s, 7.8, -5.76), w=1.0, h=1.2, **(eye or {}))
-            if brows:
-                a.box(f"Brow{S}", (1.25, 0.3, 0.2), (1.1 * s, 8.65, -5.78), brow_color or dark or EYE,
-                      rot=(0, 0, 16 * s), **DETAIL)
+                a.tri(f"Fang{S}", (0.55 * s, mouth_y + 0.07, front - 0.12), 0.36, 0.5, 0.12, WHITE,
+                      R=angles(0, 0, 180), **DETAIL)
             else:
+                a.box(f"Smile{S}", (0.45, 0.12, 0.08), (0.2 * s, mouth_y, front - 0.03), C("#5a2a3a"),
+                      rot=(0, 0, 25 * s), **DETAIL)
+            a.eye2(f"Eye{S}", (1.1 * s, 7.8, -5.76), w=1.05, h=1.25, lid=(brow_color or dark or fur) if brows else None,
+                   lid_tilt=14 * s, lid_drop=0.08, **eye)
+            if not brows:
                 a.box(f"Cheek{S}", (0.7, 0.35, 0.1), (1.6 * s, 6.75, -5.74), PINK, **DETAIL)
-            a.box(f"CheekFluff{S}", (0.6, 1.4, 1.8), (2.3 * s, 6.5, -3.6), light, role="Secondary")
-            R = angles(0, 0, -12 * s)
+            for i, y in enumerate((6.9, 6.1)):
+                a.tuft(f"CheekTuft{i}{S}", (2.3 * s, y, -3.6), (0.55, 1.1, 1.6), light, R=angles(0, 25 * s, 0),
+                       role="Secondary")
+            R = angles(-6, 0, -12 * s)
             base = (1.3 * s, 9.1, -3.4)
             a.tri(f"Ear{S}", base, ear[0], ear[1], 0.7, fur, R=R)
             a.tri(f"InnerEar{S}", at(base, R, (0, 0.12, -0.37)), ear[0] * 0.6, ear[1] * 0.65, 0.1, inner, R=R,
+                  **DETAIL)
+            a.tri(f"EarTuft{S}", at(base, R, (0, 0.05, -0.44)), ear[0] * 0.34, ear[1] * 0.32, 0.1, WHITE, R=R,
                   **DETAIL)
         if head_extra:
             head_extra(a)
 
     for s, S in SIDES:
-        for z, F in ((-2.0, "F"), (3.2, "B")):
-            with a.bone(f"Leg{F}{S}", "Body", (1.35 * s, 3.2, z)):
-                a.box(f"Leg{F}{S}", (1.3, 3.0, 1.3), (1.35 * s, 1.9, z), fur)
-                a.box(f"Paw{F}{S}", (1.5, 0.7, 1.9), (1.35 * s, 0.35, z - 0.25), paws, role="Secondary")
+        with a.bone(f"LegF{S}", "Body", (1.35 * s, 3.9, -2.0)):
+            a.post(f"LegF{S}", (1.4, 1.9, 1.4), (1.35 * s, 3.35, -2.0), fur, b=0.35)
+            a.post(f"LowerLegF{S}", (1.2, 2.0, 1.25), (1.35 * s, 1.55, -2.05), paws, b=0.3, role="Secondary")
+            a.paw(f"PawF{S}", (1.35 * s, 0, -2.3), 1.55, 1.9, paws, claws=C("#3a3a44"), h=0.75)
+        with a.bone(f"LegB{S}", "Body", (1.4 * s, 4.2, 3.2)):
+            a.oct(f"Thigh{S}", (1.7, 2.6, 2.3), (1.4 * s, 3.8, 3.2), fur, b=0.5)
+            a.post(f"LowerLegB{S}", (1.2, 2.3, 1.25), (1.35 * s, 1.6, 3.4), paws, b=0.3, role="Secondary")
+            a.paw(f"PawB{S}", (1.35 * s, 0, 3.15), 1.55, 1.9, paws, claws=C("#3a3a44"), h=0.75)
 
     if tail:
         tail(a)
@@ -124,18 +155,17 @@ def _canine(a, fur, light, dark=None, inner=PINK, eye=None, snout="wolf", ear=(1
         with a.bone("Tail", "Body", (0, 5.6, 4.1)):
             R = angles(-35, 0, 0)
             base = (0, 5.6, 4.1)
-            a.bevel("Tail", (1.5, 1.5, 3.6), at(base, R, (0, 0, 1.9)), fur, b=0.45, bottom=0.45, R=R)
-            a.bevel("TailTip", (1.56, 1.56, 1.2), at(base, R, (0, 0, 3.9)), light, b=0.47, bottom=0.47, R=R,
+            a.taper("Tail", (1.9, 1.9), (1.3, 1.3), 2.6, at(base, R, (0, 0, 1.4)), fur, R=R, r=0.35)
+            a.taper("TailTip", (1.1, 1.1), (1.9, 1.9), 1.8, at(base, R, (0, 0, 3.5)), light, R=R, r=0.35,
                     role="Secondary")
 
     a.ride_height, a.ride_z = 6.4, 0.8
 
-
 def _deer(a, fur, light, hoof, hoof_mat=None, antlers=None, spots=None, spot_kw=None, inner=PINK,
-          tail=WHITE, tail_kw=None, head_extra=None):
-    a.bevel("Body", (3.6, 3.2, 6.4), (0, 5.6, 0.4), fur, b=0.9)
-    a.box("Belly", (3.7, 0.9, 5.6), (0, 4.45, 0.5), light, role="Secondary")
-    a.box("Chest", (3.0, 2.2, 0.3), (0, 5.2, -2.8), light, role="Secondary")
+          tail=WHITE, tail_kw=None, head_extra=None, iris=C("#6b4226")):
+    a.oct("Body", (3.6, 3.2, 6.4), (0, 5.6, 0.4), fur, b=0.9, bottom=0.6)
+    a.bevel("Belly", (3.66, 1.2, 5.8), (0, 4.55, 0.45), light, b=0, bottom=0.63, role="Secondary")
+    a.oct("Chest", (3.0, 2.2, 0.4), (0, 5.2, -2.8), light, b=0.3, role="Secondary")
     if spots:
         kw = spot_kw or dict(role="Accent", material="SmoothPlastic", shadow=False)
         for s, S in SIDES:
@@ -145,18 +175,22 @@ def _deer(a, fur, light, hoof, hoof_mat=None, antlers=None, spots=None, spot_kw=
             a.box(f"TopSpot{i}", (0.7, 0.14, 0.55), (x, 7.23, z), spots, **kw)
 
     with a.bone("Head", "Body", (0, 6.8, -2.2)):
-        a.box("Neck", (1.9, 3.4, 1.9), (0, 7.9, -2.5), fur, rot=(-12, 0, 0))
-        a.bevel("Head", (3.2, 2.8, 3.0), (0, 9.9, -3.2), fur, b=0.8, bottom=0.3)
-        a.bevel("Snout", (1.9, 1.4, 1.6), (0, 9.25, -5.3), fur, b=0.4)
-        a.box("Jaw", (1.95, 0.5, 1.5), (0, 8.75, -5.3), light, role="Secondary")
-        a.box("Nose", (0.9, 0.5, 0.3), (0, 9.7, -6.15), C("#3a2a2a"), **DETAIL)
+        neck_R = matmul(angles(-12, 0, 0), angles(90, 0, 0))
+        a.taper("Neck", (1.9, 2.0), (1.55, 1.65), 3.6, (0, 7.9, -2.5), fur, R=neck_R, r=0.35)
+        a.box("Throat", (1.1, 2.2, 0.3), (0, 7.5, -3.3), light, rot=(-12, 0, 0), role="Secondary")
+        a.oct("Head", (3.2, 2.8, 3.0), (0, 9.9, -3.2), fur, b=0.8, bottom=0.5)
+        a.taper("Snout", (1.9, 1.4), (1.6, 1.15), 1.6, (0, 9.3, -5.3), fur, r=0.3)
+        a.taper("Jaw", (1.96, 0.6), (1.66, 0.5), 1.64, (0, 8.8, -5.3), light, r=0.3, role="Secondary")
+        a.bevel("Nose", (0.9, 0.5, 0.3), (0, 9.7, -6.1), C("#3a2a2a"), b=0.15, **DETAIL)
+        a.box("NoseShine", (0.25, 0.12, 0.08), (-0.18, 9.85, -6.28), WHITE, **DETAIL)
+        a.box("Smile", (0.5, 0.1, 0.08), (0, 9.0, -6.08), C("#5a2a3a"), **DETAIL)
         for s, S in SIDES:
-            a.block_eye(f"Eye{S}", (0.8 * s, 10.2, -4.76), w=0.85, h=1.05)
+            a.eye2(f"Eye{S}", (0.8 * s, 10.2, -4.76), w=0.9, h=1.1, iris=iris)
+            a.tri(f"Lash{S}", (1.28 * s, 10.7, -4.78), 0.3, 0.38, 0.08, EYE, R=angles(0, 0, -40 * s), **DETAIL)
             a.box(f"Cheek{S}", (0.55, 0.3, 0.1), (1.25 * s, 9.35, -4.74), PINK, **DETAIL)
-            R = angles(0, 0, 20 * s)
-            ear_c = (2.2 * s, 10.9, -2.9)
-            a.bevel(f"Ear{S}", (1.7, 0.7, 0.5), ear_c, fur, b=0.2, R=R)
-            a.box(f"InnerEar{S}", (1.1, 0.35, 0.1), at(ear_c, R, (0, 0, -0.26)), inner, R=R, **DETAIL)
+            ear_R = matmul(angles(0, 0, 20 * s), angles(0, -90 * s, 0))
+            a.taper(f"Ear{S}", (0.55, 0.8), (0.35, 0.45), 1.9, (2.2 * s, 10.9, -2.9), fur, R=ear_R, r=0.45)
+            a.box(f"InnerEar{S}", (1.1, 0.4, 0.1), (2.2 * s, 10.9, -3.2), inner, rot=(0, 0, 20 * s), **DETAIL)
         if antlers:
             antlers(a)
         if head_extra:
@@ -165,37 +199,42 @@ def _deer(a, fur, light, hoof, hoof_mat=None, antlers=None, spots=None, spot_kw=
     for s, S in SIDES:
         for z, F in ((-1.8, "F"), (2.6, "B")):
             with a.bone(f"Leg{F}{S}", "Body", (1.1 * s, 4.4, z)):
-                a.box(f"Leg{F}{S}", (0.9, 4.2, 0.9), (1.1 * s, 2.4, z), fur)
-                a.box(f"Hoof{F}{S}", (1.1, 0.6, 1.1), (1.1 * s, 0.3, z), hoof,
-                      **({"material": hoof_mat, "role": "Glow"} if hoof_mat else {"role": "Accent"}))
+                a.taper(f"Leg{F}{S}", (1.15, 1.2), (0.85, 0.9), 2.2, (1.1 * s, 3.3, z), fur, R=angles(-90, 0, 0),
+                        r=0.3)
+                a.post(f"LowerLeg{F}{S}", (0.8, 2.2, 0.85), (1.1 * s, 1.4, z), fur, b=0.25)
+                a.box(f"Fetlock{F}{S}", (0.92, 0.3, 0.97), (1.1 * s, 0.78, z), light, role="Secondary")
+                a.bevel(f"Hoof{F}{S}", (1.05, 0.62, 1.1), (1.1 * s, 0.31, z), hoof, b=0.2,
+                        **({"material": hoof_mat, "role": "Glow"} if hoof_mat else {"role": "Accent"}))
+                a.box(f"HoofSplit{F}{S}", (0.1, 0.45, 0.12), (1.1 * s, 0.3, z - 0.56), EYE, **DETAIL)
 
     with a.bone("Tail", "Body", (0, 6.8, 3.6)):
         if callable(tail):
             tail(a)
         else:
-            a.box("Tail", (0.9, 1.3, 0.7), (0, 6.9, 3.9), tail, rot=(-25, 0, 0), **(tail_kw or {"role": "Secondary"}))
+            a.taper("Tail", (0.7, 0.55), (1.0, 0.8), 1.4, (0, 6.9, 3.95), tail, R=angles(-65, 0, 0), r=0.4,
+                    **(tail_kw or {"role": "Secondary"}))
 
     a.ride_height, a.ride_z = 7.2, 0.6
 
-
 def _boar(a, fur, belly, snout, dark, tusk, tusk_kw=None, eye=None, mohawk=None, mohawk_kw=None, inner=PINK):
-    a.bevel("Body", (5.0, 4.2, 7.0), (0, 3.9, 0.5), fur, b=1.2)
-    a.box("Belly", (5.1, 1.1, 6.2), (0, 2.35, 0.6), belly, role="Secondary")
+    a.oct("Body", (5.0, 4.2, 7.0), (0, 3.9, 0.5), fur, b=1.2, bottom=0.8)
+    a.bevel("Belly", (5.06, 1.4, 6.2), (0, 2.5, 0.6), belly, b=0, bottom=0.83, role="Secondary")
     mohawk = mohawk or [dark]
     for i, (z, h) in enumerate([(-2.4, 1.3), (-1.2, 1.5), (0.0, 1.4), (1.2, 1.2), (2.4, 0.9)]):
         a.wedge(f"Mohawk{i}", (0.7, h, 1.4), (0, 6.0 + h / 2, z), mohawk[i % len(mohawk)],
                 **(mohawk_kw or {"role": "Accent"}))
 
     with a.bone("Head", "Body", (0, 4.2, -2.6)):
-        a.bevel("Head", (5.0, 4.0, 3.6), (0, 4.4, -4.2), fur, b=1.1)
-        a.bevel("Snout", (2.8, 1.8, 1.4), (0, 3.7, -6.5), snout, b=0.4, role="Secondary")
+        a.oct("Head", (5.0, 4.0, 3.6), (0, 4.4, -4.2), fur, b=1.1, bottom=0.7)
+        a.taper("Snout", (3.0, 2.1), (2.8, 1.9), 1.4, (0, 3.7, -6.5), snout, r=0.3, role="Secondary")
         a.box("Mouth", (2.6, 0.3, 0.14), (0, 2.75, -6.03), MOUTH, **DETAIL)
         for s, S in SIDES:
-            a.box(f"Nostril{S}", (0.45, 0.65, 0.1), (0.6 * s, 3.7, -7.24), dark, **DETAIL)
+            a.oct(f"Nostril{S}", (0.5, 0.7, 0.15), (0.6 * s, 3.7, -7.22), dark, b=0.15, **DETAIL)
             a.tooth(f"Tusk{S}", (1.5 * s, 2.75, -6.1), 0.55, 1.1, color=tusk, R=angles(0, 90, 0), up=True,
                     **(tusk_kw or {}))
-            a.block_eye(f"Eye{S}", (1.35 * s, 5.15, -6.06), w=1.0, h=1.1, **(eye or {}))
-            a.box(f"Brow{S}", (1.3, 0.32, 0.2), (1.35 * s, 5.95, -6.08), dark, rot=(0, 0, 18 * s), **DETAIL)
+            a.eye2(f"Eye{S}", (1.35 * s, 5.15, -6.06), w=1.0, h=1.1, lid=fur, lid_tilt=18 * s, lid_drop=0.12,
+                   **({"iris": C("#8a4b2a")} | (eye or {})))
+            a.tuft(f"CheekTuft{S}", (2.55 * s, 3.6, -3.4), (0.6, 1.2, 1.6), fur, R=angles(0, 25 * s, 0))
             R = matmul(angles(0, 0, -35 * s), angles(-10, 0, 0))
             base = (1.75 * s, 6.25, -3.6)
             a.tri(f"Ear{S}", base, 1.3, 1.4, 0.5, fur, R=R)
@@ -204,8 +243,9 @@ def _boar(a, fur, belly, snout, dark, tusk, tusk_kw=None, eye=None, mohawk=None,
     for s, S in SIDES:
         for z, F in ((-1.8, "F"), (2.8, "B")):
             with a.bone(f"Leg{F}{S}", "Body", (1.6 * s, 2.2, z)):
-                a.box(f"Leg{F}{S}", (1.3, 2.0, 1.3), (1.6 * s, 1.2, z), fur)
-                a.box(f"Hoof{F}{S}", (1.45, 0.5, 1.45), (1.6 * s, 0.25, z), dark, role="Accent")
+                a.post(f"Leg{F}{S}", (1.35, 2.0, 1.35), (1.6 * s, 1.3, z), fur, b=0.35)
+                a.bevel(f"Hoof{F}{S}", (1.5, 0.6, 1.5), (1.6 * s, 0.3, z), dark, b=0.2, role="Accent")
+                a.box(f"HoofSplit{F}{S}", (0.12, 0.45, 0.12), (1.6 * s, 0.3, z - 0.76), EYE, **DETAIL)
 
     with a.bone("Tail", "Body", (0, 5.0, 4.0)):
         a.box("Tail", (0.4, 1.3, 0.4), (0, 5.2, 4.25), fur, rot=(-30, 0, 0))
@@ -213,41 +253,39 @@ def _boar(a, fur, belly, snout, dark, tusk, tusk_kw=None, eye=None, mohawk=None,
 
     a.ride_height, a.ride_z = 6.0, 0.6
 
-
-def _bear(a, fur, muzzle, belly, inner, claws, angry=True, head_extra=None, nose=EYE):
-    a.bevel("Body", (6.0, 5.4, 7.6), (0, 5.0, 0.8), fur, b=1.6, bottom=0.6)
-    a.box("Belly", (5.0, 1.0, 6.6), (0, 2.55, 0.9), belly, role="Secondary")
-    a.box("Chest", (4.2, 3.2, 0.3), (0, 4.6, -3.02), belly, role="Secondary")
+def _bear(a, fur, muzzle, belly, inner, claws, angry=True, head_extra=None, nose=EYE, iris=C("#6b4226")):
+    a.oct("Body", (6.0, 5.4, 7.6), (0, 5.0, 0.8), fur, b=1.8, bottom=1.0)
+    a.bevel("Belly", (6.06, 1.6, 6.6), (0, 3.1, 0.9), belly, b=0, bottom=1.03, role="Secondary")
+    a.oct("Chest", (4.2, 3.2, 0.4), (0, 4.6, -3.02), belly, b=0.5, role="Secondary")
 
     with a.bone("Head", "Body", (0, 6.6, -2.6)):
-        a.bevel("Head", (5.6, 4.8, 4.4), (0, 8.2, -3.8), fur, b=1.4, bottom=0.4)
-        a.bevel("Muzzle", (2.8, 1.8, 1.4), (0, 7.0, -6.6), muzzle, b=0.5, role="Secondary")
-        a.box("Nose", (1.2, 0.7, 0.4), (0, 7.6, -7.35), nose, **DETAIL)
-        a.box("Mouth", (1.2, 0.3, 0.12), (0, 6.55, -7.33), MOUTH, **DETAIL)
+        a.oct("Head", (5.6, 4.8, 4.4), (0, 8.2, -3.8), fur, b=1.5, bottom=0.8)
+        a.oct("Muzzle", (2.9, 1.9, 1.5), (0, 7.0, -6.55), muzzle, b=0.6, role="Secondary")
+        a.oct("Nose", (1.3, 0.75, 0.45), (0, 7.62, -7.35), nose, b=0.25, **DETAIL)
+        a.box("NoseShine", (0.35, 0.15, 0.1), (-0.3, 7.85, -7.6), WHITE, **DETAIL)
+        a.box("Mouth", (1.2, 0.3, 0.12), (0, 6.5, -7.33), MOUTH, **DETAIL)
+        a.box("Tongue", (0.5, 0.14, 0.3), (0, 6.36, -7.36), TONGUE, **DETAIL)
         for s, S in SIDES:
-            a.block_eye(f"Eye{S}", (1.4 * s, 8.8, -6.06), w=1.1, h=1.3)
-            if angry:
-                a.box(f"Brow{S}", (1.4, 0.35, 0.2), (1.4 * s, 9.75, -6.08), EYE, rot=(0, 0, 16 * s), **DETAIL)
+            a.eye2(f"Eye{S}", (1.4 * s, 8.8, -6.06), w=1.15, h=1.35, iris=iris,
+                   lid=fur if angry else None, lid_tilt=16 * s, lid_drop=0.1)
             a.box(f"Cheek{S}", (0.8, 0.4, 0.1), (2.05 * s, 7.6, -6.04), PINK, **DETAIL)
-            a.bevel(f"Ear{S}", (1.6, 1.6, 0.8), (2.1 * s, 10.8, -3.4), fur, b=0.4)
-            a.box(f"InnerEar{S}", (0.9, 0.9, 0.1), (2.1 * s, 10.7, -3.83), inner, **DETAIL)
+            for i, y in enumerate((7.9, 6.9)):
+                a.tuft(f"CheekTuft{i}{S}", (2.9 * s, y, -4.2), (0.6, 1.2, 1.8), fur, R=angles(0, 25 * s, 0))
+            a.oct(f"Ear{S}", (1.7, 1.7, 0.9), (2.1 * s, 10.8, -3.4), fur, b=0.55)
+            a.oct(f"InnerEar{S}", (0.95, 0.95, 0.12), (2.1 * s, 10.7, -3.86), inner, b=0.3, **DETAIL)
         if head_extra:
             head_extra(a)
 
     for s, S in SIDES:
         for z, F in ((-1.8, "F"), (3.4, "B")):
             with a.bone(f"Leg{F}{S}", "Body", (2.0 * s, 3.5, z)):
-                a.bevel(f"Leg{F}{S}", (1.9, 3.2, 1.9), (2.0 * s, 1.9, z), fur, b=0.4)
-                a.box(f"Paw{F}{S}", (2.2, 0.7, 2.5), (2.0 * s, 0.35, z - 0.3), fur)
-                if F == "F":
-                    for i, dx in enumerate((-0.6, 0, 0.6)):
-                        a.wedge(f"Claw{i}{S}", (0.45, 0.4, 0.6), (2.0 * s + dx, 0.2, z - 1.85), claws, **DETAIL)
+                a.post(f"Leg{F}{S}", (1.9, 3.2, 1.9), (2.0 * s, 2.3, z), fur, b=0.5)
+                a.paw(f"Paw{F}{S}", (2.0 * s, 0, z - 0.3), 2.3, 2.6, fur, claws=claws if F == "F" else None, h=0.8)
 
     with a.bone("Tail", "Body", (0, 6.2, 4.6)):
-        a.box("Tail", (1.2, 1.2, 0.8), (0, 6.2, 4.9), fur)
+        a.oct("Tail", (1.3, 1.3, 0.9), (0, 6.2, 4.9), fur, b=0.4)
 
     a.ride_height, a.ride_z = 7.7, 0.9
-
 
 def _fox_tails(a, colors, tips, fans, tip_kw=NEON, effects_on=None, length=4.2, width=1.4, plain=False):
     base = (0, 5.4, 4.1)
@@ -277,7 +315,7 @@ def pixel_star(a, name, center, size, color, R=None, depth=0.14, kw=NEON):
 
 def rabbit():
     a = Animal("Rabbit", "Rabbit", "Common")
-    _bunny(a, C("#c98d5c"), C("#fff3e3"))
+    _bunny(a, C("#c98d5c"), C("#fff3e3"), ear_tip=C("#8a5a3a"))
     return a
 
 
@@ -290,7 +328,7 @@ def puffhop():
     for s, S in SIDES:
         a.box(f"CheekFluff{S}", (0.7, 1.6, 1.6), (2.6 * s, 2.6, -0.9), light, role="Secondary")
         a.box(f"SideFluff{S}", (0.7, 1.3, 1.4), (2.6 * s, 3.3, 1.0), light, role="Secondary")
-        a.block_eye(f"Eye{S}", (1.1 * s, 3.4, -2.36), w=1.1, h=1.4)
+        a.eye2(f"Eye{S}", (1.1 * s, 3.4, -2.36), w=1.15, h=1.45, iris=C("#7a4ad8"))
         a.box(f"Cheek{S}", (0.75, 0.4, 0.1), (1.75 * s, 2.55, -2.34), pink, **DETAIL)
         with a.bone(f"Ear{S}", "Body", (1.4 * s, 4.8, 0.3)):
             R = angles(0, 0, -25 * s)
@@ -362,7 +400,7 @@ def mossback_tortle():
         a.box("LeafStem", (0.15, 0.5, 0.15), (0.2, 4.95, -5.0), C("#3e7a2e"), **DETAIL)
         a.box("Leaf", (0.8, 0.12, 0.5), (0.6, 5.2, -5.0), C("#58ad3c"), rot=(0, 0, 20), **DETAIL)
         for s, S in SIDES:
-            a.block_eye(f"Eye{S}", (0.8 * s, 3.6, -6.56), w=0.9, h=1.1)
+            a.eye2(f"Eye{S}", (0.8 * s, 3.6, -6.56), w=0.95, h=1.15, iris=C("#3a7a2e"))
             a.box(f"Cheek{S}", (0.55, 0.3, 0.1), (1.25 * s, 2.85, -6.54), PINK, **DETAIL)
 
     for s, S in SIDES:
@@ -435,15 +473,14 @@ def frostfang_wolf():
                                        transparency=((0, 0.3), (1, 1))))
 
     _canine(a, C("#e2f4ff"), WHITE, dark=C("#b5dcf5"), inner=C("#aee6ff"), brow_color=C("#4f7fae"),
-            eye=dict(pupil=C("#2fd2ff"), glow=True), head_extra=head_extra)
+            eye=dict(iris=C("#2fd2ff"), glow=True), head_extra=head_extra)
     a.bevel("FrostMane", (4.6, 2.2, 2.6), (0, 5.6, -2.4), C("#bfeaff"), b=0.7, bottom=0.5, role="Secondary")
     for i, (x, z, h, tilt) in enumerate([(0, -1.4, 2.2, (-15, 0, 10)), (0.5, 0.4, 2.6, (-10, 0, -15)),
                                          (-0.4, 2.0, 2.0, (-20, 0, 15)), (0.1, 3.4, 1.5, (-35, 0, 0))]):
         a.shard(f"IceSpike{i}", (x, 6.2, z), 0.8, h, ice, R=angles(*tilt), **GLASS)
-    for part in ("TailTip", "TailTipTop", "TailTipBevelL", "TailTipBevelR", "TailTipBottom",
-                 "TailTipBevelLowL", "TailTipBevelLowR"):
-        find(a, part).update(color=ice, material="Glass", transparency=0.2, reflectance=0.15, studs=False,
-                             role="Glow")
+    for part in a.parts:
+        if part["name"].startswith("TailTip"):
+            part.update(color=ice, material="Glass", transparency=0.2, reflectance=0.15, studs=False, role="Glow")
     a.root_effects.append(Animal.sparkles(WHITE, rate=3, size=0.4, speed=(0.2, 0.6), name="Snowflakes"))
     return a
 
@@ -452,7 +489,7 @@ def emberback_boar():
     a = Animal("EmberbackBoar", "Emberback Boar", "Epic")
     lava, hot, gold = C("#ff5a14"), C("#ff9a1f"), C("#ffd04a")
     _boar(a, C("#3b3036"), C("#57434a"), C("#6e5058"), C("#1e1719"), gold, tusk_kw=dict(material="Neon"),
-          eye=dict(pupil=hot, glow=True), mohawk=[lava, hot, gold, hot, lava], mohawk_kw=dict(NEON), inner=lava)
+          eye=dict(iris=hot, glow=True), mohawk=[lava, hot, gold, hot, lava], mohawk_kw=dict(NEON), inner=lava)
     for s, S in SIDES:
         for i, (y, z, rx, length) in enumerate([(4.8, -1.6, 30, 1.6), (3.9, -0.6, -35, 1.3), (4.9, 0.8, 25, 1.5),
                                                 (3.8, 1.9, -30, 1.2), (4.6, 3.0, 35, 1.1)]):
@@ -521,7 +558,7 @@ def sandsnapper():
             a.tooth(f"FrontTooth{S}", (0.9 * s, 3.52, -13.35), 0.7, 0.65, R=angles(0, 90, 0))
             a.tooth(f"LowFrontTooth{S}", (0.9 * s, 2.13, -13.05), 0.65, 0.55, R=angles(0, 90, 0), up=True)
             a.bevel(f"EyeBump{S}", (2.1, 1.9, 2.0), (1.9 * s, 6.25, -6.4), sand, b=0.5)
-            a.block_eye(f"Eye{S}", (1.9 * s, 6.2, -7.46), w=1.5, h=1.45, look=(-0.6 * s, 0))
+            a.eye2(f"Eye{S}", (1.9 * s, 6.2, -7.46), w=1.5, h=1.45, look=(-0.6 * s, 0), iris=C("#1fc8b8"))
             a.box(f"Brow{S}", (1.8, 0.42, 0.3), (1.9 * s, 7.15, -7.45), stripe, rot=(0, 0, 14 * s), **DETAIL)
             a.wedge(f"Horn{S}", (0.55, 1.4, 1.8), (1.9 * s, 7.85, -5.9), stripe, role="Secondary")
 
@@ -588,7 +625,8 @@ def crystal_hare():
             a.box(f"EarCore{S}", (0.3, 2.2, 0.3), at(base, R, (0, 1.3, 0)), core, R=R, **NEON)
             a.shard(f"EarSmall{S}", (1.7 * s, 6.3, -0.7), 0.6, 1.9, pink, R=angles(-5, 0, -38 * s), **GLASS)
 
-    _bunny(a, fur, soft, eye=dict(pupil=C("#35205f")), ears=False, head_extra=head_extra, tail=None)
+    _bunny(a, fur, soft, eye=dict(iris=C("#8a5cff"), pupil=C("#2b1250")), ears=False, head_extra=head_extra,
+           tail=None)
     for i, (base, h, col, tilt) in enumerate([((0.6, 4.0, 0.5), 1.9, cyan, (-20, 0, -22)),
                                               ((-0.7, 4.0, 1.1), 1.6, pink, (-30, 0, 25)),
                                               ((0.0, 3.9, 1.9), 1.2, cyan, (-50, 0, 0))]):
@@ -623,10 +661,11 @@ def voidwhisker():
                                            color2=C("#ff9cf2"))])
 
     _canine(a, fur, soft, inner=void, snout="cat", ear=(2.0, 2.3), brows=False, fangs=False,
-            eye=dict(white=C("#f08cff"), pupil=EYE, glow=False), head_extra=head_extra, tail=tail)
+            eye=dict(white=C("#f08cff"), iris=None), head_extra=head_extra, tail=tail)
     find(a, "EyeR")["material"] = find(a, "EyeL")["material"] = "Neon"
-    for part in ("InnerEarRA", "InnerEarRB", "InnerEarLA", "InnerEarLB"):
-        find(a, part).update(material="Neon", role="Glow")
+    for part in a.parts:
+        if part["name"].startswith("InnerEar"):
+            part.update(material="Neon", role="Glow", studs=False)
     for s, S in SIDES:
         a.box(f"Orb{S}", (0.7, 0.7, 0.7), (3.4 * s, 7.8, 1.0 - 1.2 * s), void, rot=(45, 45, 0), **NEON)
     fx(a, "Body",
@@ -655,7 +694,7 @@ def phoenix_fox():
                             sizes=((0, 0.4), (0.3, 1.2), (1, 0)))] if i == 1 else None)
 
     _canine(a, fur, C("#fff1dc"), snout="fox", ear=(1.9, 2.4), brows=False, fangs=False, paws=C("#6b2417"),
-            head_extra=head_extra, tail=tail)
+            head_extra=head_extra, tail=tail, eye=dict(iris=C("#ff9a1f")))
     for s, S in SIDES:
         with a.bone(f"Wing{S}", "Body", (2.0 * s, 5.8, -1.0)):
             R = matmul(angles(0, -15 * s, 0), angles(0, 0, 28 * s))
@@ -682,7 +721,7 @@ def skyfin_whale():
     a.box("Smile", (4.0, 0.3, 0.14), (0, 6.6, -7.55), C("#2a4a7a"), **DETAIL)
     for s, S in SIDES:
         a.box(f"SmileCorner{S}", (0.3, 0.7, 0.14), (2.1 * s, 6.85, -7.55), C("#2a4a7a"), **DETAIL)
-        a.block_eye(f"Eye{S}", (2.6 * s, 8.5, -7.56), w=1.6, h=1.9)
+        a.eye2(f"Eye{S}", (2.6 * s, 8.5, -7.56), w=1.6, h=1.9, iris=C("#2a6fd6"))
         a.box(f"Cheek{S}", (1.0, 0.5, 0.1), (3.2 * s, 7.2, -7.56), PINK, **DETAIL)
     a.box("Blowhole", (1.2, 0.2, 0.8), (0, 11.12, -3.0), C("#4f9ee0"), **DETAIL,
           effects=[Animal.sparkles(cloud, rate=3, size=2, lifetime=(1.0, 1.6), speed=(4, 5), spread=12,
@@ -736,7 +775,7 @@ def starlight_kitsune():
         _fox_tails(a, [fur, soft], rainbow, range(-64, 65, 16), length=4.0, width=1.2, plain=True)
 
     _canine(a, fur, soft, snout="fox", ear=(1.9, 2.4), brows=False, fangs=False, paws=lilac,
-            eye=dict(pupil=C("#3b1d6e")), head_extra=head_extra, tail=tail)
+            eye=dict(iris=C("#8a5cff"), pupil=C("#2b1250")), head_extra=head_extra, tail=tail)
     for s, S in SIDES:
         a.box(f"Orbit{S}", (0.7, 0.7, 0.7), (3.4 * s, 8.0, 0.4 + 1.0 * s), gold, rot=(45, 45, 0), **NEON)
     fx(a, "Body", Animal.sparkles(C("#ff9cf2"), rate=8, size=0.5, speed=(0.4, 1.2), name="Starfall",
@@ -778,7 +817,7 @@ def royal_griffin():
         for s, S in SIDES:
             a.tri(f"CrownPoint{S}", (1.32 * s, 12.2, -4.4), 0.8, 0.9, 0.3, crown, R=angles(0, 90, 0), **shiny)
             a.box(f"CrownSapphire{S}", (0.14, 0.45, 0.45), (1.34 * s, 11.8, -4.4), blue, **NEON)
-            a.block_eye(f"Eye{S}", (1.2 * s, 10.0, -6.16), w=1.0, h=1.2)
+            a.eye2(f"Eye{S}", (1.2 * s, 10.0, -6.16), w=1.05, h=1.25, iris=C("#ffb52e"))
 
     for s, S in SIDES:
         pivot = (2.4 * s, 7.4, -0.8)
