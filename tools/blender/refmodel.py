@@ -77,6 +77,22 @@ class Reference:
         return np.where(inner[..., None], out, blurred)
 
 
+def simplify(mask, tolerance=4.0):
+    """The same outline redrawn with straight edges: every contour becomes a polygon whose corners are at
+    most `tolerance` wp from the drawn edge. Small bumps (fur tufts, wobbly paint) disappear, so the
+    low-poly model gets clean flat faces."""
+    out = Image.new("1", (mask.shape[1], mask.shape[0]), 0)
+    padded = np.pad(mask.astype(np.float32), 1)
+    for contour in measure.find_contours(padded, 0.5):
+        poly = measure.approximate_polygon(contour, tolerance) - 1
+        if len(poly) < 3:
+            continue
+        layer = Image.new("1", out.size, 0)
+        ImageDraw.Draw(layer).polygon([(float(x), float(y)) for y, x in poly], fill=1)
+        out = Image.fromarray(np.asarray(out) ^ np.asarray(layer))        # even-odd: holes stay holes
+    return np.asarray(out, bool)
+
+
 def tidy(mask, radius=2, min_size=200, keep_largest=False):
     """Removes thin slivers and crumbs from a mask."""
     m = ndimage.binary_opening(mask, structure=morphology.disk(radius))

@@ -16,6 +16,8 @@ import numpy as np
 from mathutils import Matrix, Vector
 from PIL import Image
 from scipy import ndimage, sparse
+from scipy.cluster.vq import kmeans2
+from skimage import color
 
 import refmodel as rm
 
@@ -40,11 +42,14 @@ class Atlas:
     with the piece's own outline, so pieces that overlap in the side view (an ear over the head, two legs
     next to each other) keep their own colors."""
 
-    def __init__(self, ref, size=1024, pad=6):
-        self.ref, self.size, self.pad = ref, size, pad
+    def __init__(self, ref, size=1024, pad=6, flat=0):
+        """flat: number of flat colors for the low-poly look (0 = keep the painted colors). The painted lines
+        and shading strokes are removed and every spot gets the nearest of `flat` colors picked from the
+        drawing, except inside a cell's `detail` area (eyes), which keeps the drawing."""
+        self.ref, self.size, self.pad, self.flat = ref, size, pad, flat
         self.cells = {}
 
-    def add(self, name, mask, keep=None, margin=14, band=9, dark=50, soft=False):
+    def add(self, name, mask, keep=None, margin=14, band=9, dark=50, soft=False, detail=None, colors=None):
         """soft=True also adds a cell "<name>~soft": the same drawing without small details (spots, painted
         lines), for the faces that look forward, back, up or down. Those faces take their colors from a line
         in the drawing, and small details on that line would be smeared into stripes."""
@@ -52,7 +57,7 @@ class Atlas:
         box = (max(xs.min() - margin, 0), max(ys.min() - margin, 0),
                min(xs.max() + margin, mask.shape[1]), min(ys.max() + margin, mask.shape[0]))
         self.cells[name] = {"mask": mask, "keep": keep, "box": box, "band": band, "dark": dark, "soft": False,
-                            "res": 1.0}
+                            "res": 1.0, "detail": detail, "colors": colors}
         if soft:
             self.cells[name + "~soft"] = dict(self.cells[name], soft=True, res=0.5)
         return name
@@ -73,6 +78,58 @@ class Atlas:
             x, shelf = x + w, max(shelf, h)
         return True
 
+    def _fit(self, c, arr, resample=Image.LANCZOS):
+        """A full-size working-image array cropped to the cell's box and resized to its rectangle."""
+        x0, y0, x1, y1 = c["box"]
+        rw, rh = c["rect"][2:]
+        a = arr[y0:y1, x0:x1]
+        if a.dtype == bool:
+            return np.asarray(Image.fromarray(a.astype(np.uint8) * 255).resize((rw, rh), Image.BILINEAR),
+                              np.float32) / 255
+        return np.asarray(Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)).resize((rw, rh), resample), np.float32)
+
+    def _px(self, c, wp):
+        """A size in working pixels as an odd number of texture pixels in this cell."""
+        return max(3, int(wp * self.scale * c["res"])) | 1
+
+    @staticmethod
+    def _median(img, size):
+        return np.stack([ndimage.median_filter(img[..., i], size=size) for i in range(3)], -1)
+
+    @staticmethod
+    def _palette(samples, k, merge):
+        """k flat colors (Lab) for the samples. With merge, a color that is only a lighter or darker shade of
+        a more common one (painted shading and highlights) is folded into it: flat, like low-poly art.
+        Very dark colors (shadow strokes) are dropped too; real dark parts (hooves, nose, eyes) come back
+        from the cell's `keep` and `detail` areas."""
+        palette, labels = kmeans2(samples, k, minit="++", seed=7)
+        target = np.arange(len(palette))
+        if merge:
+            light = np.nonzero(palette[:, 0] >= 35)[0]
+            for j in np.nonzero(palette[:, 0] < 35)[0]:
+                target[j] = light[np.argmin(((palette[light] - palette[j]) ** 2).sum(1))]
+            counts = np.bincount(labels, minlength=len(palette))
+            order = np.argsort(-counts)
+            for j in order[1:]:
+                for i in order:
+                    if counts[i] <= counts[j]:
+                        break
+                    dl = abs(palette[i, 0] - palette[j, 0])
+                    dc = np.hypot(palette[i, 1] - palette[j, 1], palette[i, 2] - palette[j, 2])
+                    if target[j] == j and target[i] == i and dl < 22 and dc < 14:
+                        target[j] = i
+                        break
+        return palette[target]
+
+    def _quantize(self, img, palette_lab, smooth):
+        lab = color.rgb2lab(np.clip(img, 0, 255) / 255)
+        palette_lab = np.unique(palette_lab, axis=0)
+        label = ((lab[..., None, :] - palette_lab[None, None]) ** 2).sum(-1).argmin(-1)
+        # majority vote in a small window removes single stray pixels between two colors
+        votes = np.stack([ndimage.uniform_filter((label == i).astype(np.float32), smooth)
+                          for i in range(len(palette_lab))], -1)
+        return color.lab2rgb(palette_lab)[votes.argmax(-1)] * 255
+
     def build(self, path):
         lo, hi = 0.05, 4.0
         for _ in range(30):
@@ -80,23 +137,41 @@ class Atlas:
             lo, hi = (mid, hi) if self._layout(mid) else (lo, mid)
         self.scale = lo
         self._layout(lo)
+        drawn = {}
+        for name, c in self.cells.items():
+            clean = self.ref.clean(c["mask"], keep=c["keep"], band=c["band"], dark=c["dark"])
+            drawn[name] = self._fit(c, clean)
+        if self.flat:
+            # the flat colors: k-means over the drawing (painted lines removed first), in Lab color space
+            samples, palettes = [], {}
+            for name, c in self.cells.items():
+                if c["soft"]:
+                    continue
+                inside = self._fit(c, c["mask"]) > 0.5
+                lab = color.rgb2lab(self._median(drawn[name], self._px(c, 17)) / 255)[inside].astype(float)
+                if c["colors"]:                                   # this cell gets its own few colors
+                    palettes[name] = self._palette(lab[::3], c["colors"], merge=False)
+                else:
+                    samples.append(lab)
+            palette = self._palette(np.concatenate(samples)[::7], self.flat, merge=True)
         tex = np.zeros((self.size, self.size, 3), np.float32)
-        for c in self.cells.values():
-            x0, y0, x1, y1 = c["box"]
+        for name, c in self.cells.items():
             rx, ry, rw, rh = c["rect"]
-            img = self.ref.clean(c["mask"], keep=c["keep"], band=c["band"], dark=c["dark"])[y0:y1, x0:x1]
-            img = np.asarray(Image.fromarray(np.clip(img, 0, 255).astype(np.uint8)).resize((rw, rh), Image.LANCZOS),
-                             np.float32)
+            img = drawn[name]
+            own = palettes.get(name.split("~")[0], palette) if self.flat else None
+            if self.flat:
+                img = self._quantize(self._median(img, self._px(c, 17)), own, self._px(c, 11))
             if c["soft"]:
-                size = int(30 * self.scale * c["res"]) | 1                    # about 30 wp: wider than a spot
-                soft = np.stack([ndimage.median_filter(img[..., i], size=size) for i in range(3)], -1)
-                soft = ndimage.gaussian_filter(soft, sigma=(size / 6, size / 6, 0))
-                if c["keep"] is not None:
-                    # details that must stay (a black nose, dark hooves) keep their own colors
-                    keep = np.asarray(Image.fromarray(c["keep"][y0:y1, x0:x1].astype(np.uint8) * 255).resize(
-                        (rw, rh), Image.BILINEAR), np.float32)[..., None] / 255
-                    soft = soft * (1 - keep) + img * keep
+                size = self._px(c, 45)                                   # about 45 wp: wider than a spot or stroke
+                soft = self._median(img, size)
+                soft = self._quantize(soft, own, 3) if self.flat else \
+                    ndimage.gaussian_filter(soft, sigma=(size / 6, size / 6, 0))
                 img = soft
+            # details that must stay as drawn: dark hooves and nose (keep) and eyes (detail)
+            for zone in (c["keep"], c["detail"]):
+                if zone is not None and (self.flat or c["soft"]):
+                    d = ndimage.gaussian_filter(self._fit(c, zone), 1.0)[..., None]
+                    img = img * (1 - d) + drawn[name] * d
             # the padding repeats the edge of the cell, so texture filtering never mixes in a neighbour
             img = np.pad(img, ((self.pad, self.pad), (self.pad, self.pad), (0, 0)), mode="edge")
             tex[ry - self.pad:ry + rh + self.pad, rx - self.pad:rx + rw + self.pad] = img
@@ -150,12 +225,14 @@ def _ranks(totals):
 
 class Piece:
     def __init__(self, name, mask, frame, atlas, cell, step=2.0, width=0.8, min_half=0.0, smooth=12, tris=2000,
-                 inset=0.0, profile="round", bevel=0.3, bevel_max=18.0, sharp=None, soft=False):
+                 inset=0.0, profile="round", bevel=0.3, bevel_max=18.0, sharp=None, soft=False, flat=False):
         """inset: how far (wp) inside the outline surfaces that face forward, back, up or down take their color
         from (a number, or a map the size of the working image). The edge of a drawing has outline strokes
         and rim light that would otherwise be stretched into stripes over those surfaces.
         profile/bevel/bevel_max: see refmodel.inflate. sharp: angle (degrees) above which edges are shaded
-        hard, for the faceted low-poly look (None = smooth everywhere)."""
+        hard, for the faceted low-poly look (None = smooth everywhere). flat: every face shaded flat, and
+        faces lying in (almost) the same plane merged into big ones: the classic low-poly look."""
+        self.flat = flat
         self.name, self.frame, self.atlas, self.cell, self.inset = name, frame, atlas, cell, inset
         self.soft = soft          # faces that don't look sideways use the "~soft" atlas cell (see Atlas.add)
         v, f = rm.inflate(mask, step=step, width=width, min_half=min_half, profile=profile, bevel=bevel,
@@ -181,12 +258,14 @@ class Piece:
         bm = bmesh.new()
         bm.from_mesh(self.obj.data)
         bmesh.ops.dissolve_degenerate(bm, dist=1e-5, edges=bm.edges[:])
-        bmesh.ops.triangulate(bm, faces=bm.faces[:])
+        if self.flat:
+            bmesh.ops.dissolve_limit(bm, angle_limit=math.radians(5), verts=bm.verts[:], edges=bm.edges[:])
+        bmesh.ops.triangulate(bm, faces=bm.faces[:], quad_method="BEAUTY", ngon_method="BEAUTY")
         bm.to_mesh(self.obj.data)
         bm.free()
         self.obj.data.validate()
         for p in self.obj.data.polygons:
-            p.use_smooth = True
+            p.use_smooth = not self.flat
 
     def set_uv(self):
         """Planar projection from the side view. Every face corner gets its own UV, so a face that looks

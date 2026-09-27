@@ -72,16 +72,19 @@ def build(ref, out):
     reset()
     p = parts(ref)
     frame = rb.Frame(ground=GROUND, height_studs=9.0, top=35, center_x=600)
-    atlas = rb.Atlas(ref)
+    # Low-poly look: a handful of flat colors instead of the painted lines and shading (the eye stays drawn)
+    atlas = rb.Atlas(ref, flat=6)
     atlas.add("ear", p["ear"], keep=p["keep"])
-    for key in ("body", "leg_front_a", "leg_front_b", "leg_back_a", "leg_back_b"):
+    atlas.add("body", p["body"], keep=p["keep"], soft=True, detail=ref.ellipse((905, 305), (30, 28)))
+    for key in ("leg_front_a", "leg_front_b", "leg_back_a", "leg_back_b"):
         atlas.add(key, p[key], keep=p["keep"], soft=True)
     for key in ("antler_back", "antler_front"):
-        atlas.add(key, p[key], band=12, dark=115)      # pale antlers have a thick dark outline
+        atlas.add(key, p[key], band=12, dark=115, colors=2)      # pale antlers have a thick dark outline
     mat = rb.material("DeerCoat", atlas.build(str(out / "DeerCoat.png")))
     k = frame.k
 
-    # Blocky low-poly look like the reference: flat sides, a flat back and chest, bevelled edges.
+    # Blocky low-poly look like the reference: flat sides, a flat back and chest, bevelled edges, few big
+    # flat-shaded faces. The outlines are redrawn with straight edges first (rm.simplify).
     # Width = how wide (seen from the front) compared to how thick the outline is there (1 = square),
     # checked against the front and back views of the turnaround.
     width = rm.soft_map(p["full"].shape, 0.82, [((770, 470), 70, 0.85), ((890, 315), 60, 1.05),
@@ -91,16 +94,18 @@ def build(ref, out):
     # so the legs sit under the thighs instead of sticking out of them.
     thighs = ndimage.gaussian_filter(ref.polygon([(165, 575), (325, 575), (310, 720), (165, 720)]).astype(np.float32),
                                      18) * 98
-    body = rb.Piece("Body", p["body"], frame, atlas, "body", step=2.0, width=width, min_half=thighs, smooth=3,
-                    tris=4500, inset=inset, profile="box", bevel=0.3, bevel_max=22, sharp=32, soft=True)
+    body = rb.Piece("Body", rm.simplify(p["body"], 5), frame, atlas, "body", step=2.0, width=width,
+                    min_half=thighs, smooth=3, tris=1600, inset=inset, profile="box", bevel=0.25, bevel_max=18,
+                    soft=True, flat=True)
     legs = {}
     for key, name, side in (("leg_front_a", "LegFL", -54), ("leg_front_b", "LegFR", 54),
                             ("leg_back_a", "LegBR", 54), ("leg_back_b", "LegBL", -54)):
-        leg = rb.Piece(name, p[key], frame, atlas, key, step=1.5, width=1.05, smooth=3, tris=600, inset=10,
-                       profile="box", bevel=0.28, bevel_max=9, sharp=32, soft=True)
+        leg = rb.Piece(name, rm.simplify(p[key], 4), frame, atlas, key, step=1.5, width=1.05, smooth=3, tris=220,
+                       inset=10, profile="box", bevel=0.25, bevel_max=8, soft=True, flat=True)
         legs[name] = leg.transform(rb.pose(rb.Vector((0, 0, 0)), move=(side * k, 0, 0)))
 
-    ear = rb.Piece("Ear", p["ear"], frame, atlas, "ear", step=1.0, width=0.25, min_half=2.5, smooth=8, tris=400, inset=4)
+    ear = rb.Piece("Ear", rm.simplify(p["ear"], 3), frame, atlas, "ear", step=1.0, width=0.25, min_half=2.5,
+                   smooth=8, tris=80, inset=4, flat=True)
     ear_pose = rb.pose(rb.pixel_point(frame, 812, 292), rotate=(0, 50, 32), move=(50 * k, 0, 0), scale=1.3)
     ears = [ear.copy("EarR").transform(ear_pose), ear.transform(rb.mirror(ear_pose))]
 
@@ -118,7 +123,8 @@ def build(ref, out):
 
     antlers = []
     for key, sign in (("antler_back", 1), ("antler_front", -1)):
-        a = rb.Piece(key, p[key], frame, atlas, key, step=1.0, width=1.0, smooth=8, tris=1500, inset=6)
+        a = rb.Piece(key, rm.simplify(p[key], 2.5), frame, atlas, key, step=1.0, width=1.0, smooth=8, tris=450,
+                     inset=6, flat=True)
         antlers.append(a.deform(spread(sign)))
 
     objs = [rb.join([body.obj] + [e.obj for e in ears] + [a.obj for a in antlers], "Body", mat)]
