@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+from scipy import ndimage
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import refmodel as rm  # noqa: E402
@@ -17,7 +18,7 @@ import refmodel as rm  # noqa: E402
 BOX = (40, 105, 340, 335)
 GROUND = 866          # hoof bottoms (wp)
 FRONT_CUT = 645       # front legs start below this line
-BACK_CUT = 650
+BACK_CUT = 705       # hind legs start below this line: above it is the thigh, part of the body
 
 
 def parts(ref):
@@ -34,9 +35,11 @@ def parts(ref):
     antler_back = rm.tidy(antler & split, keep_largest=True)
     antler_front = rm.tidy(antler & ~split, keep_largest=True)
 
-    back_legs = ref.polygon([(140, BACK_CUT), (300, 640), (440, 628), (440, 900), (140, 900)])
+    # The darker area between the hind legs in the drawing is the thigh of the far hind leg. Both thighs
+    # stay in the body (one wide block at the back, like the 3/4 picture); the legs start below them.
+    back_legs = ref.polygon([(140, BACK_CUT), (440, BACK_CUT), (440, 900), (140, 900)])
     front_legs = ref.polygon([(585, FRONT_CUT), (820, FRONT_CUT), (820, 900), (585, 900)])
-    near_back_zone = ref.polygon([(140, 600), (300, 600), (300, 640), (262, 700), (262, 900), (140, 900)])
+    near_back_zone = ref.polygon([(140, 600), (266, 600), (266, 900), (140, 900)])
     front_a_zone = ref.polygon([(585, 560), (694, 560), (694, 645), (696, 700), (697, 740), (700, 900), (585, 900)])
 
     leg_back_a = full & back_legs & near_back_zone
@@ -44,8 +47,8 @@ def parts(ref):
     leg_front_a = full & front_legs & front_a_zone
     leg_front_b = full & front_legs & ~front_a_zone
     # every leg continues up into the body, so it has no seam where it meets the belly
-    leg_back_a |= full & ref.polygon([(190, BACK_CUT + 5), (292, BACK_CUT - 6), (280, 560), (205, 560)])
-    leg_back_b |= full & ref.polygon([(275, 700), (325, 660), (360, 600), (300, 590), (270, 640)])
+    leg_back_a |= full & ref.polygon([(188, BACK_CUT + 5), (252, BACK_CUT + 5), (250, 630), (195, 630)])
+    leg_back_b |= full & ref.polygon([(282, BACK_CUT + 5), (345, BACK_CUT + 5), (340, 630), (290, 630)])
     leg_front_a |= full & ref.polygon([(618, FRONT_CUT + 5), (694, FRONT_CUT + 5), (688, 565), (628, 565)])
     leg_front_b |= full & ref.polygon([(708, FRONT_CUT + 20), (770, FRONT_CUT + 20), (765, 575), (715, 575)])
 
@@ -84,8 +87,12 @@ def build(ref, out):
     width = rm.soft_map(p["full"].shape, 0.82, [((770, 470), 70, 0.85), ((890, 315), 60, 1.05),
                                                 ((995, 345), 28, 0.95), ((215, 480), 30, 0.8)])
     inset = rm.soft_map(p["full"].shape, 28, [((1012, 347), 18, 6)])     # keep the black nose tip on the nose
-    body = rb.Piece("Body", p["body"], frame, atlas, "body", step=2.0, width=width, smooth=3, tris=4500, inset=inset,
-                    profile="box", bevel=0.3, bevel_max=22, sharp=32, soft=True)
+    # The hindquarters (both thighs) are one wide block down to where the hind legs start, as wide as the body,
+    # so the legs sit under the thighs instead of sticking out of them.
+    thighs = ndimage.gaussian_filter(ref.polygon([(165, 575), (325, 575), (310, 720), (165, 720)]).astype(np.float32),
+                                     18) * 98
+    body = rb.Piece("Body", p["body"], frame, atlas, "body", step=2.0, width=width, min_half=thighs, smooth=3,
+                    tris=4500, inset=inset, profile="box", bevel=0.3, bevel_max=22, sharp=32, soft=True)
     legs = {}
     for key, name, side in (("leg_front_a", "LegFL", -54), ("leg_front_b", "LegFR", 54),
                             ("leg_back_a", "LegBR", 54), ("leg_back_b", "LegBL", -54)):

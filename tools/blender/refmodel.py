@@ -133,7 +133,7 @@ def inflate(mask, step=2.0, width=0.8, min_half=0.0, profile="round", bevel=0.3,
     profile "box": flat sides and a flat rim with slanted edges, the blocky low-poly look. The half-width at
     a spot is `width` times the local thickness of the outline there (1 = square cross-sections), and the
     edges are cut off at 45 degrees over `bevel` times that half-width (at most `bevel_max` wp).
-    `width` may also be an array the size of the working image (a value per spot)."""
+    `width` and `min_half` (smallest half-width in wp) may also be arrays the size of the working image."""
     ys, xs = np.nonzero(mask)
     pad = 4 * step
     y0, x0 = ys.min() - pad, xs.min() - pad
@@ -141,8 +141,10 @@ def inflate(mask, step=2.0, width=0.8, min_half=0.0, profile="round", bevel=0.3,
     gx = x0 + np.arange(int((xs.max() + pad - x0) / step) + 1) * step
     GY, GX = np.meshgrid(gy, gx, indexing="ij")
     small = ndimage.map_coordinates(mask.astype(np.float32), [GY, GX], order=1, cval=0) > 0.5
-    w = ndimage.map_coordinates(np.asarray(width, np.float32), [GY, GX], order=1, mode="nearest") \
-        if np.ndim(width) else width
+    def sample(value):
+        return ndimage.map_coordinates(np.asarray(value, np.float32), [GY, GX], order=1, mode="nearest") \
+            if np.ndim(value) else value
+    w, min_half = sample(width), sample(min_half)
     if profile == "box":
         # signed distance to the outline (positive inside), measured on the full-size mask for smooth rims
         m = np.pad(mask, int(pad) + 2)
