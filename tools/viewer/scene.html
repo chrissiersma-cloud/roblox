@@ -140,11 +140,16 @@ function makePart(shape, size, cf, color, mat, t, refl, withStuds, castShadow) {
 }
 
 // Animal models from animals.json (instance format).
-function buildModel(model) {
+function buildModel(model, tint) {
   const group = new THREE.Group();
   const visit = (node) => {
     if ((node.class === "Part" || node.class === "WedgePart") && (node.props.Transparency || 0) < 1) {
-      const p = node.props;
+      let p = node.props;
+      const role = node.attrs?.Role;
+      if (tint && (role === "Primary" || role === "Secondary")) {
+        const k = role === "Secondary" ? 1.15 : 1;
+        p = { ...p, Color: tint.map(c => Math.min(1, c * k)), Reflectance: 0.35 };
+      }
       const mesh = (node.children || []).find(c => c.class === "SpecialMesh");
       const shape = node.class === "WedgePart" ? "wedge" : mesh ? "ellipsoid" : p.Shape === "Ball" ? "ball" :
         p.Shape === "Cylinder" ? "cylinder" : "block";
@@ -227,7 +232,7 @@ for (const p of sceneData.parts) {
 for (const m of sceneData.models) {
   const tpl = templates[m.id];
   if (!tpl) { console.error("missing model " + m.id); continue; }
-  const g = buildModel(tpl);
+  const g = buildModel(tpl, m.tint);
   g.matrixAutoUpdate = false;
   g.matrix.compose(new THREE.Vector3(...m.pos), new THREE.Quaternion().setFromEuler(new THREE.Euler(0, m.yaw * Math.PI / 180, 0)),
     new THREE.Vector3(m.scale, m.scale, m.scale));
@@ -246,7 +251,7 @@ for (const tx of sceneData.texts) {
   plane.matrix.copy(cfMatrix(p.cf)).multiply(local);
   scene.add(plane);
 }
-for (const sp of sceneData.sprites) {
+for (const sp of (shot.hideSprites ? [] : sceneData.sprites)) {
   const n = sp.lines.length;
   const aspect = sp.aspect || 3.2;
   const tex = textCanvas(sp.lines, 512 * aspect, 512 * n, { pad: 0.02 });

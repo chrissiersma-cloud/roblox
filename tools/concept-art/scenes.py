@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Concept-art scenes for Hunt an Animal: the Hub and the Hunting Grounds.
+"""Concept-art scenes for Create a Zoo: the lobby with the players' zoos and the Wild.
 
 Builds blocky studded scenes with the real animal models placed in them and
-writes build/hub.json and build/grounds.json for viewer/scene.html.
+writes build/world.json for tools/viewer/scene.html.
 """
 
 import json
@@ -15,7 +15,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "animal-models"))
 
-from lib import IDENTITY, Animal, add, angles, apply, cframe, hex_color, matmul  # noqa: E402
+from lib import IDENTITY, Animal, add, angles, apply, cframe, hex_color, matmul, scale, sub  # noqa: E402
 
 RARITY = {
     "Common": "#c9c9c9", "Uncommon": "#62e36e", "Rare": "#45a6ff", "Epic": "#b861ff",
@@ -34,7 +34,8 @@ ANIMALS = {
     "RoyalGriffin": ("Royal Griffin", "Exclusive", "$5K/s"),
 }
 PEN_SCALE = {"Rabbit": 0.9, "Puffhop": 0.9, "CrystalHare": 0.85, "Sandsnapper": 0.45, "SkyfinWhale": 0.42,
-             "RoyalGriffin": 0.58, "Bear": 0.65, "Moonbear": 0.65, "StarlightKitsune": 0.68, "MossbackTortle": 0.8}
+             "RoyalGriffin": 0.58, "Bear": 0.65, "Moonbear": 0.65, "StarlightKitsune": 0.68, "MossbackTortle": 0.8,
+             "Thunderhoof": 0.62, "GlowhornStag": 0.62}
 
 
 def C(h):
@@ -93,12 +94,13 @@ class Scene(Animal):
     def label(self, pos, lines, h=2.2, aspect=3.4):
         self.sprites.append({"pos": list(self.world(pos)), "lines": lines, "h": h, "aspect": aspect})
 
-    def animal(self, animal_id, pos, yaw=0.0, scale=1.0):
+    def animal(self, animal_id, pos, yaw=0.0, scale=1.0, tint=None):
         self.models.append({"id": animal_id, "pos": list(self.world(pos)), "yaw": self.frames[-1][2] + yaw,
-                            "scale": scale})
+                            "scale": scale, **({"tint": tint} if tint else {})})
 
-    def shot(self, name, pos, target, fov=50, shadow=None, env=None, hud=None):
+    def shot(self, name, pos, target, fov=50, shadow=None, env=None, hud=None, hide_sprites=False):
         self.shots[name] = {
+            **({"hideSprites": True} if hide_sprites else {}),
             "camera": {"pos": list(pos), "target": list(target), "fov": fov},
             **({"shadow": shadow} if shadow else {}), **({"env": env} if env else {}), **({"hud": hud} if hud else {}),
         }
@@ -170,20 +172,25 @@ def fence(s, start, end, color="#ffffff", h=3.0, every=5.0):
         s.beam("Rail", add(start, (0, y, 0)), add(end, (0, y, 0)), 0.4, C(color))
 
 
-def player(s, pos, yaw, shirt, pants, skin="#ffd6a5", hair="#4a2c17", camera=True):
+def player(s, pos, yaw, shirt, pants, skin="#ffd6a5", hair="#4a2c17", pose="idle"):
+    """Blocky player. pose: idle, run, drag, throw, bat. Returns the world positions of both hands."""
+    legs = {"run": (35, -35), "drag": (30, -30), "throw": (12, -18), "treadmill": (40, -40)}.get(pose, (0, 0))
+    arms = {"run": (-40, 40), "treadmill": (-40, 40), "drag": (40, -45), "throw": (70, 160),
+            "bat": (105, 105)}.get(pose, (0, 0))
+    hands = {}
     with s.frame(pos, yaw):
-        for x in (-0.5, 0.5):
-            s.box("Leg", (0.95, 2.0, 1.0), (x, 1.0, 0), C(pants))
+        for x, th in zip((-0.5, 0.5), legs):
+            d = apply(angles(th, 0, 0), (0, -1, 0))
+            s.box("Leg", (0.95, 2.0, 1.0), add((x, 2.0, 0), d), C(pants), rot=(th, 0, 0))
         s.box("Torso", (2.0, 2.0, 1.0), (0, 3.0, 0), C(shirt))
-        if camera:
-            for x in (-1.2, 1.2):
-                s.box("Arm", (0.9, 2.0, 0.9), (x, 3.55, -0.75), C(skin), rot=(-75, 0, 0))
-            s.bevel("Camera", (1.8, 1.2, 0.9), (0, 3.95, -1.9), C("#2b2b33"), b=0.2, bottom=0.2)
-            s.cyl("Lens", 0.6, 0.8, (0, 3.9, -2.55), C("#111118"), R=angles(0, 90, 0))
-            s.box("Flash", (0.4, 0.3, 0.1), (0.55, 4.35, -2.37), C("#fff7c2"), material="Neon", shadow=False)
-        else:
-            for x in (-1.5, 1.5):
-                s.box("Arm", (1.0, 2.0, 1.0), (x, 3.0, 0), C(skin))
+        for x, ph, side in zip((-1.5, 1.5), arms, ("L", "R")):
+            d = apply(angles(ph, 0, 0), (0, -1, 0))
+            shoulder = (x, 3.85, 0)
+            s.box("Arm", (1.0, 2.0, 1.0), add(shoulder, d), C(skin), rot=(ph, 0, 0))
+            hands[side] = s.world(add(shoulder, scale(d, 2.0)))
+        if pose == "bat":
+            s.beam("Bat", (1.4, 4.3, -1.9), (2.2, 7.6, -0.5), 0.55, C("#d9a066"))
+            s.box("BatKnob", (0.7, 0.3, 0.7), (1.35, 4.05, -2.0), C("#8b5a2b"))
         s.bevel("Head", (1.3, 1.3, 1.3), (0, 4.65, 0), C(skin), b=0.3, bottom=0.3)
         s.box("Hair", (1.4, 0.45, 1.4), (0, 5.35, 0.05), C(hair))
         s.box("HairBack", (1.4, 1.0, 0.35), (0, 4.95, 0.55), C(hair))
@@ -191,6 +198,7 @@ def player(s, pos, yaw, shirt, pants, skin="#ffd6a5", hair="#4a2c17", camera=Tru
             s.box("PlayerEye", (0.18, 0.32, 0.05), (x, 4.8, -0.66), C("#1b1420"), material="SmoothPlastic",
                   shadow=False)
         s.box("Smile", (0.5, 0.1, 0.05), (0, 4.42, -0.66), C("#1b1420"), material="SmoothPlastic", shadow=False)
+    return hands
 
 
 def loot_beam(s, pos, rarity, h=150.0):
@@ -220,353 +228,6 @@ def cloud(s, pos, k, rng):
         size = (12 * w * k, 7 * w * k, 9 * w * k)
         s.bevel("Cloud", size, add(pos, (dx * 10 * k, dy * 5 * k, dz * 8 * k)), C("#ffffff"), b=2.2 * w * k,
                 bottom=1.4 * w * k)
-
-
-# ----------------------------------------------------------- HUD ----
-
-def hub_hud(countdown="2:34"):
-    return f"""
-<div class="pill game" style="left:28px;top:24px;font-size:38px;color:#ffd84a">$12,450
-  <span style="font-size:24px;color:#7dff8a">&nbsp;+$85/s</span></div>
-<div class="pill game" style="left:50%;transform:translateX(-50%);top:20px;font-size:34px">NEXT HUNT
-  <span style="color:#ffd84a">{countdown}</span></div>
-<div class="pill game" style="right:28px;top:24px;font-size:30px;color:#6dff8a">&#9752; LUCK x1.5</div>
-<div class="game" style="position:absolute;left:50%;transform:translateX(-50%);bottom:56px;font-size:26px">LEVEL 7</div>
-<div class="bar" style="left:50%;transform:translateX(-50%);bottom:26px;width:560px">
-  <div style="width:62%;background:linear-gradient(#9be0ff,#3f8fff)"></div></div>
-""" + "".join(f"""
-<div class="btn game" style="left:28px;top:{150 + i * 108}px;width:84px;height:84px;background:{bg};
-  display:flex;align-items:center;justify-content:center;font-size:19px">{name}</div>
-{'' if not badge else f'<div class="btn game" style="left:92px;top:{142 + i * 108}px;width:30px;height:30px;border-width:3px;background:#3fdc5a;display:flex;align-items:center;justify-content:center;font-size:20px">!</div>'}
-""" for i, (name, bg, badge) in enumerate([("SHOP", "#ffb52e", True), ("INDEX", "#45a6ff", False),
-                                            ("QUESTS", "#b861ff", True), ("WHEEL", "#ff5a7a", True)]))
-
-
-def viewfinder_hud():
-    corner = "position:absolute;width:96px;height:96px;border:0 solid #fff;"
-    return f"""
-<div style="position:absolute;inset:0;box-shadow:inset 0 0 260px 90px rgba(0,0,0,.7)"></div>
-<div style="{corner}left:14%;top:12%;border-left-width:9px;border-top-width:9px"></div>
-<div style="{corner}right:14%;top:12%;border-right-width:9px;border-top-width:9px"></div>
-<div style="{corner}left:14%;bottom:14%;border-left-width:9px;border-bottom-width:9px"></div>
-<div style="{corner}right:14%;bottom:14%;border-right-width:9px;border-bottom-width:9px"></div>
-<div style="position:absolute;left:50%;top:50%;width:260px;height:260px;margin:-130px 0 0 -130px;border-radius:50%;
-  border:5px solid rgba(255,255,255,.85);box-shadow:0 0 12px rgba(0,0,0,.5)"></div>
-<div style="position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;
-  border:4px solid #fff"></div>
-<div class="game" style="position:absolute;left:50%;transform:translateX(-50%);top:19%;font-size:46px;color:#c77bff">FROSTFANG WOLF</div>
-<div class="game" style="position:absolute;left:50%;transform:translateX(-50%);top:25.5%;font-size:26px">EPIC &middot; 45 STUDS</div>
-<div class="game" style="position:absolute;left:50%;transform:translateX(-50%);bottom:24%;font-size:64px;color:#ffd84a">
-  &#9733;&#9733;<span style="color:rgba(255,255,255,.45)">&#9733;</span></div>
-<div class="game" style="position:absolute;left:50%;transform:translateX(-50%);bottom:18.5%;font-size:24px">CAPTURE</div>
-<div class="bar" style="left:50%;transform:translateX(-50%);bottom:13.5%;width:520px;height:26px">
-  <div style="width:78%;background:linear-gradient(90deg,#3fdc5a,#ffd84a)"></div></div>
-<div class="pill game" style="left:28px;top:24px;font-size:30px">HUNT ENDS <span style="color:#ffd84a">3:12</span></div>
-<div class="pill game" style="left:28px;top:92px;font-size:24px">23 LEFT &middot; <span style="color:#ffcc33">1 LEGENDARY</span>
-  &middot; <span style="color:#c77bff">3 EPIC</span></div>
-<div class="pill game" style="right:28px;top:24px;font-size:30px;color:#6dff8a">&#9752; LUCK x2.5</div>
-<div class="pill game" style="right:28px;top:92px;font-size:26px;color:#ffa54a">STREAK x3</div>
-<div class="bar" style="right:52px;top:34%;width:20px;height:260px"><div style="height:62%;margin-top:auto;
-  background:#fff;position:absolute;bottom:0;width:100%"></div></div>
-<div class="game" style="position:absolute;right:38px;top:calc(34% + 272px);font-size:28px">3X</div>
-<div class="btn" style="right:70px;bottom:64px;width:150px;height:150px;background:rgba(255,255,255,.2)"></div>
-<div class="btn" style="right:92px;bottom:86px;width:116px;height:116px;background:#fff;border-color:#ddd"></div>
-<div class="btn game" style="right:262px;bottom:78px;width:92px;height:92px;background:#ffd84a;display:flex;
-  align-items:center;justify-content:center;font-size:20px;color:#fff">FLASH</div>
-""" + "".join(f"""
-<div style="position:absolute;left:{28 + i * 118}px;bottom:40px;width:104px;height:140px;border-radius:14px;
-  background:linear-gradient({col},#1b1530);border:4px solid #fff;box-shadow:0 5px 0 rgba(0,0,0,.35)">
-  <div class="game" style="position:absolute;top:10px;width:100%;text-align:center;font-size:20px">{name}</div>
-  <div class="game" style="position:absolute;bottom:10px;width:100%;text-align:center;font-size:24px;color:#ffd84a">{timer}</div>
-</div>""" for i, (name, col, timer) in enumerate([("WOLF", "#45a6ff", "1:42"), ("DEER", "#62e36e", "2:10")]))
-
-
-# ----------------------------------------------------------- Hub ----
-
-PLOTS = [
-    ("LunaPlayz", "#ff7ac8", ["Sandsnapper", "Thunderhoof", "Moonbear", "Bear", "FrostfangWolf", "Wolf"], "$38.4K/s"),
-    ("Noob_123", "#52d273", ["Rabbit", "Rabbit", "Puffhop", "Deer"], "$10/s"),
-    (None, "#bfc6d1", [], ""),
-    ("ChrisHunter", "#4f9dff", ["PhoenixFox", "CrystalHare", "GlowhornStag", "EmberbackBoar", "Boar", "MossbackTortle"],
-     "$26.1K/s"),
-    ("xXFoxXx", "#ff9a3c", ["Wolf", "Boar", "Deer", "Puffhop", "MossbackTortle"], "$88/s"),
-    (None, "#bfc6d1", [], ""),
-    ("Builder_Bob", "#a66bff", ["Voidwhisker", "Bear", "Wolf", "Rabbit"], "$15.2K/s"),
-    ("StarQueen", "#ffd23f", ["StarlightKitsune", "RoyalGriffin", "SkyfinWhale", "Moonbear", "CrystalHare"],
-     "$183K/s"),
-]
-
-
-def zoo_plot(s, owner, color, animals, value, rng):
-    s.box("PlotBase", (56, 1, 56), (0, 0.5, 0), C("#f3e6c6"))
-    wall = C(color)
-    s.box("Wall", (56, 3, 1.5), (0, 2.5, 27.25), wall)
-    for x in (-27.25, 27.25):
-        s.box("Wall", (1.5, 3, 56), (x, 2.5, 0), wall)
-    for x in (-17, 17):
-        s.box("Wall", (22, 3, 1.5), (x, 2.5, -27.25), wall)
-    for x in (-7.5, 7.5):
-        s.bevel("GatePillar", (2.6, 10, 2.6), (x, 6, -27.25), C("#ffffff"), b=0.5)
-    if owner is None:
-        s.sign("PlotSign", (17, 3.2, 1), (0, 11.2, -27.25), wall, [L("FREE PLOT")])
-        s.box("PlotGrass", (50, 0.3, 46), (0, 1.15, 3), C("#9bd67e"))
-        s.label((0, 6, 0), [L("CLAIM ME!", "#ffffff")], h=3)
-        return
-    s.sign("PlotSign", (17, 3.2, 1), (0, 11.2, -27.25), wall, [L(f"{owner}'s Zoo")])
-    s.box("SignPost", (0.8, 6, 0.8), (-12.5, 3.5, -31), C("#8b5a2b"))
-    s.sign("ValueSign", (8, 3.4, 0.6), (-12.5, 7.4, -31), "#ffffff",
-           [L("ZOO VALUE", "#ffcf3a", 0.8), L(value, "#3fdc5a", 1.1)])
-    s.box("PlotGrass", (50, 0.3, 46), (0, 1.15, 3), C("#86d06a"))
-    pens = [(-17, -10), (0, -10), (17, -10), (-17, 10), (0, 10), (17, 10)]
-    for i, (x, z) in enumerate(pens):
-        s.box("PenFloor", (15, 0.4, 15), (x, 1.5, z), C("#9fdc7f"))
-        for dz in (-7.25, 7.25):
-            s.box("PenFence", (15, 1.3, 0.5), (x, 2.35, z + dz), C("#ffffff"))
-        for dx in (-7.25, 7.25):
-            s.box("PenFence", (0.5, 1.3, 15), (x + dx, 2.35, z), C("#ffffff"))
-        for dx in (-7.25, 7.25):
-            for dz in (-7.25, 7.25):
-                s.box("PenPost", (0.9, 2.2, 0.9), (x + dx, 2.8, z + dz), wall)
-        s.box("CollectPad", (4, 0.3, 2.2), (x, 1.85, z - 5.3), C("#ffcf3a"), **NEON)
-        if i < len(animals):
-            aid = animals[i]
-            name, rarity, income = ANIMALS[aid]
-            s.animal(aid, (x, 1.7, z + 0.6), yaw=rng.uniform(-25, 25), scale=PEN_SCALE.get(aid, 0.72))
-            s.label((x, 12.5, z), [L(name, RARITY[rarity]), L(income, "#5dff7a", 0.8)], h=1.9, aspect=4.2)
-            if rng.random() < 0.45:
-                s.label((x + 3.5, 8.5 + rng.uniform(0, 2), z - 4), [L("+" + income.replace("/s", ""), "#ffd84a")],
-                        h=1.8, aspect=2.6)
-    for x in (-24, 24):
-        bush(s, (x, 1.3, 24), "#4fb84f")
-
-
-def hub_buildings(s, rng):
-    # Hunting Gate with the giant clock (north).
-    with s.frame((0, 0, -112), 180):
-        s.box("GateSteps", (72, 1.2, 26), (0, 0.6, 0), C("#d6ceb9"))
-        s.box("GateSteps", (60, 1.2, 8), (0, 1.8, 0), C("#e2dac6"))
-        for x in (-24, 24):
-            s.bevel("GatePillar", (10, 44, 10), (x, 24.4, 0), C("#b9b3a7"), b=2.0)
-            s.bevel("GateCap", (12, 3, 12), (x, 47.9, 0), C("#f2c14e"), b=0.8, reflectance=0.2)
-            s.box("Banner", (6.5, 13, 0.4), (x, 33, -5.3), C("#d8283f"))
-            s.box("BannerEmblem", (3, 3, 0.2), (x, 34, -5.55), C("#ffd23a"), rot=(0, 0, 45))
-            s.box("Torch", (1.4, 3, 1.4), (x, 18, -5.8), C("#3a2a22"))
-            s.box("TorchFlame", (1.6, 2.2, 1.6), (x, 20.4, -5.8), C("#ff8a1f"), **NEON)
-        s.bevel("GateBeam", (58, 9, 12), (0, 43, 0), C("#a8a092"), b=2.0)
-        s.sign("GateName", (40, 5, 0.6), (0, 43, -6.3), "#5b3a22", [L("HUNTING GATE", "#ffd84a")])
-        s.box("ClockFrame", (40, 17, 2.4), (0, 57, 0.6), C("#f2c14e"), reflectance=0.2)
-        s.sign("Clock", (36, 14, 3), (0, 57, 0), "#1d2033",
-               [L("NEXT HUNT", "#ffffff", 0.75), L("2:34", "#ffe14a", 1.35)], glow=True)
-        for x in (-16, 0, 16):
-            s.tri("ClockSpike", (x, 65.5, 0.6), 4, 4, 1.5, C("#f2c14e"), reflectance=0.2)
-        for x in (-9.6, 9.6):
-            s.box("Door", (19, 34, 2), (x, 19.4, 1.5), C("#8a5a33"))
-            for dx in (-6, 0, 6):
-                s.box("DoorPlank", (0.5, 33, 0.4), (x + dx, 19.4, 0.4), C("#6b4226"))
-            s.box("DoorBand", (19, 1.2, 0.4), (x, 28, 0.35), C("#3a2a22"))
-            s.box("DoorBand", (19, 1.2, 0.4), (x, 10, 0.35), C("#3a2a22"))
-        s.box("DoorGlow", (0.8, 33, 0.4), (0, 19.4, 0.8), C("#7dff9a"), **NEON)
-        for i, (x, z, shirt, pants, hair) in enumerate([
-                (-8, -16, "#ff5a5a", "#2b3a6b", "#3a2412"), (-3, -19, "#45a6ff", "#333", "#e8c07a"),
-                (4, -17, "#3fdc5a", "#4a3a2a", "#111"), (10, -20, "#ffd23f", "#2b3a6b", "#a33"),
-                (1, -23, "#b861ff", "#222", "#ffe6a8")]):
-            player(s, (x, 2.4 if abs(z) < 13 else 1.2, z), 180 + rng.uniform(-20, 20), shirt, pants, hair=hair,
-                   camera=i % 2 == 0)
-
-    # Shop (north-east).
-    with s.frame(polar(45, 92), 135):
-        s.box("ShopFloor", (26, 1, 18), (0, 0.5, 0), C("#caa472"))
-        s.bevel("ShopBack", (26, 12, 2), (0, 7, 8), C("#fff1d6"), b=0)
-        for x in (-12, 12):
-            s.box("ShopSide", (2, 12, 18), (x, 7, 0), C("#fff1d6"))
-        s.box("ShopRoof", (28, 1.5, 20), (0, 13.7, 0), C("#e0473c"))
-        for i in range(7):
-            s.wedge("Awning", (4, 3, 5), (-12 + 4 * i, 11.5, -11.4), C("#e0473c" if i % 2 == 0 else "#ffffff"))
-        s.sign("ShopSign", (18, 4.5, 1), (0, 17.2, -3), "#ffcf3a", [L("SHOP")])
-        s.box("Counter", (20, 4, 3), (0, 3, -6), C("#9c6b3f"))
-        s.box("CounterTop", (21, 0.5, 3.4), (0, 5.2, -6), C("#fff1d6"))
-        for i, (x, col) in enumerate([(-7, "#3fdc5a"), (-4, "#b861ff"), (4, "#45a6ff"), (7, "#ffcf3a")]):
-            s.box("Potion", (1.2, 1.8, 1.2), (x, 6.4, -6), C(col), material="Glass", transparency=0.1)
-        s.bevel("DisplayCamera", (2.6, 1.8, 1.4), (0, 6.4, -6), C("#2b2b33"), b=0.3, bottom=0.3)
-        player(s, (0, 1, -2), 0, "#ffffff", "#333", hair="#6a3", camera=False)
-        s.label((0, 23, -3), [L("RESTOCKED!", "#ffd84a")], h=3)
-
-    # Bounty Board (east).
-    with s.frame(polar(90, 88), 90):
-        for x in (-12, 12):
-            s.box("BoardPost", (1.5, 18, 1.5), (x, 9, 0.5), C("#6b4226"))
-        s.box("Board", (26, 14, 1.2), (0, 11, 0), C("#9c6b3f"))
-        s.box("BoardRoof", (29, 2, 4), (0, 19, 0), C("#5b3a22"))
-        s.sign("BoardTitle", (22, 3, 0.4), (0, 16, -0.8), "#5b3a22", [L("BOUNTY BOARD", "#ffd84a")])
-        for x, lines in ((-8, ["BIG DEER", "3 STARS", "$5,000"]), (0, ["ANY GOLDEN", "ANIMAL", "$12,000"]),
-                         (8, ["FROSTFANG", "WOLF", "$25,000"])):
-            s.sign("Poster", (6.5, 8.6, 0.3), (x, 9.6, -0.75), "#f6e7c1",
-                   [L("WANTED", "#d8283f", 1.2), L(lines[0], "#3a2a22", 0.8), L(lines[1], "#3a2a22", 0.8),
-                    L(lines[2], "#2fae4a", 1.0)], pad=0.1)
-
-    # Lucky Wheel (south-east).
-    with s.frame(polar(135, 90), 45):
-        s.box("WheelBase", (12, 2, 7), (0, 1, 1), C("#7b4bd6"))
-        for x in (-5.5, 5.5):
-            s.box("WheelPost", (1.6, 16, 1.6), (x, 9, 1.5), C("#5a32b0"))
-        s.cyl("WheelRim", 1.2, 26, (0, 17.5, 0.5), C("#ffd23a"), R=angles(0, 90, 0), reflectance=0.2)
-        s.cyl("WheelFace", 1.2, 24, (0, 17.5, -0.2), C("#ffffff"), R=angles(0, 90, 0))
-        colors = ["#ff5a5a", "#ff9a3c", "#ffd23f", "#52d273", "#3fe0e0", "#4f9dff", "#a66bff", "#ff7ac8"]
-        for k, col in enumerate(colors):
-            a = math.radians(22.5 + 45 * k)
-            s.box("WheelSlice", (10.5, 5.2, 0.4), (5.9 * math.cos(a), 17.5 + 5.9 * math.sin(a), -1.0), C(col),
-                  rot=(0, 0, 22.5 + 45 * k))
-            b = math.radians(45 * k)
-            s.ball("Bulb", 0.9, (12.4 * math.cos(b), 17.5 + 12.4 * math.sin(b), -0.4), C("#fff3a0"), **NEON)
-        s.cyl("WheelHub", 1.2, 4, (0, 17.5, -1.4), C("#ffd23a"), R=angles(0, 90, 0), reflectance=0.2)
-        s.tri("WheelPointer", (0, 33.2, -1.2), 3.2, 3.4, 1.2, C("#ff3b3b"), R=angles(0, 0, 180))
-        s.sign("WheelSign", (16, 3.2, 0.8), (0, 3.8, -3.2), "#7b4bd6", [L("LUCKY WHEEL", "#ffd84a")])
-        s.label((0, 36.5, 0), [L("FREE SPIN!", "#5dff7a")], h=3)
-
-    # Leaderboards (south).
-    with s.frame(polar(180, 88), 0):
-        boards = [
-            ("RICHEST ZOO", ["1. StarQueen  $183K/s", "2. LunaPlayz  $38.4K/s", "3. ChrisHunter  $26.1K/s",
-                             "4. Builder_Bob  $15.2K/s", "5. xXFoxXx  $88/s"]),
-            ("RAREST MUTATION", ["1. StarQueen  CELESTIAL", "2. LunaPlayz  GALAXY", "3. ChrisHunter  RAINBOW",
-                                 "4. Builder_Bob  BLAZING", "5. Noob_123  GOLDEN"]),
-            ("HUNT MVPS", ["1. LunaPlayz  42", "2. StarQueen  37", "3. ChrisHunter  29", "4. xXFoxXx  12",
-                           "5. Builder_Bob  9"]),
-        ]
-        for i, (title, rows) in enumerate(boards):
-            x = (i - 1) * 16
-            s.box("LbPost", (1.2, 5, 1.2), (x, 2.5, 0.6), C("#3a3f5c"))
-            s.box("LbFrame", (14, 17.4, 0.8), (x, 13.2, 0.5), C("#f2c14e"), reflectance=0.2)
-            s.sign("Leaderboard", (13, 16.4, 1), (x, 13.2, 0), "#1f2340",
-                   [L(title, "#ffd84a", 1.3)] + [L(r, "#ffffff", 0.8, "body") for r in rows], pad=0.06)
-
-    # VIP lounge (south-west).
-    with s.frame(polar(225, 92), -45):
-        s.box("VipFloor", (26, 1.6, 20), (0, 0.8, 0), C("#f2c14e"), reflectance=0.2)
-        s.box("VipCarpet", (8, 0.3, 20.2), (0, 1.75, 0), C("#c9243f"))
-        for x in (-11, 11):
-            s.box("RopePost", (0.8, 3, 0.8), (x, 3.1, -9.2), C("#ffd23a"), reflectance=0.3)
-        s.beam("Rope", (-11, 4, -9.2), (-4, 3.4, -9.2), 0.35, C("#c9243f"))
-        s.beam("Rope", (4, 3.4, -9.2), (11, 4, -9.2), 0.35, C("#c9243f"))
-        for x in (-7, 7):
-            s.box("Couch", (8, 2.2, 3.2), (x, 2.7, 4.5), C("#8a2be2"))
-            s.box("CouchBack", (8, 3, 1), (x, 4, 6.3), C("#6a1fb0"))
-            tree(s, (x * 1.5, 1.6, 8.5), rng, leaf="#3fbf5a", k=0.8)
-        s.sign("VipSign", (12, 4.4, 1), (0, 9.5, 8.8), "#6a35c9", [L("VIP", "#ffd84a", 1.3), L("LOUNGE", "#ffffff", 0.7)])
-        player(s, (-7, 3.8, 4.2), 0, "#111111", "#111111", hair="#ffd23a", camera=False)
-
-    # Quests board and a reward chest (north-west).
-    with s.frame(polar(315, 88), -135):
-        for x in (-10, 10):
-            s.box("BoardPost", (1.4, 15, 1.4), (x, 7.5, 0.5), C("#6b4226"))
-        s.sign("QuestBoard", (22, 12, 1.2), (0, 9.5, 0), "#2f7ad9",
-               [L("DAILY QUESTS", "#ffd84a", 1.3), L("Capture 5 Rabbits  3/5", "#ffffff", 0.8, "body"),
-                L("Get 3 stars on a Wolf  0/1", "#ffffff", 0.8, "body"),
-                L("Roll any mutation  2/3", "#ffffff", 0.8, "body")], pad=0.08)
-        chest(s, (14, 1, -2), 20, k=1.6)
-
-    # Training Track arch (west).
-    with s.frame(polar(270, 55), 180):
-        for x in (-6.5, 6.5):
-            s.box("ArchPost", (1.6, 13, 1.6), (x, 6.5, 0), C("#ff9a3c"))
-        s.sign("TrackSign", (16, 3.4, 1), (0, 12.6, 0), "#ff9a3c", [L("TRAINING TRACK")])
-
-
-def build_hub():
-    rng = random.Random(7)
-    s = Scene("hub", env={
-        "sky": [[0, "#3f9fff"], [0.55, "#96d0ff"], [1, "#dff2ff"]], "fog": ["#dff2ff", 330, 900],
-        "sun": {"dir": [-0.5, 1.0, 0.45], "intensity": 2.5}, "hemi": ["#ffffff", "#8fb070", 1.45],
-        "bloom": [0.45, 0.45, 0.93],
-    })
-    ground(s, (4000, 4000), (0, 0, 0), "#72c255")
-    octagon(s, "Plaza", 50, 0.6, 0.6, "#efe2bf")
-    octagon(s, "PlazaInner", 30, 0.8, 0.7, "#e3cf9f")
-    for k in range(8):
-        b = 45 * k
-        s.box("Track", (49.7, 0.8, 10), polar(b, 55, 0.4), C("#d0543f"), rot=(0, -b, 0))
-        s.box("TrackLine", (49.7, 0.3, 0.5), polar(b, 55, 0.85), C("#ffffff"), rot=(0, -b, 0))
-    for k in range(8):
-        b = 22.5 + 45 * k
-        s.box("Path", (12, 0.5, 36), polar(b, 78, 0.25), C("#d9cfb8"), rot=(0, -b, 0))
-    s.box("GatePath", (22, 0.5, 40), polar(0, 80, 0.25), C("#d9cfb8"))
-
-    # The magic camera statue in the middle of the plaza.
-    octagon(s, "Pedestal", 9, 3, 3.7, "#c9c1ad")
-    octagon(s, "PedestalTop", 7, 1.5, 5.2, "#f2c14e", reflectance=0.2)
-    with s.frame((0, 5.2, 0), 180):
-        s.bevel("StatueBody", (15, 9.5, 7), (0, 5.5, 0), C("#e8423f"), b=1.6, bottom=1.6)
-        s.bevel("StatueTop", (6, 2.4, 5), (1.5, 11.2, 0), C("#2b2b33"), b=0.5)
-        s.cyl("StatueLens", 3.2, 6.6, (0, 5.3, -4.8), C("#2b2b33"), R=angles(0, 90, 0))
-        s.cyl("StatueGlass", 0.4, 5, (0, 5.3, -6.5), C("#7fd8ff"), R=angles(0, 90, 0), **NEON)
-        s.box("StatueFlash", (3.4, 2.2, 1), (-4.6, 8.8, -3.3), C("#fff7c2"), **NEON)
-        s.cyl("StatueButton", 1.2, 1.8, (-4.5, 10.9, 0), C("#ffd23a"), R=angles(0, 0, 90), reflectance=0.3)
-        s.box("StatueStripe", (15.1, 1.2, 7.1), (0, 2.5, 0), C("#ffffff"))
-    with s.frame((0, 0, 0), 180):
-        s.sign("TitleSign", (16, 2.6, 0.6), (0, 2.2, -9.4), "#1f2340", [L("HUNT AN ANIMAL", "#ffd84a")])
-
-    for k, (owner, color, animals, value) in enumerate(PLOTS):
-        theta = 22.5 + 45 * k
-        with s.frame(polar(theta, 122), 180 - theta):
-            zoo_plot(s, owner, color, animals, value, rng)
-
-    hub_buildings(s, rng)
-
-    for x, z, shirt in [(-12, 18, "#ff7ac8"), (16, 10, "#52d273"), (-20, -8, "#ffd23f"), (8, 26, "#45a6ff"),
-                        (26, -22, "#ff9a3c"), (-30, 24, "#3fe0e0")]:
-        player(s, (x, 0.7, z), rng.uniform(0, 360), shirt, "#2b3a6b", hair=rng.choice(["#3a2412", "#111", "#e8c07a"]),
-               camera=rng.random() < 0.5)
-
-    for _ in range(70):
-        b, r = rng.uniform(0, 360), rng.uniform(170, 300)
-        if abs(((b + 180) % 360) - 180) < 14 and r < 230:
-            continue
-        tree(s, polar(b, r), rng, k=rng.uniform(1.0, 1.5), kind=rng.choice(["round", "round", "pine"]))
-    for k in range(8):
-        b = 45 * k
-        for side in (-1, 1):
-            bush(s, polar(b + side * 7, 64), rng.choice(["#4fb84f", "#3fa347"]))
-            flower(s, polar(b + side * 10, 66), rng.choice(["#ff7ac8", "#ffd23f", "#ffffff", "#ff5a5a"]), rng)
-
-    plot3 = polar(157.5, 122)
-    s.shot("overview", (0, 205, 245), (0, 4, -28), fov=52, shadow={"center": [0, 0, -10], "radius": 270})
-    s.shot("gate", (24, 11, -52), (0, 30, -112), fov=58, shadow={"center": [0, 0, -95], "radius": 90},
-           hud=hub_hud())
-    cam = polar(150, 88, 27)
-    s.shot("zoo", cam, (plot3[0] + 2, 2, plot3[2] + 2), fov=50, shadow={"center": [plot3[0], 0, plot3[2]], "radius": 70})
-    return s
-
-
-# ------------------------------------------------ Hunting Grounds ----
-
-BIOMES = {
-    "forest": (-85, -35, 105, 235, "#4f9d3a"),
-    "frost": (-35, 5, 125, 270, "#eef5ff"),
-    "crystal": (5, 45, 140, 280, "#5d5775"),
-    "canyon": (45, 92, 115, 265, "#e6a15a"),
-}
-
-
-def patch(s, b0, b1, r0, r1, color, top):
-    step = 7
-    b = b0
-    while b <= b1:
-        width = r1 * math.radians(step) * 1.25
-        s.box("Biome", (width, 0.6, r1 - r0), polar(b, (r0 + r1) / 2, top - 0.3), C(color), rot=(0, -b, 0))
-        b += step
-
-
-def in_biome(rng, key, pad_b=3, pad_r=8):
-    b0, b1, r0, r1, _ = BIOMES[key]
-    return rng.uniform(b0 + pad_b, b1 - pad_b), rng.uniform(r0 + pad_r, r1 - pad_r)
-
-
-def place(s, aid, bearing, r, yaw=None, rng=None, scale=1.0, y=None, beam=True):
-    pos = polar(bearing, r, y if y is not None else 0.4)
-    s.animal(aid, pos, yaw=yaw if yaw is not None else (rng.uniform(0, 360) if rng else 0), scale=scale)
-    rarity = ANIMALS[aid][1]
-    if beam and rarity not in ("Common", "Uncommon"):
-        loot_beam(s, pos, rarity)
 
 
 def mountain(s, pos, k, rng, rock_col="#9aa6b8", snow=True):
@@ -611,41 +272,33 @@ def crystal(s, pos, h, color, rng):
     s.box("CrystalCore", (h * 0.1, h * 0.55, h * 0.1), add(pos, (0, h * 0.3, 0)), C(color), **NEON)
 
 
-def base_camp(s, rng):
-    octagon(s, "Camp", 26, 0.8, 0.8, "#d9b77c")
-    for k in range(8):
-        b = 45 * k + 22.5
-        if k in (3, 4):
-            continue
-        a0, a1 = polar(b - 18, 25.5, 0.8), polar(b + 18, 25.5, 0.8)
-        fence(s, a0, a1, color="#8b5a2b", h=3)
-    for b, col in ((-60, "#f2a541"), (60, "#4fa3e0"), (-120, "#e55b5b")):
-        with s.frame(polar(b, 15, 0.8), -b):
-            s.tri("Tent", (0, 0, 0), 10, 7, 9, C(col), R=angles(0, 90, 0))
-            s.box("TentDoor", (0.3, 3.5, 2.6), (-4.35, 1.75, 0), C("#3a2a22"), rot=(0, 0, 0))
-    with s.frame((0, 0.8, 0)):
-        for k in range(8):
-            a = math.radians(45 * k)
-            s.box("FireStone", (1.3, 1.0, 1.3), (3 * math.cos(a), 0.5, 3 * math.sin(a)), C("#8d8d99"))
-        s.beam("Log", (-2, 0.5, -1), (2, 0.5, 1), 0.8, C("#6b4226"))
-        s.beam("Log", (-2, 0.5, 1), (2, 0.5, -1), 0.8, C("#6b4226"))
-        s.box("Flame", (1.8, 2.4, 1.8), (0, 1.8, 0), C("#ff7a1a"), rot=(0, 45, 0), **NEON)
-        s.box("FlameTip", (1.0, 1.6, 1.0), (0, 3.2, 0), C("#ffd23f"), rot=(0, 20, 0), **NEON)
-    # Exit Portal at the south edge, facing the camp.
-    with s.frame((0, 0.8, 20), 180):
-        octagon(s, "PortalBase", 7, 1.2, 1.2, "#b9b3a7")
-        for k in range(8):
-            a = math.radians(22.5 + 45 * k)
-            s.box("PortalFrame", (8.8, 2.6, 2.6), (10.5 * math.cos(a), 12.5 + 10.5 * math.sin(a), 0), C("#8d86a3"),
-                  rot=(0, 0, 22.5 + 45 * k + 90))
-        s.cyl("PortalSwirl", 0.6, 20, (0, 12.5, 0), C("#b86bff"), R=angles(0, 90, 0), transparency=0.3, **NEON)
-        s.cyl("PortalCore", 0.8, 11, (0, 12.5, 0), C("#6fe8ff"), R=angles(0, 90, 0), transparency=0.25, **NEON)
-        s.sign("PortalSign", (15, 3, 0.8), (0, 25.5, 0), "#3a2a5c", [L("EXIT PORTAL", "#d9b8ff")])
-    s.box("SignPost", (0.9, 9, 0.9), (8, 5.3, 6), C("#8b5a2b"))
-    for i, (text, yaw) in enumerate([("FOREST", -60), ("FROSTPEAK", -15), ("CAVERNS", 25), ("CANYON", 70)]):
-        with s.frame((8, 7.6 - i * 1.6, 6), -yaw + 90):
-            s.sign("Arrow", (6, 1.3, 0.3), (2.6, 0, 0), "#e8c48a", [L(text, "#5b3a22", 1, stroke=False)])
-    chest(s, (-9, 0.8, -6), 30)
+
+# ------------------------------------------------- Create a Zoo props ----
+
+ROPE = "#c9a064"
+GOLD = [1.0, 0.8, 0.2]
+
+
+def bezier(p0, p1, p2, n):
+    return [tuple((1 - t) ** 2 * a + 2 * (1 - t) * t * b + t * t * c for a, b, c in zip(p0, p1, p2))
+            for t in (i / n for i in range(n + 1))]
+
+
+def rope(s, points, thickness=0.42):
+    for a, b in zip(points, points[1:]):
+        s.beam("Rope", a, b, thickness, C(ROPE), material="SmoothPlastic", shadow=False)
+
+
+def lasso_loop(s, center, radius, tilt=(0, 0, 0), n=12, thickness=0.32):
+    R = angles(*tilt)
+    pts = [add(center, apply(R, (radius * math.cos(2 * math.pi * i / n), 0, radius * math.sin(2 * math.pi * i / n))))
+           for i in range(n + 1)]
+    rope(s, pts, thickness)
+    return pts[n // 4]
+
+
+def model_point(pos, yaw, k, local):
+    return add(pos, apply(angles(0, yaw, 0), scale(local, k)))
 
 
 def toward(src, dst):
@@ -654,187 +307,508 @@ def toward(src, dst):
     return -math.degrees(math.atan2(dx, -dz))
 
 
-def near_segment(p, a, b, dist):
-    ax, az, bx, bz, px, pz = a[0], a[2], b[0], b[2], p[0], p[2]
-    vx, vz = bx - ax, bz - az
-    t = max(0.0, min(1.0, ((px - ax) * vx + (pz - az) * vz) / (vx * vx + vz * vz)))
-    return math.hypot(px - (ax + t * vx), pz - (az + t * vz)) < dist
+def treadmill(s, pos, yaw, runner=None, screen="+1 SPEED"):
+    with s.frame(pos, yaw):
+        s.box("TreadBase", (4.4, 1.0, 10), (0, 0.5, 0), C("#3a3f4a"))
+        s.box("TreadBelt", (3.4, 0.3, 9.4), (0, 1.15, 0), C("#1b1b22"))
+        for z in (-3, -1, 1, 3):
+            s.box("TreadStripe", (3.42, 0.3, 0.3), (0, 1.16, z), C("#44ff88"), **NEON)
+        for x in (-2.1, 2.1):
+            s.box("TreadRail", (0.35, 3.6, 0.35), (x, 2.8, -3.8), C("#8d8d99"))
+            s.beam("TreadHandle", (x, 4.3, -3.8), (x, 4.3, -1.0), 0.35, C("#8d8d99"))
+        s.box("TreadConsole", (4.4, 0.4, 1.2), (0, 4.6, -4.0), C("#8d8d99"))
+        s.sign("TreadScreen", (3.8, 1.9, 0.5), (0, 5.8, -4.0), "#10203a", [L(screen, "#44ff88")], glow=True)
+        if runner:
+            player(s, (0, 1.3, 0.6), 0, runner, "#2b3a6b", hair="#3a2412", pose="treadmill")
+            s.label((0, 12, 0), [L("+1 SPEED", "#44ff88")], h=1.8, aspect=3.4)
 
 
-def build_grounds():
-    rng = random.Random(11)
-    s = Scene("grounds", env={
-        "sky": [[0, "#3f9fff"], [0.6, "#a6dcff"], [1, "#e3f5ff"]], "fog": ["#e3f5ff", 480, 1250],
-        "sun": {"dir": [-0.55, 1.0, 0.5], "intensity": 2.5}, "hemi": ["#ffffff", "#8fb070", 1.45],
-        "bloom": [0.55, 0.5, 0.9],
-    })
-    ground(s, (5000, 5000), (0, 0, 0), "#86d45f")
-    for key, (b0, b1, r0, r1, col) in BIOMES.items():
-        patch(s, b0, b1, r0, r1, col, 0.35 if key != "canyon" else 0.3)
-    for b in (-60, -15, 25, 68):
-        s.box("Path", (7, 0.5, 100), polar(b, 74, 0.2), C("#d8b77a"), rot=(0, -b, 0))
+def bear_trap(s, pos, yaw=0):
+    with s.frame(pos, yaw):
+        s.cyl("TrapBase", 0.3, 3.4, (0, 0.2, 0), C("#6d6d7a"), R=angles(0, 0, 90), reflectance=0.3)
+        s.box("TrapPlate", (1.2, 0.3, 1.2), (0, 0.45, 0), C("#b8b8c4"), reflectance=0.3)
+        for sgn in (-1, 1):
+            s.box("TrapJaw", (3.6, 1.0, 0.3), (0, 0.8, sgn * 1.3), C("#8d8d99"), rot=(sgn * 35, 0, 0), reflectance=0.3)
+            for x in (-1.2, 0, 1.2):
+                s.tri("TrapTooth", (x, 1.25, sgn * 1.05), 0.5, 0.55, 0.2, C("#d6d6de"), R=angles(sgn * 35, 0, 0),
+                      material="SmoothPlastic", shadow=False)
 
-    base_camp(s, rng)
 
-    # Shot layouts (animal spots, camera spots) so nothing blocks the view.
-    wolves = polar(-71, 142)
-    forest_cam = polar(-60, 100, 10)
-    fang = polar(-15, 182)
-    fang_cam = polar(-15, 137, 5.6)
-    snap = polar(63, 172)
-    canyon_cam = polar(63, 124, 10)
+def bat_item(s, pos, rot):
+    with s.frame(pos, rot[1]):
+        s.beam("Bat", (0, 0, 0), (0, 3.2, 0.3), 0.55, C("#d9a066"))
 
-    # Sunny Meadow around camp.
-    for _ in range(120):
-        b, r = rng.uniform(0, 360), rng.uniform(32, 112)
-        flower(s, polar(b, r, 0), rng.choice(["#ff7ac8", "#ffd23f", "#ffffff", "#ff5a5a", "#b861ff"]), rng)
-    for _ in range(16):
-        bush(s, polar(rng.uniform(0, 360), rng.uniform(40, 110)), rng.choice(["#4fb84f", "#63c95a"]))
-    for aid, b, r in [("Rabbit", -150, 45), ("Rabbit", 160, 60), ("Rabbit", -100, 70), ("Puffhop", 130, 52),
-                      ("Puffhop", -30, 80), ("Deer", 100, 85), ("Deer", -125, 95), ("Rabbit", 20, 70),
-                      ("Rabbit", -52, 88), ("Puffhop", -68, 90)]:
-        place(s, aid, b, r, rng=rng)
-    for i in range(12):
-        p = polar(-25 + (i % 2) * 3, 34 + i * 4.5, 0.2)
-        s.box("MysteryTrack", (0.9, 0.2, 1.4), p, C("#6fe8ff"), rot=(0, 25 + (i % 2) * 20, 0), **NEON)
-    s.label(polar(-26, 92, 6), [L("???", "#6fe8ff")], h=4, aspect=2)
 
-    # Whispering Forest with its river and a clearing where the wolf pack roams.
-    for _ in range(75):
-        b, r = in_biome(rng, "forest")
-        p = polar(b, r)
-        if 158 < r < 182 or math.dist(p, wolves) < 26 or near_segment(p, forest_cam, wolves, 12):
+def enclosure(s, x, z, color, aid=None, tint=None, income=None, plus=True, rng=None):
+    s.box("EncFloor", (17, 0.4, 17), (x, 1.5, z), C("#9fdc7f"))
+    for dz in (-8.25, 8.25):
+        s.box("EncFence", (17, 1.6, 0.6), (x, 2.5, z + dz), C("#ffffff"))
+    for dx in (-8.25, 8.25):
+        s.box("EncFence", (0.6, 1.6, 17), (x + dx, 2.5, z), C("#ffffff"))
+    for dx in (-8.25, 8.25):
+        for dz in (-8.25, 8.25):
+            s.box("EncPost", (1.0, 2.6, 1.0), (x + dx, 3.0, z + dz), C(color))
+    s.box("Trough", (4, 1, 1.6), (x + 5.5, 2.2, z + 6), C("#8b5a2b"))
+    s.box("TroughWater", (3.4, 0.2, 1.1), (x + 5.5, 2.75, z + 6), C("#4fb7ff"), material="Water", transparency=0.1)
+    s.box("CollectPad", (4, 0.3, 2.2), (x - 4, 1.85, z - 6), C("#ffcf3a"), **NEON)
+    if aid:
+        name, rarity, inc = ANIMALS[aid]
+        s.animal(aid, (x, 1.7, z + 0.5), yaw=(rng.uniform(-30, 30) if rng else 0), scale=PEN_SCALE.get(aid, 0.72),
+                 tint=tint)
+        label = ("GOLDEN " + name) if tint else name
+        s.label((x, 13, z), [L(label, "#ffd23a" if tint else RARITY[rarity]), L(income or inc, "#5dff7a", 0.8)],
+                h=1.9, aspect=4.6)
+        if plus:
+            s.label((x + 3.5, 9, z - 4), [L("+" + (income or inc).replace("/s", ""), "#ffd84a")], h=1.8, aspect=2.6)
+
+
+ZOOS = [
+    # (side, z, owner, color, animals)
+    (-1, 60, "LunaPlayz", "#ff7ac8", ["Sandsnapper", "Thunderhoof", "Moonbear", "FrostfangWolf", "Wolf", "Bear"]),
+    (1, 60, "Noob_123", "#52d273", ["Rabbit", "Puffhop", "Deer"]),
+    (-1, 125, "StarQueen", "#ffd23f", ["StarlightKitsune", "RoyalGriffin", "SkyfinWhale", "Voidwhisker", "CrystalHare",
+                                       "PhoenixFox"]),
+    (1, 125, "xXFoxXx", "#ff9a3c", ["Wolf", "Boar", "Deer", "MossbackTortle"]),
+    (-1, 190, "Builder_Bob", "#a66bff", ["Voidwhisker", "Bear", "Wolf", "Rabbit", "Boar"]),
+    (1, 190, "ChrisHunter", "#4f9dff", ["PhoenixFox", "Thunderhoof", "GlowhornStag", "EmberbackBoar", "Boar",
+                                        "MossbackTortle"]),
+    (-1, 255, None, "#bfc6d1", []),
+    (1, 255, "LilPanda", "#3fe0e0", ["Puffhop", "Rabbit", "MossbackTortle", "Deer"]),
+]
+MY_ZOO = 5
+
+
+def zoo(s, owner, color, animals, rng, mine=False):
+    """A player's zoo in local space: the gate (and treadmill) face -Z, towards the avenue."""
+    wall = C(color)
+    s.box("ZooBase", (58, 1, 64), (0, 0.5, 0), C("#f3e6c6"))
+    s.box("ZooWall", (58, 3, 1.5), (0, 2.5, 31.25), wall)
+    for x in (-28.25, 28.25):
+        s.box("ZooWall", (1.5, 3, 64), (x, 2.5, 0), wall)
+    for x in (-18, 18):
+        s.box("ZooWall", (22, 3, 1.5), (x, 2.5, -31.25), wall)
+    for x in (-7.5, 7.5):
+        s.bevel("ZooGatePost", (2.6, 11, 2.6), (x, 6.5, -31.25), C("#ffffff"), b=0.5)
+    if owner is None:
+        s.sign("ZooSign", (18, 3.4, 1), (0, 12.2, -31.25), wall, [L("EMPTY ZOO")])
+        s.box("ZooGrass", (52, 0.3, 58), (0, 1.15, 0), C("#9bd67e"))
+        s.label((0, 7, 0), [L("CLAIM ME!", "#ffffff")], h=3)
+        return
+    s.sign("ZooSign", (18, 3.4, 1), (0, 12.2, -31.25), wall, [L(f"{owner}'s Zoo")])
+    s.box("ZooGrass", (52, 0.3, 58), (0, 1.15, 0), C("#86d06a"))
+    s.box("SignPost", (0.8, 6, 0.8), (-13, 3.5, -35), C("#8b5a2b"))
+    s.sign("LevelSign", (8.5, 3.6, 0.6), (-13, 7.4, -35), "#ffffff",
+           [L(f"ZOO LVL {3 + len(animals) // 2}", "#4f9dff", 0.9), L(f"{len(animals)}/8 ANIMALS", "#3a2a22", 0.8)])
+    spots = [(-18, -12), (0, -12), (18, -12), (-18, 12), (0, 12), (18, 12)]
+    for i, (x, z) in enumerate(spots):
+        aid = animals[i] if i < len(animals) else None
+        if mine and i == 1:
+            enclosure(s, x, z, color, "Thunderhoof", tint=GOLD, income="$5K/s", plus=False, rng=rng)
             continue
-        tree(s, p, rng, k=rng.uniform(1.1, 1.7), kind=rng.choice(["round", "round", "pine"]))
-    for i in range(8):
-        b = -88 + i * 7.2
-        s.box("River", (math.radians(8) * 170 * 1.2, 0.5, 13), polar(b, 170, 0.45), C("#4fb7ff"), rot=(0, -b, 0),
-              material="Water", transparency=0.1)
-    s.box("LogBridge", (4, 1.4, 18), polar(-58, 170, 1.0), C("#8b5a2b"), rot=(0, 58, 0))
-    for i, off in enumerate([(-5, 0, 2), (6, 0, -3), (1, 0, 9)]):
-        p = add(wolves, off)
-        s.animal("Wolf", add(p, (0, 0.4, 0)), yaw=toward(p, forest_cam) + (i - 1) * 25)
-        loot_beam(s, add(p, (0, 0.4, 0)), "Rare")
-    boar = polar(-80, 150)
-    s.animal("Boar", add(boar, (0, 0.4, 0)), yaw=toward(boar, forest_cam) + 30)
-    loot_beam(s, add(boar, (0, 0.4, 0)), "Rare")
-    place(s, "MossbackTortle", -64, 162, yaw=150)
-    place(s, "MossbackTortle", -44, 190, rng=rng)
-    place(s, "Deer", -50, 125, yaw=200)
-    chest(s, polar(-52, 205, 0.4), 40, k=1.4)
-    hunter = add(forest_cam, (0, -10, 0))
-    hunter = add(hunter, tuple(0.16 * (w - c) for w, c in zip(wolves, hunter)))
-    hunter = add(hunter, (-6.5, 0.4, 2.0))
-    player(s, hunter, toward(hunter, wolves), "#ff5a5a", "#2b3a6b", hair="#3a2412")
+        enclosure(s, x, z, color, aid, plus=rng.random() < 0.5, rng=rng)
+    treadmill(s, (19, 0, -39), 90, runner="#ff5a5a" if mine else rng.choice(["#45a6ff", "#ffd23f", "#3fdc5a", None]))
 
-    # Frostpeak Mountains.
-    for b, r, k in [(-30, 245, 1.3), (-17, 268, 1.6), (-4, 250, 1.2), (-32, 205, 0.9), (2, 215, 0.8)]:
-        mountain(s, polar(b, r), k, rng)
-    s.box("FrozenLake", (44, 0.6, 28), polar(-24, 200, 0.5), C("#bfe8ff"), rot=(0, 24, 0), material="Ice",
-          reflectance=0.2)
-    for _ in range(26):
-        b, r = in_biome(rng, "frost")
-        p = polar(b, r)
-        if math.dist(p, fang) < 16 or near_segment(p, fang_cam, fang, 10) or math.dist(p, polar(-24, 200)) < 26:
-            continue
-        tree(s, p, rng, leaf="#2f7a4a", k=rng.uniform(1.0, 1.4), kind="pine", snow=True)
-    place(s, "Bear", -30, 150, rng=rng)
-    place(s, "Bear", -4, 200, yaw=toward(polar(-4, 200), fang_cam) - 40)
-    s.animal("FrostfangWolf", add(fang, (0, 0.4, 0)), yaw=toward(fang, fang_cam) - 18)
-    for _ in range(90):
-        d = rng.uniform(14, 44)
-        t = d / math.dist(fang_cam, fang)
-        p = tuple(c + (f - c) * t for c, f in zip(fang_cam, fang))
-        p = add(p, (rng.uniform(-0.45, 0.45) * d, rng.uniform(-0.3, 0.4) * d, rng.uniform(-0.45, 0.45) * d))
-        s.box("Snowflake", (0.16, 0.16, 0.16), p, C("#ffffff"), rot=(45, 45, 0), material="SmoothPlastic",
+
+def shop(s, title, color, items):
+    s.box("ShopFloor", (26, 1, 18), (0, 0.5, 0), C("#caa472"))
+    s.box("ShopBack", (26, 12, 2), (0, 7, 8), C("#fff1d6"))
+    for x in (-12, 12):
+        s.box("ShopSide", (2, 12, 18), (x, 7, 0), C("#fff1d6"))
+    s.box("ShopRoof", (28, 1.5, 20), (0, 13.7, 0), C(color))
+    for i in range(7):
+        s.wedge("Awning", (4, 3, 5), (-12 + 4 * i, 11.5, -11.4), C(color if i % 2 == 0 else "#ffffff"))
+    s.sign("ShopSign", (20, 4.5, 1), (0, 17.2, -3), color, [L(title)])
+    s.box("Counter", (20, 4, 3), (0, 3, -6), C("#9c6b3f"))
+    s.box("CounterTop", (21, 0.5, 3.4), (0, 5.2, -6), C("#fff1d6"))
+    for x, kind in items:
+        if kind == "lasso":
+            with s.frame((x, 6.0, -6)):
+                lasso_loop(s, (0, 0, 0), 1.1, tilt=(90, 0, 0), n=10, thickness=0.3)
+        elif kind == "bat":
+            s.beam("Bat", (x - 0.8, 5.5, -6), (x + 0.8, 7.8, -6), 0.5, C("#d9a066"))
+        elif kind == "trap":
+            s.box("TrapIcon", (2.2, 0.5, 2.2), (x, 5.75, -6), C("#8d8d99"), reflectance=0.3)
+        else:
+            s.box("Potion", (1.2, 1.8, 1.2), (x, 6.4, -6), C(kind), material="Glass", transparency=0.1)
+    player(s, (0, 1, -2), 0, "#ffffff", "#333", hair="#6a3")
+
+
+def lobby(s, rng):
+    ground(s, (5000, 5000), (0, 0, 0), "#72c255")
+    s.box("Avenue", (40, 0.5, 330), (0, 0.25, 170), C("#e9dcb8"))
+    for x in (-20.5, 20.5):
+        s.box("AvenueEdge", (1.2, 0.7, 330), (x, 0.35, 170), C("#c9b98f"))
+
+    for i, (side, z, owner, color, animals) in enumerate(ZOOS):
+        with s.frame((62 * side, 0, z), 90 * side):
+            zoo(s, owner, color, animals, rng, mine=i == MY_ZOO)
+
+    # Arch into the Wild, with the respawn clock.
+    with s.frame((0, 0, 18), 180):
+        for x in (-26, 26):
+            s.bevel("ArchPillar", (9, 38, 9), (x, 19, 0), C("#8b5a2b"), b=1.5)
+            s.bevel("ArchCap", (11, 3, 11), (x, 39.5, 0), C("#3fa347"), b=0.8)
+        s.bevel("ArchBeam", (62, 8, 10), (0, 36, 0), C("#6b4226"), b=1.5)
+        s.sign("ArchName", (40, 5, 0.6), (0, 36, -5.3), "#4a2e18", [L("TO THE WILD", "#ffd84a")])
+        s.box("ClockFrame", (40, 15, 2.4), (0, 49, 0.6), C("#f2c14e"), reflectance=0.2)
+        s.sign("Clock", (36, 12.5, 3), (0, 49, 0), "#1d2033",
+               [L("ANIMALS RESPAWN IN", "#ffffff", 0.7), L("2:34", "#ffe14a", 1.35)], glow=True)
+        for x in (-20, 20):
+            s.box("Vine", (1.4, 20, 0.6), (x + (6 if x < 0 else -6), 26, -4.9), C("#3fa347"))
+
+    # "Create a Zoo" arch over the avenue near spawn, facing the players who spawn south of it.
+    with s.frame((0, 0, 300), 180):
+        for x in (-17, 17):
+            s.bevel("LogoPillar", (5, 22, 5), (x, 11, 0), C("#ffffff"), b=1)
+        s.box("LogoBoard", (44, 13, 2), (0, 25, 0.8), C("#3fa347"))
+        s.sign("Logo", (40, 11, 1.2), (0, 25, 0), "#2f8f3a",
+               [L("CREATE A", "#ffffff", 0.8), L("ZOO!", "#ffd23f", 1.35)])
+        for x in (-22, 22):
+            s.tri("LogoLeaf", (x, 30, 0.5), 8, 7, 2, C("#58c44a"), R=angles(0, 0, 25 if x > 0 else -25))
+    octagon(s, "Spawn", 12, 0.6, 0.9, "#ffffff")
+    for k in range(8):
+        a = math.radians(45 * k)
+        s.box("SpawnGlow", (2, 0.3, 2), (9 * math.cos(a), 1.0, 320 + 9 * math.sin(a)), C("#6fe8ff"), **NEON)
+    s.box("SpawnCenter", (8, 0.3, 8), (0, 1.0, 320), C("#6fe8ff"), rot=(0, 45, 0), **NEON)
+
+    with s.frame((-50, 0, 318), -90):
+        shop(s, "LASSO SHOP", "#e0473c", [(-7, "lasso"), (-2.5, "lasso"), (2.5, "#3fdc5a"), (7, "lasso")])
+    with s.frame((50, 0, 318), 90):
+        shop(s, "GEAR SHOP", "#4f9dff", [(-7, "bat"), (-2.5, "trap"), (2.5, "bat"), (7, "#b861ff")])
+
+    for x, z, shirt, pose in [(-8, 150, "#ff7ac8", "run"), (6, 95, "#52d273", "idle"), (-4, 40, "#ffd23f", "run"),
+                              (10, 230, "#45a6ff", "idle"), (-12, 280, "#3fe0e0", "idle"), (3, 312, "#ff9a3c", "idle")]:
+        player(s, (x, 0.5, z), rng.uniform(150, 210) if pose == "run" else rng.uniform(0, 360), shirt, "#2b3a6b",
+               hair=rng.choice(["#3a2412", "#111", "#e8c07a"]), pose=pose)
+
+    for _ in range(80):
+        x = rng.choice([-1, 1]) * rng.uniform(110, 260)
+        z = rng.uniform(-10, 420)
+        tree(s, (x, 0, z), rng, k=rng.uniform(1.0, 1.5), kind=rng.choice(["round", "round", "pine"]))
+    for _ in range(30):
+        tree(s, (rng.uniform(-100, 100), 0, rng.uniform(345, 440)), rng, k=rng.uniform(1.0, 1.4))
+
+
+# ------------------------------------------------------------ the Wild ----
+
+BIOMES = [
+    # name, speed, ground, wall, guardian (id, scale), herd
+    ("SUNNY MEADOW", "NO SPEED NEEDED", "#86d45f", "#4fa63a", ("Boar", 3.2),
+     ["Rabbit", "Rabbit", "Puffhop", "Puffhop", "Deer"]),
+    ("WHISPERING FOREST", "900 SPEED", "#4f9d3a", "#2f7a2f", ("Bear", 2.9),
+     ["Wolf", "Wolf", "Wolf", "MossbackTortle", "GlowhornStag"]),
+    ("SCORCHED DESERT", "10K SPEED", "#f2cf6b", "#d9a441", ("Sandsnapper", 2.7),
+     ["Thunderhoof", "Sandsnapper", "Boar"]),
+    ("FROSTPEAK", "40K SPEED", "#eef5ff", "#cfe6ff", ("FrostfangWolf", 2.9), ["Bear", "Moonbear", "FrostfangWolf"]),
+    ("VOLCANO", "250K SPEED", "#4a3a3a", "#2e2528", ("EmberbackBoar", 3.1), ["EmberbackBoar", "PhoenixFox"]),
+    ("CRYSTAL CAVERNS", "1M SPEED", "#5d5775", "#3e3854", ("Voidwhisker", 2.8), ["CrystalHare", "Voidwhisker"]),
+    ("SKY ISLES", "700M SPEED", "#9fdcff", None, ("SkyfinWhale", 1.5), ["StarlightKitsune"]),
+]
+HEIGHT = {"Boar": 7.5, "Bear": 11.5, "Sandsnapper": 8.5, "FrostfangWolf": 11, "EmberbackBoar": 7.5,
+          "Voidwhisker": 11}
+DEPTH = 170
+WIDTH = 230
+
+
+def biome_z(i):
+    """Front (south) edge of biome i; biomes run north (-Z) from the lobby arch."""
+    return -10 - DEPTH * i
+
+
+def speed_gate(s, z, name, speed, wall, glow):
+    with s.frame((0, 0, z), 180):
+        for x in (-WIDTH / 4 - 9, WIDTH / 4 + 9):
+            s.bevel("GateWall", (WIDTH / 2 - 18, 12, 6), (x, 6, 0), C(wall), b=1.5)
+        for x in (-18, 18):
+            s.bevel("GatePillar", (6, 24, 6), (x, 12, 0), C("#ffffff"), b=1)
+        s.box("GateBeam", (42, 4, 5), (0, 23, 0), C("#ffffff"))
+        s.sign("GateSign", (34, 8, 1), (0, 29, 0), "#1d2033",
+               [L(name, "#ffffff", 0.9), L(speed + (" RECOMMENDED" if "SPEED" in speed and "NO" not in speed else ""),
+                                              "#ffd84a", 0.8)], glow=True)
+        s.box("SpeedBarrier", (30, 20, 0.4), (0, 10.5, 0), C(glow), transparency=0.72, material="Glass",
               shadow=False)
-    chest(s, polar(-8, 230, 0.4), 10, k=1.7)
 
-    # Crystal Caverns.
-    with s.frame(polar(25, 250), -25):
-        for i, (w, h, d, y, col) in enumerate([(80, 30, 50, 0, "#4e4863"), (62, 22, 40, 30, "#5d5775"),
-                                                (40, 16, 28, 52, "#6d6784")]):
-            s.bevel("CaveRock", (w, h, d), (0, y + h / 2, 0), C(col), b=5)
-        s.box("CaveMouth", (18, 20, 2), (0, 10, -25.2), C("#120d1e"))
-        for x, k in ((-4.5, 7), (4, 6.5), (0, 5), (-1, 5.5)):
-            rock(s, (x, 0, -28 - (k - 5) * 0.8), (k, k * 0.85, k), "#8d8d99", rng)
-        for x, y, z, h, col in [(-22, 30, -8, 22, "#7ff0ff"), (18, 30, -10, 18, "#ff8fe0"), (-8, 52, -6, 16, "#b07bff"),
-                                (6, 68, 0, 20, "#7ff0ff"), (30, 0, -26, 16, "#b07bff"), (-32, 0, -26, 14, "#ff8fe0")]:
-            crystal(s, (x, y, z), h, col, rng)
-    for _ in range(22):
-        b, r = in_biome(rng, "crystal", pad_r=6)
-        if r > 215:
+
+def herd(s, center, ids, rng, spread=26):
+    spots = []
+    for i, aid in enumerate(ids):
+        a = 2 * math.pi * i / max(1, len(ids)) + rng.uniform(-0.3, 0.3)
+        p = add(center, (math.cos(a) * spread * rng.uniform(0.7, 1.0), 0.4, math.sin(a) * spread * 0.6))
+        s.animal(aid, p, yaw=rng.uniform(0, 360))
+        spots.append(p)
+    return spots
+
+
+def guardian(s, pos, aid, k, face):
+    s.animal(aid, pos, yaw=toward(pos, face), scale=k)
+    s.cyl("GuardianZone", 0.2, 70, add(pos, (0, 0.35, 0)), C("#ff3b3b"), R=angles(0, 0, 90), transparency=0.8, **NEON)
+
+
+def wild(s, rng):
+    for i, (name, speed, ground_col, wall, (gid, gk), ids) in enumerate(BIOMES):
+        z0 = biome_z(i)
+        zc = z0 - DEPTH / 2
+        if name != "SKY ISLES":
+            s.box("BiomeGround", (WIDTH + 20, 0.6, DEPTH), (0, 0.3, zc), C(ground_col))
+            for x in (-WIDTH / 2 - 8, WIDTH / 2 + 8):
+                s.bevel("BiomeWall", (14, 26, DEPTH), (x, 13, zc), C(wall), b=3)
+        glow = {"SUNNY MEADOW": "#8cff7a", "WHISPERING FOREST": "#8cff7a", "SCORCHED DESERT": "#ffcf5a",
+                "FROSTPEAK": "#8fe9ff", "VOLCANO": "#ff7a3a", "CRYSTAL CAVERNS": "#c38bff",
+                "SKY ISLES": "#ff9cf2"}[name]
+        if i > 0:
+            speed_gate(s, z0, name, speed, BIOMES[i - 1][3] or "#ffffff", glow)
+        else:
+            s.sign("MeadowSign", (22, 5, 1), (-40, 8, z0 + 2), "#3fa347", [L(name), L(speed, "#ffffff", 0.7)],
+                   R=angles(0, 180, 0))
+            s.box("MeadowSignPost", (1, 6, 1), (-40, 3, z0 + 2), C("#8b5a2b"))
+
+        gpos = (rng.uniform(-15, 15), 0.6, zc - 40)
+        face = (0, 0, z0)
+        herd_c = add(gpos, (0, 0, 35))
+        if name == "WHISPERING FOREST":
+            gpos, face, herd_c = (-12, 0.6, z0 - 112), (6, 0, z0 - 70), (-62, 0.6, z0 - 120)
+        elif name == "SCORCHED DESERT":
+            gpos, herd_c = (-34, 0.6, z0 - 118), (-70, 0.6, z0 - 70)
+        if name == "SKY ISLES":
+            for dx, dz, y, size in [(-50, -40, 30, 50), (40, -20, 40, 44), (0, -110, 55, 60), (-70, -120, 45, 40),
+                                    (70, -100, 60, 46)]:
+                island(s, (dx, y, z0 + dz), size, rng, trees=2)
+            for dx, dz, y in [(-10, -60, 20), (60, -60, 70), (-80, -70, 70)]:
+                cloud(s, (dx, y, z0 + dz), 1.6, rng)
+            s.animal("SkyfinWhale", (20, 45, z0 - 70), yaw=160, scale=1.5)
+            s.animal("StarlightKitsune", (0, 57.5, z0 - 110), yaw=180)
             continue
-        crystal(s, polar(b, r, 0.3), rng.uniform(10, 24), rng.choice(["#7ff0ff", "#ff8fe0", "#b07bff"]), rng)
-    place(s, "CrystalHare", 20, 190, yaw=190)
-    place(s, "Voidwhisker", 32, 205, yaw=210)
-    chest(s, polar(12, 215, 0.4), -20, k=2.0)
+        guardian(s, gpos, gid, gk, face)
+        herd(s, herd_c, ids, rng)
+        s.label(add(gpos, (0, HEIGHT.get(gid, 10) * gk + 4, 0)), [L("GUARDIAN", "#ff4a4a")], h=4, aspect=3.4)
 
-    # Scorched Canyon at sunset.
-    for b, r, k in [(50, 235, 1.3), (64, 258, 1.2), (80, 238, 1.3), (90, 172, 0.9), (44, 168, 0.8)]:
-        mesa(s, polar(b, r), k, rng)
-    for b, r, w, d in [(70, 200, 26, 12), (56, 205, 16, 9), (82, 150, 14, 8)]:
-        s.box("LavaRim", (w + 3, 0.6, d + 3), polar(b, r, 0.4), C("#3a2a2a"), rot=(0, -b + 20, 0))
-        s.box("Lava", (w, 0.6, d), polar(b, r, 0.55), C("#ff6a1a"), rot=(0, -b + 20, 0), **NEON)
-    for _ in range(12):
-        b, r = in_biome(rng, "canyon")
-        p = polar(b, r)
-        if math.dist(p, snap) < 22 or near_segment(p, canyon_cam, snap, 12):
-            continue
-        with s.frame(p, rng.uniform(0, 90)):
-            s.box("Cactus", (1.6, 6, 1.6), (0, 3, 0), C("#3fa347"))
-            s.box("CactusArm", (1.2, 3, 1.2), (1.4, 4, 0), C("#3fa347"))
-    s.animal("Sandsnapper", add(snap, (0, 0.4, 0)), yaw=toward(snap, canyon_cam) + 25)
-    loot_beam(s, add(snap, (0, 0.4, 0)), "Legendary")
-    ember = polar(72, 160)
-    s.animal("EmberbackBoar", add(ember, (0, 0.4, 0)), yaw=toward(ember, canyon_cam) - 20)
-    loot_beam(s, add(ember, (0, 0.4, 0)), "Epic")
-    place(s, "Thunderhoof", 76, 214, yaw=toward(polar(76, 214), canyon_cam) + 70)
-    place(s, "PhoenixFox", 56, 218, yaw=toward(polar(56, 218), canyon_cam) - 10)
-    chest(s, polar(74, 250, 0.4), -30, k=2.2)
+        if name in ("SUNNY MEADOW",):
+            for _ in range(60):
+                flower(s, (rng.uniform(-100, 100), 0.6, rng.uniform(z0 - 160, z0 - 10)),
+                       rng.choice(["#ff7ac8", "#ffd23f", "#ffffff", "#ff5a5a"]), rng)
+            for _ in range(12):
+                tree(s, (rng.choice([-1, 1]) * rng.uniform(70, 105), 0.6, rng.uniform(z0 - 160, z0 - 10)), rng)
+        elif name == "WHISPERING FOREST":
+            for _ in range(46):
+                x = rng.choice([-1, 1]) * rng.uniform(45, 108)
+                tree(s, (x, 0.6, rng.uniform(z0 - 165, z0 - 12)), rng, k=rng.uniform(1.2, 1.8),
+                     kind=rng.choice(["round", "pine"]))
+            s.box("River", (WIDTH + 20, 0.5, 12), (0, 0.65, z0 - 140), C("#4fb7ff"), material="Water", transparency=0.1)
+            s.box("LogBridge", (18, 1.4, 16), (30, 1.1, z0 - 140), C("#8b5a2b"))
+        elif name == "SCORCHED DESERT":
+            for x, dz, k in [(-85, -50, 1.1), (85, -110, 1.2), (-80, -140, 0.9), (80, -30, 0.8)]:
+                mesa(s, (x, 0.6, z0 + dz), k, rng)
+            for _ in range(16):
+                spot = (rng.uniform(-100, 100), 0.6, rng.uniform(z0 - 160, z0 - 15))
+                turn = rng.uniform(0, 90)
+                if math.dist((spot[0], spot[2]), (0, z0 - 20)) < 40:
+                    continue
+                with s.frame(spot, turn):
+                    s.box("Cactus", (1.8, 7, 1.8), (0, 3.5, 0), C("#3fa347"))
+                    s.box("CactusArm", (1.3, 3.2, 1.3), (1.6, 4.5, 0), C("#3fa347"))
+            s.sign("SpeedPost", (10, 5, 0.8), (gpos[0] + 26, 9, gpos[2] + 32), "#ff9a3c",
+                   [L("10K", "#ffffff", 1.1), L("RECOMMENDED", "#ffffff", 0.6)], R=angles(0, 200, 0))
+            s.box("SpeedPostPole", (1, 7, 1), (gpos[0] + 26, 3.5, gpos[2] + 32), C("#8b5a2b"))
+        elif name == "FROSTPEAK":
+            for x, dz, k in [(-80, -60, 1.2), (80, -120, 1.4), (-70, -150, 1.0), (75, -40, 0.9)]:
+                mountain(s, (x, 0.6, z0 + dz), k, rng)
+            for _ in range(20):
+                tree(s, (rng.choice([-1, 1]) * rng.uniform(40, 100), 0.6, rng.uniform(z0 - 160, z0 - 15)), rng,
+                     leaf="#2f7a4a", k=rng.uniform(1.0, 1.4), kind="pine", snow=True)
+            s.box("FrozenLake", (50, 0.6, 30), (-45, 0.7, z0 - 95), C("#bfe8ff"), material="Ice", reflectance=0.2)
+        elif name == "VOLCANO":
+            with s.frame((0, 0.6, z0 - 150)):
+                for w, h, y in [(90, 20, 0), (66, 18, 20), (44, 16, 38)]:
+                    s.bevel("Volcano", (w, h, w * 0.6), (0, y + h / 2, 0), C("#3a2f33"), b=6)
+                s.box("Crater", (26, 3, 14), (0, 54.5, 0), C("#ff6a1a"), **NEON)
+            for x, dz in [(-60, -60), (55, -90), (-30, -120)]:
+                s.box("Lava", (30, 0.6, 12), (x, 0.7, z0 + dz), C("#ff6a1a"), rot=(0, rng.uniform(-30, 30), 0), **NEON)
+        elif name == "CRYSTAL CAVERNS":
+            for _ in range(18):
+                crystal(s, (rng.choice([-1, 1]) * rng.uniform(30, 100), 0.6, rng.uniform(z0 - 160, z0 - 15)),
+                        rng.uniform(10, 26), rng.choice(["#7ff0ff", "#ff8fe0", "#b07bff"]), rng)
 
-    # Sky Isles floating high above the far side.
-    for b, r, y, size in [(-18, 330, 62, 34), (-2, 360, 80, 40), (14, 330, 70, 30), (6, 405, 100, 36),
-                          (-14, 395, 92, 28)]:
-        island(s, polar(b, r, y), size, rng, trees=1 if size < 35 else 2)
-    for b, r, y, k in [(-8, 330, 50, 1.4), (20, 375, 72, 1.6), (-24, 360, 76, 1.2), (8, 300, 88, 1.0)]:
-        cloud(s, polar(b, r, y), k, rng)
-    place(s, "StarlightKitsune", -2, 360, yaw=200, y=81.8)
-    place(s, "SkyfinWhale", 8, 345, yaw=230, y=58, beam=False)
-    loot_beam(s, polar(8, 345, 58), "Mythic", h=110)
 
-    # Other hunters, and hills and trees around the edge of the grounds.
-    for b, r, yaw, shirt in [(-20, 118, 20, "#45a6ff"), (62, 108, -60, "#ffd23f"), (10, 60, 0, "#b861ff"),
-                             (-140, 30, 200, "#3fdc5a")]:
-        player(s, polar(b, r, 0.4), -b + yaw, shirt, "#2b3a6b", hair=rng.choice(["#3a2412", "#111", "#e8c07a"]))
-    for _ in range(90):
-        b, r = rng.uniform(0, 360), rng.uniform(300, 470)
-        if -30 < ((b + 180) % 360) - 180 < 30:
-            continue
-        tree(s, polar(b, r), rng, k=rng.uniform(1.2, 1.8), kind=rng.choice(["round", "pine"]))
-    for b in range(0, 360, 20):
-        k = rng.uniform(1.2, 2.2)
-        s.bevel("Hill", (70 * k, 22 * k, 50 * k), polar(b + rng.uniform(-6, 6), rng.uniform(520, 620), 8 * k),
-                C(rng.choice(["#6cbf4a", "#78c95a", "#5fae45"])), b=12 * k, R=angles(0, -b, 0))
+# ----------------------------------------------------------------- HUD ----
 
-    s.shot("overview", (20, 245, 205), (0, 0, -135), fov=56, shadow={"center": [0, 0, -130], "radius": 330})
-    s.shot("forest", forest_cam, add(wolves, (0, 4, 0)), fov=50, shadow={"center": list(wolves), "radius": 70})
-    s.shot("canyon", canyon_cam, add(snap, (0, 5, 0)), fov=56, shadow={"center": list(snap), "radius": 80}, env={
-        "sky": [[0, "#40306e"], [0.45, "#d4655a"], [0.8, "#ffab6a"], [1, "#ffd9a0"]],
-        "fog": ["#f2a67a", 170, 700], "sun": {"dir": [-1.0, 0.32, 0.25], "color": "#ffb070", "intensity": 2.6},
-        "hemi": ["#ffcf9e", "#6a4a5a", 1.15], "bloom": [0.7, 0.55, 0.85]})
-    s.shot("viewfinder", fang_cam, add(fang, (0, 5.6, 0)), fov=29, shadow={"center": list(fang), "radius": 60},
-           env={"sky": [[0, "#6aa9e0"], [0.6, "#c4e2ff"], [1, "#f4fbff"]], "fog": ["#e8f4ff", 80, 520]},
-           hud=viewfinder_hud())
+def pill(x_css, y_css, html, size=30, color="#ffffff", extra=""):
+    return f'<div class="pill game" style="{x_css};{y_css};font-size:{size}px;color:{color};{extra}">{html}</div>'
+
+
+ICONS = {
+    "LASSO": '<div style="position:absolute;top:12px;left:24px;width:32px;height:26px;border-radius:50%;'
+             'border:6px solid #c9a064"></div><div style="position:absolute;top:40px;left:52px;width:6px;height:16px;'
+             'background:#c9a064;transform:rotate(-30deg)"></div>',
+    "BAT": '<div style="position:absolute;top:10px;left:40px;width:12px;height:46px;border-radius:6px;'
+           'background:#d9a066;transform:rotate(35deg)"></div>',
+    "TRAP": '<div style="position:absolute;top:18px;left:22px;width:40px;height:26px;border-radius:0 0 20px 20px;'
+            'background:#9a9aa8;border-top:6px dotted #e6e6ee"></div>',
+}
+
+
+def hotbar(selected):
+    items = [("LASSO", "#c9a064"), ("BAT", "#d9a066"), ("TRAP", "#8d8d99")]
+    out = ""
+    for i, (name, col) in enumerate(items):
+        border = "#ffd84a" if name == selected else "#ffffff"
+        out += (f'<div class="game" style="position:absolute;left:calc(50% + {(i - 1) * 104 - 46}px);bottom:26px;'
+                f'width:92px;height:92px;border-radius:16px;border:5px solid {border};background:rgba(20,16,40,.72);'
+                f'display:flex;align-items:flex-end;justify-content:center;font-size:18px;padding-bottom:6px;'
+                f'box-sizing:border-box;box-shadow:0 5px 0 rgba(0,0,0,.35)">'
+                f'{ICONS[name]}{i + 1} {name}</div>')
+    return out
+
+
+def top_bar(coins="$48,210", income="+$1,250/s", speed="12,400"):
+    return (pill("left:28px", "top:24px", f'{coins}<span style="font-size:22px;color:#7dff8a">&nbsp;{income}</span>',
+                 36, "#ffd84a")
+            + pill("right:28px", "top:24px", f'SPEED <span style="color:#44ff88">{speed}</span>', 32))
+
+
+def lobby_hud():
+    return (top_bar() + pill("left:50%", "top:20px", 'RESPAWN IN <span style="color:#ffd84a">2:34</span>', 32,
+                             extra="transform:translateX(-50%)")
+            + "".join(f'<div class="btn game" style="left:28px;top:{150 + i * 108}px;width:84px;height:84px;'
+                      f'background:{bg};display:flex;align-items:center;justify-content:center;font-size:18px">{n}</div>'
+                      for i, (n, bg) in enumerate([("SHOP", "#ffb52e"), ("ZOO", "#52d273"), ("GEAR", "#45a6ff"),
+                                                   ("REBIRTH", "#ff5a7a")]))
+            + hotbar("LASSO"))
+
+
+def lasso_hud():
+    return (top_bar()
+            + pill("left:50%", "top:20px", 'SCORCHED DESERT <span style="font-size:22px;color:#ffd84a">10K SPEED</span>',
+                   30, extra="transform:translateX(-50%)")
+            + '<div class="btn game" style="right:60px;bottom:60px;width:150px;height:150px;background:#ffb52e;'
+              'display:flex;align-items:center;justify-content:center;text-align:center;font-size:26px">THROW<br>LASSO</div>'
+            + hotbar("LASSO"))
+
+
+def escape_hud():
+    return (top_bar(speed='1,450 <span style="color:#ff5a5a;font-size:22px">-30%</span>')
+            + '<div class="game" style="position:absolute;left:50%;top:92px;transform:translateX(-50%);font-size:54px;'
+              'color:#ff5a5a">RUN TO YOUR ZOO!</div>'
+            + '<div class="game" style="position:absolute;left:50%;top:160px;transform:translateX(-50%);font-size:28px">'
+              '&#9660; 212 STUDS &#9660;</div>'
+            + pill("left:28px", "top:110px", 'CARRYING: <span style="color:#45a6ff">WOLF</span>', 26)
+            + pill("left:28px", "top:176px", '<span style="color:#ff5a5a">GUARDIAN IS CHASING!</span>', 24)
+            + hotbar("BAT"))
+
+
+def gate_hud():
+    return (top_bar()
+            + '<div class="game" style="position:absolute;left:50%;top:40%;transform:translateX(-50%);font-size:44px;'
+              'color:#ff5a5a;text-align:center">TOO SLOW!<br><span style="font-size:28px;color:#fff">'
+              'YOU NEED 40K SPEED &middot; YOU HAVE 12,400</span></div>'
+            + '<div class="game" style="position:absolute;left:50%;top:calc(40% + 110px);transform:translateX(-50%);'
+              'font-size:24px;color:#44ff88">TRAIN ON YOUR TREADMILL!</div>'
+            + hotbar("LASSO"))
+
+
+def tame_hud():
+    confetti = "".join(
+        f'<div style="position:absolute;left:{x}%;top:{y}%;width:14px;height:22px;background:{c};'
+        f'transform:rotate({r}deg);border-radius:3px"></div>'
+        for x, y, c, r in [(30, 12, "#ff5a5a", 20), (36, 30, "#ffd23f", -30), (62, 16, "#45a6ff", 45),
+                           (70, 34, "#52d273", 10), (25, 40, "#b861ff", -60), (75, 22, "#ff7ac8", 70),
+                           (44, 8, "#3fe0e0", 15), (56, 38, "#ffd23f", -15), (20, 22, "#52d273", 35),
+                           (80, 44, "#ffd23f", -40)])
+    return (top_bar(coins="$53,420", income="+$6,250/s") + confetti
+            + '<div class="game" style="position:absolute;left:50%;top:9%;transform:translateX(-50%);font-size:76px;'
+              'color:#ffd23a">TAMED!</div>'
+            + '<div style="position:absolute;right:5%;top:30%;width:430px;padding:18px 0;'
+              'border-radius:22px;border:6px solid #ffd23a;background:linear-gradient(#5a3fb0,#1b1530);text-align:center;'
+              'box-shadow:0 8px 0 rgba(0,0,0,.35)">'
+              '<div class="game" style="font-size:40px;color:#ffd23a">GOLDEN THUNDERHOOF</div>'
+              '<div class="game" style="font-size:26px;color:#ffcc33;margin-top:6px">LEGENDARY &middot; GOLDEN x2</div>'
+              '<div class="game" style="font-size:34px;color:#5dff7a;margin-top:8px">$5,000/S</div></div>'
+            + '<div class="btn game" style="right:calc(5% - 20px);top:calc(30% - 36px);width:74px;height:74px;background:#ff3b5c;'
+              'display:flex;align-items:center;justify-content:center;font-size:22px">NEW!</div>'
+            + hotbar("LASSO"))
+
+
+# --------------------------------------------------------------- world ----
+
+def build_world():
+    rng = random.Random(21)
+    s = Scene("world", env={
+        "sky": [[0, "#3f9fff"], [0.55, "#96d0ff"], [1, "#dff2ff"]], "fog": ["#dff2ff", 420, 1150],
+        "sun": {"dir": [-0.5, 1.0, 0.45], "intensity": 2.5}, "hemi": ["#ffffff", "#8fb070", 1.45],
+        "bloom": [0.5, 0.5, 0.9],
+    })
+    lobby(s, rng)
+    wild(s, rng)
+
+    # My zoo: ChrisHunter, right side of the avenue.
+    side, zz = ZOOS[MY_ZOO][0], ZOOS[MY_ZOO][1]
+    zoo_center = (62 * side, 0, zz)
+
+    # Desert: throwing a lasso at a Thunderhoof in front of the giant Sandsnapper.
+    z0 = biome_z(2)
+    thunder = (8, 0.9, z0 - 60)
+    thrower = (-4, 0.6, z0 - 28)
+    s.animal("Thunderhoof", thunder, yaw=toward(thunder, (60, 0, z0 - 60)))
+    s.label(add(thunder, (0, 16.5, 0)), [L("THUNDERHOOF", "#ffcc33"), L("LEGENDARY", "#ffffff", 0.7)], h=2.4)
+    hands = player(s, thrower, toward(thrower, thunder), "#ff5a5a", "#2b3a6b", hair="#3a2412", pose="throw")
+    neck = model_point(thunder, toward(thunder, (60, 0, z0 - 60)), 1, (0, 10.6, -2.8))
+    loop_c = add(neck, (0, 2.2, 0))
+    edge = lasso_loop(s, loop_c, 3.4, tilt=(12, 0, -10))
+    rope(s, bezier(hands["R"], add(scale(add(hands["R"], edge), 0.5), (0, 13, 0)), edge, 16))
+    gpos = (-6, 0.6, z0 - 125)
+    desert_cam = (10, 10, z0 - 6)
+
+    # Forest: escaping with a lassoed Wolf, the giant Bear chasing, a rival with a bat.
+    zf = biome_z(1)
+    runner = (6, 0.6, zf - 70)
+    wolf = (-5, 0.9, zf - 92)
+    runner_yaw = 180
+    hands_r = player(s, runner, runner_yaw, "#45a6ff", "#2b3a6b", hair="#e8c07a", pose="drag")
+    wolf_yaw = toward(wolf, runner)
+    s.animal("Wolf", wolf, yaw=wolf_yaw)
+    wolf_neck = model_point(wolf, wolf_yaw, 1, (0, 6.2, -2.8))
+    near = lasso_loop(s, wolf_neck, 1.9, tilt=(0, 0, 0), n=10)
+    rope(s, bezier(hands_r["R"], add(scale(add(hands_r["R"], near), 0.5), (0, -1.2, 0)), near, 10))
+    rival = (-17, 0.6, zf - 62)
+    player(s, rival, toward(rival, runner), "#ffd23f", "#4a3a2a", hair="#111", pose="bat")
+    bear_trap(s, (13, 0.6, zf - 50), 20)
+    forest_cam = (12, 7.5, zf - 30)
+
+    # Frostpeak speed gate seen from the desert.
+    zg = biome_z(3)
+    gate_cam = (12, 12, zg + 72)
+    player(s, (4, 0.6, zg + 34), 0, "#ff5a5a", "#2b3a6b", hair="#3a2412")
+
+    s.shot("lobby", (-165, 140, 430), (0, 0, 135), fov=50, shadow={"center": [0, 0, 170], "radius": 230},
+           hud=lobby_hud())
+    zc = zoo_center
+    s.shot("zoo", (4, 24, zc[2] + 26), (zc[0] - 2, 2, zc[2] - 4), fov=55,
+           shadow={"center": [zc[0], 0, zc[2]], "radius": 75})
+    s.shot("wild", (150, 190, 60), (0, 0, -420), fov=52, shadow={"center": [0, 0, -330], "radius": 420},
+           env={"fog": ["#dff2ff", 650, 1800]})
+    s.shot("lasso", desert_cam, (-10, 9, z0 - 75), fov=60, shadow={"center": list(thunder), "radius": 110},
+           hud=lasso_hud())
+    s.shot("escape", forest_cam, add(runner, (-3, 6, -26)), fov=60, shadow={"center": list(runner), "radius": 90},
+           hud=escape_hud(), hide_sprites=True)
+    s.shot("gate", gate_cam, (0, 16, zg - 100), fov=55, shadow={"center": [0, 0, zg - 40], "radius": 140},
+           hud=gate_hud())
+    # Taming: close-up of the golden Thunderhoof in my zoo (enclosure 2, front row).
+    to_world = lambda local: add(zoo_center, apply(angles(0, 90 * side, 0), local))
+    enc = to_world((0, 0, -12))
+    s.shot("tame", to_world((14, 13, -27)), add(enc, (0, 4, 0)), fov=52,
+           shadow={"center": list(enc), "radius": 50}, hud=tame_hud(), hide_sprites=True)
+    r = random.Random(3)
+    for _ in range(16):
+        p = add(enc, (r.uniform(-6, 6), r.uniform(2, 11), r.uniform(-6, 6)))
+        s.box("Sparkle", (0.45, 0.45, 0.45), p, C("#ffe066"), rot=(45, 45, 0), **NEON)
     return s
 
 
 def main():
     out = HERE / "build"
     out.mkdir(exist_ok=True)
-    for scene in (build_hub(), build_grounds()):
-        (out / f"{scene.id}.json").write_text(json.dumps(scene.export()))
-        print(f"{scene.id}: {len(scene.parts)} parts, {len(scene.models)} animals, {len(scene.shots)} shots")
+    world = build_world()
+    (out / "world.json").write_text(json.dumps(world.export()))
+    print(f"world: {len(world.parts)} parts, {len(world.models)} animals, {len(world.shots)} shots")
 
 
 if __name__ == "__main__":
