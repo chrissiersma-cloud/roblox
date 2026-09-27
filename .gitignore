@@ -1,0 +1,10 @@
+# Place-bestanden die met "rojo build" gemaakt worden
+*.rbxl
+*.rbxlx
+*.rbxm
+*.rbxmx
+*.lock
+
+# Systeembestanden
+.DS_Store
+Thumbs.db
