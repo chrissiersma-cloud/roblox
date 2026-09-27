@@ -8,3 +8,8 @@
 # Systeembestanden
 .DS_Store
 Thumbs.db
+
+# Tool build output
+tools/animal-models/build/
+tools/rbxm-writer/target/
+__pycache__/
