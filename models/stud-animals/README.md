@@ -1,26 +1,29 @@
-# Create a Zoo – dieren met noppen (low-poly)
+# Create a Zoo – blokkige dieren met noppen
 
-Twaalf dieren, helemaal in Blender gemaakt, in dezelfde low-poly stijl en met de klassieke Roblox-noppen in de
-textuur: kleine vierkante noppen met schuine randjes (licht aan de boven- en linkerkant, donker aan de onder- en
-rechterkant), in een dicht, regelmatig raster over elk vlak, net als de studs-textuur van Roblox. De noppen zijn
+Twaalf dieren, helemaal in Blender gemaakt, in een blokkige cartoonstijl: elk dier is opgebouwd uit dikke blokken
+met afgeschuinde randen, net als modellen die in Studio uit parts zijn gebouwd. Ze hebben felle kleuren, grote
+cartoonogen met pupillen (sommige met wenkbrauwen) en de klassieke Roblox-noppen in de textuur: vierkante noppen
+met een schuin randje (licht aan de boven- en linkerkant, donker aan de onder- en rechterkant). De noppen zijn
 bij alle dieren even groot, zodat ze bij elkaar en bij je map passen. De vier zeldzaamste dieren (Legendary,
 Mythic en Secret) hebben ook delen die gloeien, vonken, vlammen en een lichtje, en alle dieren vanaf Rare krijgen
 glinsters in de kleur van hun zeldzaamheid.
 
-| Dier | Zeldzaamheid | Hoogte | Driehoekjes | Kleuren |
+| Dier | Zeldzaamheid | Hoogte | Driehoekjes | Hoe hij eruitziet |
 |---|---|---|---|---|
-| Deer | Common | 6 studs (met gewei) | 1.040 | bruin, crème buik/borst, wit onder de staart, lichtbruin gewei, donkerbruine hoeven en neus |
-| Rabbit | Common | 3,3 studs (tot de oorpunten) | 584 | bruin, crème buik/borst/snuit, roze binnenkant oren en neus, wit staartje |
-| Fox | Common | 3,2 studs (tot de oorpunten) | 776 | oranje, witte borst/buik/wangen/staartpunt, zwarte sokken en oren |
-| Raccoon | Common | 2,3 studs (tot de oren) | 704 | grijs, zwart masker met witte randjes om de ogen, witte snuit, staart met zwarte ringen, zwarte pootjes |
-| Wolf | Rare | 4,1 studs (tot de oorpunten) | 842 | grijs, donker zadel op de rug, lichte buik/borst/snuit/poten, donkere staartpunt |
-| Boar | Rare | 2,5 studs (met manen) | 788 | bruin, donkere manen, roze snuit met neusgaten, witte slagtanden, donkere hoeven |
-| Owl | Rare | 2,9 studs (met oorpluimen) | 542 | bruin, lichte borst en gezicht, donkere vleugels, gele ogen, oranje snavel en poten |
-| Bear | Epic | 4,2 studs (tot de oren) | 724 | bruin, lichtbruine snuit en binnenkant oren, donkere poten |
-| Thunderhoof | Legendary | 7,8 studs (met gewei) | 1.126 | wit en lichtblauw, gouden hoeven, blauwe ogen; gloeit: gele bliksemschichten als gewei, op de flanken en uit de staart, en blauwe manen |
-| Voidwhisker | Mythic | 5 studs (met staart) | 928 | bijna zwart paars, roze ogen, paars in de oren; gloeit: een rune op het voorhoofd, een halsband met roze edelsteen, snorharen, twee zwevende edelstenen en een kristal op de staart |
-| Phoenix | Mythic | 5,8 studs (met vleugels) | 2.236 | een echte vuurvogel, extra gedetailleerd: rond lijf, rood met een oranje borst, een kraag van vlammenveren om de hals, een haaksnavel en gouden ringen om de ogen, grote vleugels met lange slagpennen en kortere veren aan de achterrand, vijf lange staartveren die van rood via oranje naar geel gaan, gouden poten met zwarte klauwen; gloeit: vijf vlammenpluimen op de kop en vlammen aan de vleugels en de staart |
-| Gorilla King | Secret | 5,7 studs (met kroon) | 4.062 | helemaal dripped out en extra gedetailleerd: ronde vormen, zwarte vacht, zilveren rug, grijze borst en gezicht, zware wenkbrauwen, oranje ogen met pupillen, een brede neus, oren, knokkels en tenen; gloeit: een gouden kroon met punten, balletjes en robijnen; glimt: gouden grills met diamanten tanden, een dikke gouden ketting met een groot medaillon met diamant, een gouden oorring, en gouden armbanden met diamanten en ringen om de knokkels |
+| Deer | Common | 5,6 studs (met gewei) | 1.884 | bruin met crème vlekjes op de rug, crème borst en buik, gewei van blokjes, donkere hoeven |
+| Rabbit | Common | 3,3 studs (tot de oorpunten) | 1.212 | lichtbruin, crème snuit en buik, lange oren die van binnen roze zijn, roze wangetjes, tandjes, wit staartje, grote achtervoeten |
+| Fox | Common | 3,2 studs (tot de oorpunten) | 1.404 | oranje, witte borst, buik en pluizige wangen, zwarte oorpuntjes en sokken, grote pluimstaart met witte punt |
+| Raccoon | Common | 2,2 studs (tot de oren) | 1.572 | grijs, zwart masker met witte wenkbrauwen, witte snuit, staart met zwarte ringen, zwarte pootjes |
+| Wolf | Rare | 4,3 studs (tot de oorpunten) | 1.428 | grijs met een donkere rug, lichte borst, kraag, buik en poten, gele ogen met stoere wenkbrauwen, puntoren, hangende staart met donkere punt |
+| Boar | Rare | 2,3 studs (met manen) | 1.332 | bruin, stekelige donkere manen, roze snuit met neusgaten, witte slagtanden, boze wenkbrauwen, donkere hoeven |
+| Owl | Rare | 3,2 studs (met oorpluimen) | 1.194 | bruin, licht gezicht en lichte borst met veertjes, grote gele ogen met wenkbrauwen, oranje snavel en tenen, donkere vleugels met strepen |
+| Bear | Epic | 3,8 studs (tot de oren) | 1.212 | dik en bruin, lichte snuit en binnenkant oren, donkere poten |
+| Thunderhoof | Legendary | 8 studs (met gewei) | 2.982 | groot, wit en lichtblauw, blauwe ogen met wenkbrauwen, gouden hoeven; gloeit: gele bliksemschichten als gewei, op de flanken en uit de staart, en blauwe stekels als manen |
+| Voidwhisker | Mythic | 5,1 studs (met staart) | 1.832 | schaduwkat, bijna zwart paars, roze ogen met spleetpupillen, paars in de oren; gloeit: een rune op het voorhoofd, een halsband, snorharen, drie roze edelstenen (op de halsband en twee zwevend) en een kristal op de staart |
+| Phoenix | Mythic | 4,8 studs (met kuif), 7 studs breed met gespreide vleugels | 4.128 | vuurvogel: rood met een oranje borst, een kraag van oranje en gele veren, haaksnavel, stoere gouden wenkbrauwen, grote vleugels met waaiers van rode, oranje en gele veren, drie lange staartveren, gouden poten met zwarte klauwen; gloeit: een vlammenkuif en vlammen aan de vleugels en de staart |
+| Gorilla King | Secret | 5,3 studs (met kroon) | 3.420 | helemaal dripped out: zwarte vacht, zilveren rug, grijze borst, gezicht en vuisten, zware wenkbrauw, oranje ogen; gloeit: een gouden kroon met punten en robijnen; glimt: gouden grills met diamanten tanden, een dikke gouden ketting met een medaillon met diamant, een gouden oorring en gouden armbanden met diamanten |
+
+![Alle twaalf dieren](../../previews/stud_animals_lineup.png)
 
 ![Hert](../../previews/stud_deer_views.png)
 ![Konijn](../../previews/stud_rabbit_views.png)
@@ -35,10 +38,9 @@ glinsters in de kleur van hun zeldzaamheid.
 ![Phoenix](../../previews/stud_phoenix_views.png)
 ![Gorilla King](../../previews/stud_gorillaking_views.png)
 
-Een Roblox-speler is ongeveer 5 studs hoog. De meeste dieren hebben 500 tot 1.300 driehoekjes. Kleine dieren
-hebben er minder nodig, want meer vlakjes zou je daar niet zien. De Phoenix en de Gorilla King zijn extra
-gedetailleerd (2.236 en 4.062 driehoekjes, met ronde vormen, zie hieronder). Een Roblox-MeshPart mag er tot 20.000 hebben, dus alle
-dieren zijn erg licht. Bij alle dieren geldt:
+Een Roblox-speler is ongeveer 5 studs hoog. De gewone dieren hebben 1.200 tot 1.900 driehoekjes, de vier
+zeldzaamste meer, omdat ze meer onderdelen hebben (bliksem, vlammen, veren, bling). Een Roblox-MeshPart mag er
+tot 20.000 hebben, dus alle dieren zijn licht. Bij alle dieren geldt:
 
 - **Onderdelen:** `Body` (met kop, oren, staart en de rest) en de poten `LegFL`, `LegFR`, `LegBL`, `LegBR`
   (F = voor, B = achter, L = links, R = rechts). Bij de Gorilla King zijn `LegFL` en `LegFR` de armen. De uil en
@@ -75,48 +77,43 @@ en kleuren van één dier, en `stud_animal.py` doet de rest (noppen, textuur, ex
 
 ## Hoe het gemaakt is
 
-- **Low-poly:** elk onderdeel is een rij platte "ringen" (rechthoeken met schuine hoeken) die met grote, platte
-  vlakken verbonden zijn. Elk vlak is precies plat en krijgt één kleur, zonder verloop. De dieren zijn vlak
-  belicht: je ziet de hoekjes.
+- **Blokken:** elk dier is gebouwd uit blokken met afgeschuinde randen: een blok voor het lijf, een voor de borst,
+  de kop, de snuit, de oren, de poten en de staart. Sommige blokken lopen schuin of worden smaller naar het eind
+  (snuiten, staarten, stekels). Elk vlak is precies plat en krijgt één kleur, zonder verloop. De dieren zijn vlak
+  belicht: je ziet de randjes.
+- **Cartoonogen:** een wit (of gekleurd) blokje met een donkere pupil en een klein wit lichtpuntje, soms met een
+  wenkbrauw erboven. Door de wenkbrauw schuin te zetten kijkt een dier stoer (wolf, zwijn, Phoenix) of lief.
 - **De noppen zitten in de textuur, niet in de 3D-vorm.** Echte 3D-noppen zouden duizenden driehoekjes extra
   kosten. De ingebouwde noppen van Roblox werken ook niet: die bestaan alleen op gewone Parts, niet op MeshParts.
 - **Alle noppen zijn even groot en nergens uitgerekt.** Elk vlak krijgt een eigen plekje in de textuur, en alle
   vlakken van een dier staan daar op dezelfde schaal. Het script controleert dat: de verhouding tussen een rand
   in 3D en in de textuur is overal precies 1.
-- **De noppen lopen netjes door.** De noppen bedekken elk vlak in een regelmatig raster, gecentreerd op het vlak,
-  en de rijen lopen waterpas. Vlakken van dezelfde ring zijn even hoog, dus de rijen liggen rondom een poot of het
-  lijf op gelijke hoogte. De rechterkant is het spiegelbeeld van de linkerkant. Ook smalle randjes hebben noppen;
-  aan de rand van een vlak kan een nop afgesneden zijn, net als bij de Roblox-textuur. De ogen, neuzen, snavels,
-  klauwen, het goud en de edelstenen en de gloeiende delen hebben geen noppen.
+- **Alleen hele noppen.** De noppen staan in een raster in het midden van elk vlak en de rijen lopen waterpas.
+  Een nop die over de rand van een vlak zou vallen, wordt weggelaten. Daardoor blijven de schuine randjes en
+  dunne vlakken glad, en zie je nergens halve noppen of streepjes. De ogen, neuzen, snavels, klauwen, slagtanden,
+  het goud en de edelstenen en de gloeiende delen hebben geen noppen.
 - **Hoe een nop eruitziet:** een vierkantje met een schuin randje eromheen. Het licht komt van linksboven: de
   boven- en linkerrand zijn lichter, de onder- en rechterrand donkerder, en rechtsonder ligt een zacht schaduwtje.
   Zo lijken ze uit het vlak te steken, terwijl het gewoon een plaatje is.
-- **Extra detail (Phoenix en Gorilla King):** hun ringen hebben ronde hoeken (twee stukjes per hoek in plaats
-  van één schuin stukje), er zijn meer ringen, en ze hebben veel meer kleine onderdelen (veren, klauwen, knokkels,
-  tanden, schakels). Kleine dingen zoals ogen en tanden worden precies op het oppervlak gezet: het script schiet
-  een rechte lijn op het lijf af en kijkt waar hij het raakt. De noppen lopen daar door over de ronde vormen: de
-  vlakken rondom een ring worden in stukjes van vier naast elkaar plat gelegd, zoals een etiket van een blikje,
-  dus zonder uitrekken.
-- **Noppengrootte:** er staat om de 0,25 stud een nop (vier keer zo dicht op elkaar als op een gewoon
-  Roblox-blok), en elke nop is 0,16 stud breed. Zo passen er ook op smalle vlakken, zoals de poten en de snuit,
-  een paar rijen noppen, en ziet het dier eruit als een dicht noppenraster.
+- **Noppengrootte:** er staat om de 0,4 stud een nop, en elke nop is 0,24 stud breed. Kleurvlakken zijn nooit
+  helemaal wit: de lichte randjes van de noppen moeten nog lichter kunnen zijn.
 - **Elke kleur heeft een eigen band in de textuur** (een aantal rijen pixels over de hele breedte). Van boven
   naar beneden:
 
   | Dier | Banden van boven naar beneden |
   |---|---|
-  | Deer | bruin, crème, wit, lichtbruin (gewei), donkerbruin (hoeven), neus, zwart (ogen), lichtpuntje (ogen) |
-  | Rabbit | bruin, crème, wit, roze, neus, zwart, lichtpuntje |
-  | Fox | oranje, wit, donker, neus, zwart, lichtpuntje |
-  | Raccoon | grijs, licht, donker, oogrand, neus, zwart, lichtpuntje |
-  | Wolf | grijs, licht, donker, neus, zwart, lichtpuntje |
-  | Boar | bruin, donker (manen, oren, staart), snuit, slagtanden, hoeven, neusgaten, zwart, lichtpuntje |
-  | Owl | bruin, licht, donker (vleugels, staart), poten, iris (geel), snavel, zwart, lichtpuntje |
-  | Bear | bruin, licht (snuit, oren), donker (poten), neus, zwart, lichtpuntje |
-  | Thunderhoof | wit, lichtblauw, cyaan (oren), hoeven, neus, blauw (ogen), lichtpuntje, bliksem, manen |
-  | Voidwhisker | vacht, zacht paars, paars (oren), neus, roze (ogen), lichtpuntje, void (paars), edelsteen (roze) |
-  | Phoenix | rood, oranje, geel, goud (poten), snavel, oogrand, zwart, lichtpuntje, vlam |
-  | GorillaKing | vacht, zilver, huid, goud, robijn, diamant, mond, neus, oranje (ogen), lichtpuntje, kroon |
+  | Deer | bruin, crème, gewei, hoeven, neus, oogwit, pupil, lichtpuntje |
+  | Rabbit | bruin, crème, wit, roze, neus, oogwit, pupil, lichtpuntje |
+  | Fox | oranje, wit, donker, neus, oogwit, pupil, lichtpuntje |
+  | Raccoon | grijs, licht, donker, neus, oogwit, pupil, lichtpuntje |
+  | Wolf | grijs, licht, donker, neus, oogwit (geel), pupil, lichtpuntje |
+  | Boar | bruin, donker (manen, oren, staart), snuit, slagtanden, hoeven, neusgaten, oogwit, pupil, lichtpuntje |
+  | Owl | bruin, licht, donker (vleugels, staart), tenen, snavel, oogwit (geel), pupil, lichtpuntje |
+  | Bear | bruin, licht (snuit, oren), donker (poten), neus, oogwit, pupil, lichtpuntje |
+  | Thunderhoof | wit, lichtblauw, cyaan (oren), hoeven, neus, oogwit, pupil (blauw), lichtpuntje, bliksem, manen |
+  | Voidwhisker | vacht, zacht paars, paars (oren), neus, oogwit (roze), pupil, lichtpuntje, void (paars), edelsteen (roze) |
+  | Phoenix | rood, oranje, geel, goud (poten, wenkbrauwen), snavel, klauwen, oogwit, pupil, lichtpuntje, vlam |
+  | GorillaKing | vacht, zilver, huid, goud, robijn, diamant, zwart (neusgaten), oogwit (oranje), pupil, lichtpuntje, kroon |
 
   In `texture_bands.json` staat per dier precies in welke rijen elke kleur staat.
 
@@ -206,11 +203,12 @@ python3 tools/blender/stud_fox.py
 ```
 
 Zo maak je één dier opnieuw (hier de vos). Elk script maakt de bestanden van zijn dier in deze map opnieuw, en
-ook `SetupZooAnimals.lua` en `previews/stud_<dier>_views.png`. Dat duurt 2 tot 3 minuten per dier. Wat je
+ook `SetupZooAnimals.lua` en `previews/stud_<dier>_views.png`. Dat duurt ongeveer 2,5 minuut per dier. Wat je
 makkelijk kunt veranderen:
 
-- bovenin elk dierscript: `PALETTE` en `GOLDEN` (de kleuren) en de tabellen van de poten; in `build_body()`
-  staan de ringen van het lijf, de kop en de rest;
-- bovenin `stud_animal.py`: `STUD`, de afstand tussen de noppen (0,25 = een kwart van een Roblox-blok,
-  1,0 = even ver), en `STUD_SIZE`, hoe breed een nop is vergeleken met die afstand (0,64 = ongeveer twee derde,
-  met een smalle naad ertussen). Dat geldt voor alle dieren tegelijk, zodat ze bij elkaar passen.
+- bovenin elk dierscript: `PALETTE` en `GOLDEN` (de kleuren); in `build_body()` en de functies voor de poten
+  staan de blokken: `block(deel, midden, (breedte, diepte, hoogte), kleur, ...)` met eventueel `rot` (draaien),
+  `taper` (smaller naar boven) en `bevel` (hoe schuin de randen zijn), en `bar(deel, van, naar, dikte, kleur)`
+  voor een blok van het ene punt naar het andere;
+- bovenin `stud_animal.py`: `STUD`, de afstand tussen de noppen (0,4 stud), en `STUD_SIZE`, hoe breed een nop is
+  vergeleken met die afstand (0,6). Dat geldt voor alle dieren tegelijk, zodat ze bij elkaar passen.

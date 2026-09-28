@@ -1,207 +1,109 @@
-"""The Phoenix (Mythic): a bird of fire with burning wings, low-poly with Roblox studs (see stud_animal.py).
+"""The Phoenix (Mythic): a fire bird with a glowing flame crest, flaming wing tips and a long tail of red,
+orange and yellow feathers ending in flames. Blocky, built from chunky bevelled blocks, with Roblox studs in
+its texture (see stud_animal.py for how).
 
 Run: python3 tools/blender/stud_phoenix.py [out_dir]       (default out_dir: models/stud-animals)
 Change the look by editing the numbers below and running it again.
-
-The phoenix stands upright like the owl. Parts: Body (with head, beak, a collar of feathers and the long tail
-feathers), the wings WingL and WingR (they turn at the shoulder), the legs LegL and LegR with talons, and the flames
-that glow (Neon in Roblox): Crest (the plumes on the head), TailFlames, and WingFlameL / WingFlameR (attached to the
-wings, so they move with them).
-
-The shapes use round rings (segs=2) and the studs wrap around them (wrap=True), for a smoother, more detailed look.
 """
-
-import math
 
 import numpy as np
 
-from stud_animal import (X, Y, Z, Animal, Part, build, centered, effect, hit, loft, mirror, ring, scaled, slab,
-                         square, turn, unit)
+from stud_animal import X, Y, Animal, Part, bar, block, build, cartoon_eye, centered, effect, wedge
 
-FLAME = "#ffc02e"
-
+FLAME = "#ffc02e"                     # glow color (Neon in Roblox)
 # Colors (sRGB). Faces with the same key share one band in the texture, in this order.
-PALETTE = {"red": "#e8331f", "orange": "#ff7a1a", "yellow": "#ffc13a", "gold": "#f5b82e", "beak": "#ffd23f",
-           "claw": "#2a1a10", "eyering": "#ffd23f", "eye": "#1a0a05", "glint": "#ffffff", "flame": FLAME}
+PALETTE = {"red": "#ec3a26", "orange": "#ff8a1f", "yellow": "#ffc93a", "gold": "#f5b82e", "beak": "#ffd23f",
+           "claw": "#2a1a10", "eyewhite": "#ffffff", "eye": "#1a0a05", "glint": "#ffffff", "flame": FLAME}
 GOLDEN = {**PALETTE, "red": "#e6ac2e", "orange": "#ffd66b", "yellow": "#fff0a0", "gold": "#fff6d2"}
-NO_STUDS = ("beak", "claw", "eyering", "eye", "glint", "flame")
+NO_STUDS = ("beak", "claw", "eye", "eyewhite", "glint", "flame")
 
-SIZE = 1.25                            # the whole phoenix is this many times bigger than the numbers in this file
-ROUND = 2                              # corner pieces of the rings: round shapes
-
-# Wings rise up and out from the shoulder.
-SHOULDER = np.array([0.44, 0.02, 2.20])
-SPAN = unit(np.array([0.85, 0.12, 0.62]))          # from the shoulder to the wing tip
-_back, _up = unit(Y - np.dot(Y, SPAN) * SPAN), unit(Z - np.dot(Z, SPAN) * SPAN)
-CHORD = unit(0.55 * _back + 0.85 * _up)             # across the wing, turned so it shows its face from the front
-THIN = unit(np.cross(SPAN, CHORD))                  # the thin direction of the wing
-# The arm of the wing: (distance along the span, width across, thickness, how far it sweeps back)
-WING = [(0.0, 0.80, 0.20, 0.0), (0.5, 1.00, 0.18, 0.04), (1.1, 1.05, 0.16, 0.10), (1.6, 0.80, 0.13, 0.20),
-        (1.95, 0.45, 0.10, 0.32)]
-# Long feathers at the tip: (where along the span, where across, angle from the span towards the back, length)
-PRIMARIES = [(1.55, -0.30, -12, 1.05), (1.65, -0.10, 5, 1.15), (1.70, 0.10, 22, 1.15), (1.65, 0.30, 40, 1.0),
-             (1.50, 0.45, 58, 0.85)]
-# Shorter feathers along the back edge: (where along the span, length)
-SECONDARIES = [(0.30, 0.55), (0.70, 0.62), (1.10, 0.66), (1.40, 0.6)]
-
-# Tail feathers: from inside the body back, then sweeping up. (y, height, width, thickness)
-FEATHER = [(0.40, 1.05, 0.30, 0.10), (0.95, 0.82, 0.42, 0.09), (1.55, 0.78, 0.46, 0.09), (2.05, 1.02, 0.40, 0.08),
-           (2.35, 1.42, 0.28, 0.07)]
-FEATHER_ROOT = (0, 0.40, 1.05)
-FEATHER_ANGLES = (-34, -17, 0, 17, 34)             # the tail feathers fan out sideways
+SHOULDER = np.array([0.62, 0.1, 2.75])        # the left wing turns around this point
+# Wing feathers: (start along the wing arm 0..1, direction (x, z), length, color). They fan out and up.
+FEATHERS = [(0.15, (0.35, 1.0), 1.2, "red"), (0.4, (0.6, 1.0), 1.5, "red"), (0.65, (0.85, 1.0), 1.7, "orange"),
+            (0.9, (1.0, 0.75), 1.75, "orange"), (1.0, (1.0, 0.35), 1.55, "yellow")]
+TAIL = [-0.28, 0.0, 0.28]             # sideways places of the three long tail feathers
 
 
-def fire(root, near, far):
-    """red close to root, then orange, then yellow (the colors of fire)."""
-    def paint(c, n):
-        d = np.linalg.norm(np.asarray(c) - root)
-        return "red" if d < near else ("orange" if d < far else "yellow")
-    return paint
-
-
-def feather(part, root, direction, flat, length, width, paint, tip_part=None, thin=0.06):
-    """A flat feather from root along direction, widest a third of the way; flat: its thin direction.
-    tip_part: also put a flame on its tip in that part."""
-    across = unit(np.cross(flat, direction))
-    pts = [root + direction * length * f for f in (0.0, 0.35, 0.8)]
-    loft(part, [square(p, across, flat, width * s, thin) for p, s in zip(pts, (0.7, 1.0, 0.7))], paint,
-         caps=(True, False), tip=root + direction * length)
-    if tip_part is not None:
-        base = root + direction * length * 0.8
-        loft(tip_part, [square(base, across, flat, width * 0.5, thin * 0.8)], "flame", caps=(True, False),
-             tip=root + direction * (length + 0.45))
-
-
-def wing_point(dist, across=0.0):
-    return SHOULDER + SPAN * dist + CHORD * across
-
-
-def build_wing(name, flames_name, sign):
-    """A wing and its flames (a separate part, attached to the wing). Built on the left side, then mirrored."""
-    wing, flames = Part(name, origin=SHOULDER * (sign, 1, 1)), Part(flames_name, parent=name)
-    rings = [ring(wing_point(d, sweep), CHORD, THIN, width, thick, thick * 0.45, segs=ROUND)
-             for d, width, thick, sweep in WING]
-    loft(wing, rings, fire(SHOULDER, 0.7, 1.5))
-    for d, across, angle, length in PRIMARIES:
-        t = math.radians(angle)
-        feather(wing, wing_point(d, across), unit(SPAN * math.cos(t) + CHORD * math.sin(t)), THIN, length, 0.26,
-                fire(SHOULDER, 1.4, 2.1), flames)
-    for d, length in SECONDARIES:
-        direction = unit(CHORD * 0.85 - SPAN * 0.2 - Z * 0.35)
-        feather(wing, wing_point(d, 0.40), direction, THIN, length, 0.24, fire(SHOULDER, 0.9, 1.5),
-                flames if d > 1.0 else None)
-    if sign < 0:                                        # the mirror image: turn the faces around as well
-        for part in (wing, flames):
-            part.verts = mirror(part.verts)
-            part.faces = [f[::-1] for f in part.faces]
-    return wing, centered(flames)
-
-
-def feather_rings(width_scale=1.0):
-    """Rings of one tail feather, each standing across the feather where it is (the feather bends upward)."""
-    pts = [np.array([0, y, z]) for y, z, _, _ in FEATHER]
-    rings = []
-    for i, (_, _, w, t) in enumerate(FEATHER):
-        along = unit(pts[min(i + 1, len(pts) - 1)] - pts[max(i - 1, 0)])
-        rings.append(square(pts[i], X, unit(np.cross(X, along)), w * width_scale, t))
-    return rings, unit(pts[-1] - pts[-2])
+def flat_bar(part, p, q, width, paint, thick=0.14):
+    """A flat feather from p to q: wide in the x-z plane, thin front to back."""
+    d = np.asarray(q, float) - np.asarray(p, float)
+    bar(part, p, q, (width, thick), paint, bevel=0.04, side=np.cross(Y, d), over=0.06)
 
 
 def build_body():
     body = Part("Body")
-    # Body: an upright egg with a full chest. (height, forward/back, width, depth, corner)
-    rings = [(0.92, 0.26, 0.56, 0.62, 0.22), (1.05, 0.18, 0.86, 0.92, 0.34), (1.30, 0.08, 1.06, 1.08, 0.42),
-             (1.62, -0.02, 1.14, 1.12, 0.44), (1.95, -0.10, 1.06, 1.02, 0.40), (2.22, -0.18, 0.88, 0.84, 0.34),
-             (2.45, -0.24, 0.66, 0.64, 0.26)]
-    loft(body, [ring((0, y, z), X, Y, w, d, c, segs=ROUND) for z, y, w, d, c in rings],
-         lambda c, n: "orange" if n[1] < -0.45 or n[2] < -0.5 else "red")
-    rings = [(2.40, -0.24, 0.62, 0.60, 0.24), (2.70, -0.34, 0.54, 0.52, 0.21), (2.98, -0.42, 0.50, 0.48, 0.19),
-             (3.12, -0.44, 0.48, 0.46, 0.18)]
-    loft(body, [ring((0, y, z), X, Y, w, d, c, segs=ROUND) for z, y, w, d, c in rings],
-         lambda c, n: "orange" if n[1] < -0.45 else "red")
-
-    # A collar of flame feathers around the bottom of the neck.
-    for k in range(10):
-        t = 2 * math.pi * k / 10
-        out = np.array([math.sin(t), -math.cos(t), 0.0])
-        root = np.array([0, -0.26, 2.42]) + out * np.array([0.28, 0.27, 0])
-        direction = unit(out - Z * 0.55)
-        feather(body, root, direction, unit(np.cross(direction, Z)), 0.42, 0.2, fire(root, 0.12, 0.3))
-
-    # Head, with golden rings around the eyes and a hooked golden beak.
-    rings = [(-0.14, 3.24, 0.50, 0.50, 0.19, 0.17), (-0.26, 3.28, 0.66, 0.64, 0.26, 0.23),
-             (-0.44, 3.30, 0.72, 0.68, 0.28, 0.25), (-0.62, 3.26, 0.66, 0.60, 0.25, 0.22),
-             (-0.76, 3.20, 0.52, 0.46, 0.19, 0.17)]
-    loft(body, [ring((0, y, zc), X, Z, w, h, c, cb, segs=ROUND) for y, zc, w, h, c, cb in rings], "red")
+    block(body, (0, 0.1, 2.1), (1.3, 1.35, 1.75), "red", bevel=0.22)                       # body
+    block(body, (0, -0.6, 1.98), (0.96, 0.1, 1.25), "orange", bevel=0.05)                  # orange chest
+    block(body, (0, -0.25, 3.42), (1.1, 1.1, 1.0), "red", bevel=0.18)                      # head
+    block(body, (0, -1.05, 3.32), (0.42, 0.36, 0.52), "beak", rot=(90, 0, 0), taper=(0.6, 0.6), bevel=0.05)
+    wedge(body, (0, -1.24, 3.24), (0.2, 0.16), (0, -1.34, 3.02), "beak")                  # hooked tip
     for s in (1, -1):
-        p, n = hit(body, (s * 2, -0.52, 3.31), -X * s)
-        slab(body, p, n, 0.22, 0.2, 0.015, "eyering", corner=0.08, segs=ROUND)
-        slab(body, p + n * 0.015, n, 0.13, 0.14, 0.02, "eye", corner=0.05, segs=ROUND)
-        slab(body, p + n * 0.035 + (0, -0.03, 0.03), n, 0.04, 0.04, 0.01, "glint")
-    beak = [ring((0, y, z), X, Z, w, h, h * 0.35, segs=ROUND)
-            for y, z, w, h in ((-0.70, 3.18, 0.30, 0.22), (-0.88, 3.14, 0.24, 0.17), (-1.00, 3.08, 0.16, 0.12))]
-    loft(body, beak, "beak", caps=(True, False), tip=(0, -1.08, 2.94))
-    loft(body, [square((0, -0.70, 3.03), X, Z, 0.22, 0.1)], "beak", caps=(True, False), tip=(0, -0.92, 3.0))
-
-    # Tail: long feathers fanning out behind and sweeping up, red to yellow; the outer ones a bit narrower.
-    for angle in FEATHER_ANGLES:
-        rings, _ = feather_rings(1.0 if abs(angle) < 20 else 0.85)
-        loft(body, turn(rings, FEATHER_ROOT, Z, angle), fire(np.array(FEATHER_ROOT), 0.8, 1.6))
+        cartoon_eye(body, (0.55 * s, -0.45, 3.52), X * s, size=0.32, look=(-0.12 * s, 0.0), brow="gold",
+                    tilt=18 * s)
+    for i, a in enumerate(np.radians(np.arange(0, 360, 45))):                            # collar of feathers
+        c, s_ = np.cos(a), np.sin(a)
+        bar(body, (0.4 * c, -0.2 + 0.4 * s_, 3.02), (0.88 * c, -0.2 + 0.88 * s_, 2.7), (0.32, 0.14),
+            "yellow" if i % 2 else "orange", bevel=0.03, side=(-s_, c, 0), taper=0.2)
+    for x in TAIL:                                                                       # long tail feathers
+        pts = [(x * 0.6, 0.6, 1.55), (x * 1.3, 1.45, 1.05), (x * 2.0, 2.25, 0.65), (x * 2.5, 2.85, 0.42)]
+        for (p, q), color, t in zip(zip(pts, pts[1:]), ("red", "orange", "yellow"), (0.16, 0.13, 0.1)):
+            bar(body, p, q, (0.44 - t, t), color, bevel=0.03, over=0.08)                 # each a bit thinner
     return body
 
 
 def build_crest():
     part = Part("Crest")
-    # Five flame plumes on the head, streaming back.
-    for x, length in ((0, 1.0), (0.13, 0.85), (-0.13, 0.85), (0.25, 0.68), (-0.25, 0.68)):
-        root = np.array([x, -0.46, 3.52])
-        direction = unit(np.array([x * 1.2, 0.75, 0.62]))
-        across = unit(np.cross(direction, Y if abs(x) > 0.2 else X))
-        flat = unit(np.cross(direction, across))
-        pts = [root, root + direction * length * 0.4]
-        loft(part, [square(p, across, flat, s, 0.1) for p, s in zip(pts, (0.14, 0.2))], "flame", caps=(True, False),
-             tip=root + direction * length + Z * 0.08)
+    for tip in ((0, -0.6, 4.62), (0.24, -0.2, 4.75), (-0.24, -0.2, 4.75), (0, 0.2, 4.62), (0, 0.5, 4.28)):
+        wedge(part, (tip[0] * 0.4, tip[1] * 0.5 - 0.2, 3.82), (0.26, 0.26), tip, "flame")
     return centered(part)
 
 
 def build_tail_flames():
     part = Part("TailFlames")
-    for angle in FEATHER_ANGLES:
-        rings, end = feather_rings(1.0 if abs(angle) < 20 else 0.85)
-        last = np.mean(rings[-1], 0)
-        base = [p - end * 0.05 for p in rings[-1]]
-        tip = turn([[last + end * 0.65]], FEATHER_ROOT, Z, angle)[0][0]
-        loft(part, turn([base], FEATHER_ROOT, Z, angle), "flame", caps=(True, False), tip=tip)
+    for x in TAIL:
+        bar(part, (x * 2.5, 2.8, 0.42), (x * 2.9, 3.5, 0.52), (0.4, 0.16), "flame", bevel=0.03, taper=0.15)
     return centered(part)
 
 
-def bird_leg(name, x):
-    """A golden leg with three talons forward and one back."""
-    part = Part(name, origin=(x, 0.10, 1.0))
-    rings = [(1.12, 0.00, 0.34, 0.36, 0.14), (0.80, 0.02, 0.30, 0.32, 0.12), (0.45, 0.02, 0.18, 0.20, 0.07),
-             (0.14, -0.02, 0.20, 0.22, 0.08), (0.06, -0.02, 0.24, 0.26, 0.09)]
-    loft(part, [ring((x, 0.10 + dy, z), X, Y, w, d, c, segs=ROUND) for z, dy, w, d, c in rings], "gold")
-    for dx, direction in ((-0.1, (-0.35, -1, 0)), (0, (0, -1, 0)), (0.1, (0.35, -1, 0)), (0, (0, 1, 0))):
-        d = unit(np.array(direction, float))
-        root = np.array([x + dx, 0.08, 0.04])
-        side = unit(np.cross(Z, d))
-        toe = [square(root, side, Z, 0.09, 0.08), square(root + d * 0.22, side, Z, 0.08, 0.07)]
-        loft(part, toe, "gold")
-        loft(part, [square(root + d * 0.2, side, Z, 0.07, 0.06)], "claw", caps=(True, False),
-             tip=root + d * 0.34 - Z * 0.04)
+def build_wing(name, flame_name, s):
+    m = np.array([s, 1, 1])
+    wing = Part(name, origin=SHOULDER * m)
+    flames = Part(flame_name, parent=name)
+    elbow = np.array([1.55, 0.12, 3.35])
+    flat_bar(wing, SHOULDER * m, elbow * m, 0.55, "red", thick=0.22)                      # wing arm
+    for t, (dx, dz), length, color in FEATHERS:
+        base = SHOULDER + (elbow - SHOULDER) * t
+        d = np.array([dx, 0, dz]) / np.hypot(dx, dz)
+        tip = base + d * length
+        flat_bar(wing, base * m, (base + d * length * 0.55) * m, 0.4, color)
+        flat_bar(wing, (base + d * length * 0.55) * m, tip * m, 0.34, "yellow" if color != "yellow" else "orange",
+                 thick=0.1)
+        bar(flames, (tip - d * 0.05) * m, (tip + d * 0.5) * m, (0.34, 0.14), "flame", bevel=0.03,
+            side=np.cross(Y, d * m), taper=0.15)
+    return wing, centered(flames)
+
+
+def bird_leg(name, s):
+    x = 0.3 * s
+    part = Part(name, origin=(x, 0.1, 1.28))
+    bar(part, (x, 0.1, 1.3), (x, 0.02, 0.2), (0.2, 0.2), "gold", bevel=0.04)
+    for dx in (-0.14, 0.0, 0.14):                                                       # three toes, claws
+        bar(part, (x, 0.0, 0.06), (x + dx * 2, -0.42, 0.06), (0.12, 0.12), "gold", bevel=0.03, over=0.04)
+        wedge(part, (x + dx * 2.1, -0.46, 0.06), (0.1, 0.1), (x + dx * 2.2, -0.62, 0.0), "claw")
+    bar(part, (x, 0.02, 0.06), (x, 0.32, 0.06), (0.12, 0.12), "gold", bevel=0.03)          # back toe
     return part
 
 
 def parts():
-    """Body, wings, legs and flames, SIZE times as big. The phoenix faces -y; its left is +x."""
+    """Body, wings, legs and the glowing flames. The phoenix faces -y; its left is +x."""
     wing_l, flames_l = build_wing("WingL", "WingFlameL", 1)
     wing_r, flames_r = build_wing("WingR", "WingFlameR", -1)
-    return scaled([build_body(), wing_l, wing_r, bird_leg("LegL", 0.26), bird_leg("LegR", -0.26),
-                   flames_l, flames_r, build_crest(), build_tail_flames()], SIZE)
+    return [build_body(), wing_l, wing_r, bird_leg("LegL", 1), bird_leg("LegR", -1),
+            flames_l, flames_r, build_crest(), build_tail_flames()]
 
 
 PHOENIX = Animal(
-    "Phoenix", "Mythic", PALETTE, GOLDEN, parts, close=((0.4, -0.6, 3.9), 5.5), no_studs=NO_STUDS, wrap=True,
+    "Phoenix", "Mythic", PALETTE, GOLDEN, parts, close=((0.4, -0.5, 3.6), 6.0), no_studs=NO_STUDS,
     glow={"Crest": FLAME, "TailFlames": FLAME, "WingFlameL": FLAME, "WingFlameR": FLAME},
     effects=[effect("TailFire", "TailFlames", "Fire", "#ff8c1a", "#ff3b1f", rate=14, size=(1.1, 0),
                     lifetime=(0.4, 0.7), speed=(1.5, 2.5), spread=25),
