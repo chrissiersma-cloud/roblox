@@ -1,111 +1,60 @@
-"""The Owl: low-poly, with classic Roblox studs painted in its texture (see stud_animal.py for how).
+"""The Owl: a blocky, cartoony owl built from chunky bevelled blocks, with Roblox studs in its texture
+(see stud_animal.py for how).
 
 Run: python3 tools/blender/stud_owl.py [out_dir]           (default out_dir: models/stud-animals)
 Change the look by editing the numbers below and running it again.
-
-The owl stands upright, so its parts are different from the four-legged animals: Body (with head, ear tufts,
-beak and tail), the wings WingL and WingR (they turn around the shoulder) and the legs LegL and LegR.
 """
 
-import numpy as np
-
-from stud_animal import X, Y, Z, Animal, Part, build, leg, loft, newell, ring, sides, slab, square, unit
+from stud_animal import Y, Animal, Part, bar, block, build, cartoon_eye, slab, wedge
 
 # Colors (sRGB). Faces with the same key share one band in the texture, in this order.
-PALETTE = {"brown": "#8b6a4b", "light": "#eee2c9", "dark": "#5e4531", "feet": "#e39a2e", "iris": "#f2b52c",
-           "beak": "#e39a2e", "eye": "#161211", "glint": "#ffffff"}
-GOLDEN = {"brown": "#e6ac2e", "light": "#fff3c4", "dark": "#b8801a", "feet": "#c98a1a", "iris": "#ff9a3c",
-          "beak": "#c98a1a", "eye": "#161211", "glint": "#ffffff"}
-NO_STUDS = ("iris", "beak", "eye", "glint")
-
-# Legs, from the top (inside the body) down: (height, forward/back shift, width, depth, corner).
-LEG = [(0.62, 0.00, 0.30, 0.32, 0.08),
-       (0.28, 0.00, 0.26, 0.28, 0.07),
-       (0.12, -0.10, 0.36, 0.52, 0.08),            # foot, toes forward
-       (0.00, -0.12, 0.38, 0.56, 0.08)]
-# Wings, from the shoulder down: (height, x, y, width, depth, corner).
-WING = [(1.88, 0.60, 0.08, 0.20, 0.62, 0.06),
-        (1.50, 0.70, 0.10, 0.24, 0.84, 0.07),
-        (0.95, 0.68, 0.16, 0.20, 0.80, 0.06),
-        (0.55, 0.60, 0.26, 0.14, 0.50, 0.04)]
-
-
-def body_paint(c, n):
-    return "light" if n[1] < -0.6 else "brown"         # light chest
-
-
-def head_paint(c, n):
-    return "light" if n[1] < -0.6 else "brown"         # light face
-
-
-def leg_paint(c, n):
-    return "feet" if c[2] < 0.14 else "light"          # feathered legs, yellow feet
-
-
-def front_point(ring_a, ring_b, x, z):
-    """Point with the given x and z on the front face between two level rings, and the face's normal."""
-    pts = [ring_a[6], ring_a[7], ring_b[7], ring_b[6]]
-    n = unit(newell(pts))
-    n = n if n[1] < 0 else -n
-    p0 = pts[0]
-    y = p0[1] - (n[0] * (x - p0[0]) + n[2] * (z - p0[2])) / n[1]
-    return np.array([x, y, z]), n
+PALETTE = {"brown": "#9a6f4c", "light": "#f3e6cc", "dark": "#644631", "feet": "#f5a623", "beak": "#f5a623",
+           "eyewhite": "#ffc93a", "eye": "#1d1a1a", "glint": "#ffffff"}
+GOLDEN = {"brown": "#f0b631", "light": "#fff3c4", "dark": "#b8801a", "feet": "#c98a1a", "beak": "#c98a1a",
+          "eyewhite": "#ff9a3c", "eye": "#1d1a1a", "glint": "#ffffff"}
 
 
 def build_body():
     body = Part("Body")
-    # Body: an upright egg, level rings from the bottom up. (height, forward/back, width, depth, corner)
-    rings = [(0.42, 0.05, 0.80, 0.70, 0.22),
-             (0.60, 0.02, 1.16, 1.00, 0.32),
-             (1.10, 0.00, 1.30, 1.10, 0.36),            # belly
-             (1.60, 0.02, 1.20, 1.02, 0.34),
-             (1.90, 0.04, 1.02, 0.90, 0.30)]
-    loft(body, [ring((0, y, z), X, Y, w, d, c) for z, y, w, d, c in rings], body_paint)
-
-    # Head: big and boxy, with a flat face.
-    rings = [(1.82, 0.02, 1.08, 0.94, 0.30),
-             (2.05, 0.00, 1.34, 1.08, 0.36),            # widest
-             (2.45, 0.02, 1.30, 1.04, 0.34),
-             (2.66, 0.06, 1.02, 0.84, 0.26)]
-    head = [ring((0, y, z), X, Y, w, d, c) for z, y, w, d, c in rings]
-    loft(body, head, head_paint)
-
-    # Big round eyes on the face: yellow, a black pupil and a white glint. The beak points down between them.
-    for x in (0.3, -0.3):
-        p, n = front_point(head[1], head[2], x, 2.26)
-        slab(body, p, n, 0.36, 0.36, 0.02, "iris", corner=0.1)
-        slab(body, p + n * 0.02, n, 0.18, 0.2, 0.02, "eye", corner=0.05)
-        slab(body, p + (x * 0.2, 0, 0.06) + n * 0.04, n, 0.07, 0.07, 0.015, "glint")
-    p, n = front_point(head[1], head[2], 0, 2.12)
-    loft(body, [square(p - n * 0.04, X, Z, 0.2, 0.18)], "beak", caps=(True, False), tip=p + n * 0.2 - Z * 0.14)
-
-    # Ear tufts on the top corners of the head.
-    out = unit(np.array([0.4, 0.1, 1.0]))
-    flat = unit(-Y - np.dot(-Y, out) * out)            # the thin direction of the tuft
-    across = unit(np.cross(out, flat))
-    base = np.array([0.44, 0.0, 2.56])
-    for pts, tip in sides([square(base, across, flat, 0.28, 0.12)], base + out * 0.38):
-        loft(body, pts, "brown", caps=(True, False), tip=tip)
-
-    # Tail: a short, flat fan of feathers at the back.
-    tail = [square((0, 0.36, 0.64), X, Z, 0.50, 0.14), square((0, 0.64, 0.50), X, Z, 0.56, 0.10)]
-    loft(body, tail, "dark")
+    block(body, (0, 0.0, 1.28), (1.36, 1.2, 1.56), lambda c, n: "light" if n[1] < -0.5 else "brown",
+          bevel=0.22)                                                                      # round body
+    for x, z in ((0.0, 1.55), (-0.26, 1.2), (0.26, 1.2), (0.0, 0.85)):                     # chest feathers
+        slab(body, (x, -0.6, z), -Y, 0.18, 0.08, 0.02, "brown")
+    block(body, (0, -0.02, 2.4), (1.46, 1.2, 0.98), "brown", bevel=0.22)                    # head
+    block(body, (0, -0.63, 2.36), (1.22, 0.1, 0.8), "light", bevel=0.05)                    # face disc
+    for s in (1, -1):
+        cartoon_eye(body, (0.3 * s, -0.68, 2.42), -Y, size=0.42, pupil=(0.5, 0.5), brow="dark", tilt=-12 * s)
+        wedge(body, (0.52 * s, 0.0, 2.84), (0.3, 0.3), (0.64 * s, 0.06, 3.22), "brown")   # ear tuft
+    wedge(body, (0, -0.68, 2.22), (0.2, 0.14), (0, -0.84, 2.0), "beak")
+    block(body, (0, 0.62, 0.72), (0.8, 0.3, 0.6), "dark", rot=(-30, 0, 0), bevel=0.06)     # tail
     return body
 
 
-def wing(name, sign):
-    part = Part(name, origin=(sign * WING[0][1], WING[0][2] - 0.02, WING[0][0] - 0.03))
-    loft(part, [ring((sign * x, y, z), X, Y, w, d, c) for z, x, y, w, d, c in WING], "dark")
+def wing(name, s):
+    part = Part(name, origin=(0.66 * s, 0.0, 2.0))
+    block(part, (0.76 * s, 0.05, 1.35), (0.24, 1.0, 1.32), "dark", rot=(0, -8 * s, 0), bevel=0.08)
+    for z in (1.0, 1.35, 1.7):                                                            # light stripes
+        slab(part, (0.9 * s, 0.05, z), (s, 0, 0), 0.7, 0.07, 0.02, "light")
+    return part
+
+
+def leg(name, s):
+    x = 0.3 * s
+    part = Part(name, origin=(x, -0.08, 0.55))
+    block(part, (x, -0.08, 0.36), (0.24, 0.24, 0.4), "light", bevel=0.05)
+    for dx in (-0.1, 0.0, 0.1):                                                           # three toes
+        bar(part, (x + dx * 1.2, -0.1, 0.05), (x + dx * 2.2, -0.42, 0.05), (0.1, 0.1), "feet", bevel=0.02)
+    block(part, (x, -0.1, 0.09), (0.3, 0.26, 0.18), "feet", bevel=0.04)
     return part
 
 
 def parts():
-    """Body, the wings and the legs. The owl's left side is +x (it faces -y)."""
-    return [build_body(), wing("WingL", 1), wing("WingR", -1),
-            leg("LegL", 0.28, 0.0, 0.55, LEG, leg_paint), leg("LegR", -0.28, 0.0, 0.55, LEG, leg_paint)]
+    """Body, the two wings and the two legs. The owl's left side is +x (it faces -y)."""
+    return [build_body(), wing("WingL", 1), wing("WingR", -1), leg("LegL", 1), leg("LegR", -1)]
 
 
-OWL = Animal("Owl", "Rare", PALETTE, GOLDEN, parts, close=((0.2, -0.3, 2.1), 3.4), no_studs=NO_STUDS)
+OWL = Animal("Owl", "Rare", PALETTE, GOLDEN, parts, close=((0.2, -0.3, 2.1), 4.4),
+             no_studs=("beak", "eye", "eyewhite", "glint"))
 
 if __name__ == "__main__":
     build(OWL)

@@ -1,4 +1,4 @@
-"""Shared toolkit for the low-poly Create a Zoo animals with classic Roblox studs painted in their texture.
+"""Shared toolkit for the blocky Create a Zoo animals with classic Roblox studs painted in their texture.
 
 Every animal has its own small script (stud_deer.py, stud_fox.py, stud_owl.py, ...) that describes its
 shape and colors and then calls `build(animal)`. Run one of those:
@@ -10,15 +10,16 @@ For an animal with id <Id>, build() writes <Id>.blend, <Id>.glb, <Id>Studs.png, 
 the folder) and draws previews/stud_<id>_views.png.
 
 How an animal is made:
-  1. Every part (body, neck, head, legs, ...) is a loft: a row of flat rings (boxes with 45 degree corners)
-     joined by big flat faces. All rings of one loft face the same way, so every face is exactly flat.
+  1. Every part (body, legs, wings, ...) is built from chunky blocks with bevelled edges (block, bar,
+     wedge), like parts built in Studio: a body block, a head block, a snout, ears, a tail. Big cartoon
+     eyes (cartoon_eye) sit on the flat faces. Every face is exactly flat.
   2. Every face gets one flat color (brown, cream, ...) from where it is and which way it faces.
   3. Every face gets its own spot in the texture, all at the same scale, so every stud has the same size.
-     Small square studs cover every face in a regular grid (like the Roblox studs texture), rows running
-     level and centered on the face. Faces of the same ring have the same height, so their rows line up
-     all around a leg or the body; the right side is the mirror image of the left side.
+     Square studs sit in a grid centered on each face, rows running level; only studs that fit completely
+     are painted, so bevels and thin faces stay plain.
   4. Faces with the same color are packed together, so every color has its own band in the texture
      (recolor a band to make a mutation, see the animal's GOLDEN colors).
+The older helpers (ring, loft, leg, eyes) build smooth lofts from rows of rings; the blocks use them too.
 
 Blender axes: +Z up, the animal faces -Y (the Front view), +X is its left side. 1 Blender unit = 1 stud.
 """
@@ -38,8 +39,9 @@ import setup_script  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "models" / "stud-animals"
-STUD = 0.25           # distance between studs in studs: a quarter of the studs on a Roblox part
-STUD_SIZE = 0.64      # the side of a (square) stud compared to that distance
+STUD = 0.4            # distance between studs in studs (a Roblox part has one stud per stud)
+STUD_SIZE = 0.6       # the side of a (square) stud compared to that distance
+MARGIN = 0.04         # studs keep at least this far (in studs) from the edges of a face
 TEX = 1024            # texture size in pixels
 PAD = 3               # extra pixels around every face in the texture, against color bleeding
 
@@ -57,8 +59,8 @@ class Animal:
     effects: particle effects for the setup script, see effect(). light: (part name, "#rrggbb", brightness, range)
     for a PointLight. wrap: lay the studs out in strips around round parts (for smooth, detailed animals)."""
 
-    def __init__(self, id, rarity, palette, golden, parts, close, no_studs=("nose", "eye", "glint"), display=None,
-                 glow=None, shine=None, effects=(), light=None, wrap=False):
+    def __init__(self, id, rarity, palette, golden, parts, close, no_studs=("nose", "eye", "eyewhite", "glint"),
+                 display=None, glow=None, shine=None, effects=(), light=None, wrap=False):
         self.wrap = wrap                                # studs wrap around round shapes (see make_islands)
         self.id, self.display, self.rarity = id, display or id, rarity
         self.palette, self.golden, self.no_studs = palette, golden, set(no_studs)
@@ -305,6 +307,90 @@ def leg(name, x, y, top, rings, paint):
     return part
 
 
+# ------------------------------------------------------------------ blocks ----
+# The blocky style: an animal is a stack of chunky blocks with bevelled edges, like parts built in Studio.
+
+def rotation(rot):
+    """A turn from (degrees around x, around y, around z): x tips the front up or down, y rolls to the side,
+    z turns left or right. Done in the order x, y, z."""
+    ax, ay, az = (math.radians(v) for v in rot)
+    rx = np.array([[1, 0, 0], [0, math.cos(ax), -math.sin(ax)], [0, math.sin(ax), math.cos(ax)]])
+    ry = np.array([[math.cos(ay), 0, math.sin(ay)], [0, 1, 0], [-math.sin(ay), 0, math.cos(ay)]])
+    rz = np.array([[math.cos(az), -math.sin(az), 0], [math.sin(az), math.cos(az), 0], [0, 0, 1]])
+    return rz @ ry @ rx
+
+
+def block(part, center, size, paint, rot=(0, 0, 0), bevel=0.08, taper=(1.0, 1.0), shift=(0.0, 0.0), frame=None):
+    """A block with bevelled edges. size: (width along x, depth along y, height along z) before turning.
+    taper: the top is this much as wide (x) and deep (y) as the bottom; shift: the top is moved this far
+    (x, y), for slanted blocks like snouts and legs. rot: see rotation(); or frame: the block's own
+    (x, y, z) directions. All faces stay exactly flat."""
+    a, b, up = frame if frame is not None else rotation(rot).T
+    center, taper, shift = np.asarray(center, float), np.asarray(taper, float), np.asarray(shift, float)
+    w, d, h = size
+    e = min(bevel, w * min(1, taper[0]) / 4, d * min(1, taper[1]) / 4, h / 4)
+    rings = []
+    for z, inset in ((-h / 2, e), (-h / 2 + e, 0.0), (h / 2 - e, 0.0), (h / 2, e)):
+        t = z / h + 0.5                                 # 0 at the bottom, 1 at the top
+        k = 1 + (taper - 1) * t
+        mid = center + up * z + a * shift[0] * t + b * shift[1] * t
+        rings.append(ring(mid, a, b, w * k[0] - 2 * inset, d * k[1] - 2 * inset, e * (0.5 if inset else 1.0)))
+    loft(part, rings, paint)
+
+
+def bar(part, p, q, size, paint, bevel=0.05, side=None, taper=1.0, over=0.0):
+    """A block from point p to point q (antlers, tails, feathers, whiskers). size: (width, thickness) across
+    it; side: the direction of its width (default: x). taper: the q end is this much as thick. over: it
+    reaches this far past both ends, so bars in a row overlap at the bends."""
+    p, q = np.asarray(p, float), np.asarray(q, float)
+    up = unit(q - p)
+    a = (X if side is None else np.asarray(side, float))
+    a = a - np.dot(a, up) * up
+    if np.linalg.norm(a) < 1e-3:
+        a = Y - np.dot(Y, up) * up
+    a = unit(a)
+    length = np.linalg.norm(q - p) + 2 * over
+    block(part, (p + q) / 2, (size[0], size[1], length), paint, bevel=bevel, taper=(taper, taper),
+          frame=(a, np.cross(up, a), up))
+
+
+def wedge(part, base, size, tip, paint, rot=(0, 0, 0)):
+    """A point (horn, tooth, claw, spike, ear tip): a block-shaped base (x width, y depth) at `base` that
+    narrows to the point `tip`."""
+    turn_ = rotation(rot)
+    loft(part, [square(base, turn_[:, 0], turn_[:, 1], size[0], size[1])], paint, caps=(True, False), tip=tip)
+
+
+def face_axes(normal):
+    """Directions on a face with this normal: (sideways, up)."""
+    n = unit(np.asarray(normal, float))
+    up = Z - np.dot(Z, n) * n
+    up = unit(up) if np.linalg.norm(up) > 1e-3 else unit(-Y - np.dot(-Y, n) * n)
+    return np.cross(up, n), up
+
+
+def cartoon_eye(part, center, normal, size=0.36, look=(0.0, 0.0), pupil=(0.42, 0.62), brow=None, tilt=0.0,
+                height=None):
+    """A big cartoon eye on a flat face: a white block, a dark pupil (moved by `look`, as a part of the eye
+    size), a small glint and, when brow is a color key, an eyebrow above it, turned by `tilt` degrees in the
+    face. height: eye height (default: as high as it is wide)."""
+    n = unit(np.asarray(normal, float))
+    side, up = face_axes(n)
+    center = np.asarray(center, float)
+    h = height or size
+    slab(part, center, n, size, h, 0.035, "eyewhite")
+    p = center + n * 0.035 + side * look[0] * size + up * look[1] * h
+    slab(part, p, n, size * pupil[0], h * pupil[1], 0.03, "eye")
+    g = p + n * 0.03 + side * 0.1 * size + up * 0.16 * h
+    slab(part, g, n, size * 0.15, size * 0.15, 0.02, "glint")
+    if brow:
+        t = math.radians(tilt)
+        bs, bu = side * math.cos(t) + up * math.sin(t), up * math.cos(t) - side * math.sin(t)
+        top = center + up * (h * 0.5 + size * 0.2)
+        loft(part, [square(top - n * 0.06, bs, bu, size * 1.2, size * 0.26),
+                    square(top + n * 0.08, bs, bu, size * 1.2, size * 0.26)], brow)
+
+
 # ---------------------------------------------------------------- texture ----
 
 def frame(n):
@@ -323,11 +409,10 @@ class Island:
         self.color, self.polys, self.studs = color, polys, studs     # polys: (u, v) corner lists, in studs
         uv = np.concatenate(polys)
         self.lo, self.hi = uv.min(0), uv.max(0)
-        # The stud grid covers the whole face, centered on it: a stud in the middle when an odd number of whole
-        # studs fits across (or none: then one stud in the middle, cut off on both sides), a gap in the middle
-        # when an even number fits.
+        # The stud grid is centered on the face: a stud in the middle when an odd number of whole studs fits
+        # across, a gap in the middle when an even number fits. Only whole studs are painted (see whole_studs).
         size = self.hi - self.lo
-        whole = np.floor((size - STUD_SIZE * STUD) / STUD) + 1
+        whole = np.floor((size - STUD_SIZE * STUD - 2 * MARGIN) / STUD) + 1
         self.grid = (self.lo + self.hi) / 2 + np.where((whole > 0) & (whole % 2 == 0), STUD / 2, 0.0)
 
     def pixel_size(self, density):
@@ -502,7 +587,7 @@ def stud_shade(du, dv, px):
     texture): lit from the top left, so the top and left edges are bright and the bottom and right edges dark,
     with a soft shadow below and to the right. du, dv: distance from the middle of the nearest stud, in studs."""
     side = STUD_SIZE * STUD
-    s, bevel = side / 2, max(0.2 * side, 1.5 * px)      # half the side of a stud, and the width of its bevel
+    s, bevel = side / 2, max(0.16 * side, 1.5 * px)     # half the side of a stud, and the width of its bevel
     edge = lambda d, limit: np.clip((limit - d) / px + 0.5, 0, 1)      # 1 inside, 0 outside, smooth
     m = np.maximum(np.abs(du), np.abs(dv))
     inside = edge(m, s)
@@ -513,7 +598,33 @@ def stud_shade(du, dv, px):
     light = -0.7 * facing_u + 0.9 * facing_v            # light from the top left
     shift = max(0.12 * side, px)
     shadow = edge(np.maximum(np.abs(du - shift), np.abs(dv + shift)), s) * (1 - inside)
-    return (1 - 0.2 * shadow) * (1 + 0.04 * flat + (inside - flat) * 0.36 * light)
+    return (1 - 0.13 * shadow) * (1 + 0.03 * flat + (inside - flat) * 0.28 * light)
+
+
+def inside_polys(pts, polys):
+    """Which of the points (an (n, 2) array) lie inside one of the polygons (lists of (u, v) corners)."""
+    x, y = pts[:, 0], pts[:, 1]
+    found = np.zeros(len(pts), bool)
+    for poly in polys:
+        inside = np.zeros(len(pts), bool)
+        for (x1, y1), (x2, y2) in zip(poly, np.roll(poly, -1, 0)):
+            if y1 != y2:
+                inside ^= ((y1 > y) != (y2 > y)) & (x < (x2 - x1) * (y - y1) / (y2 - y1) + x1)
+        found |= inside
+    return found
+
+
+def whole_studs(isl, iu, iv):
+    """For the stud numbers iu, iv (along u and v) of every pixel: does that stud fit completely on the face?
+    Studs that would be cut off by an edge are left out, so narrow faces and bevels stay plain."""
+    u0, v0 = iu.min(), iv.min()
+    cu, cv = np.meshgrid(np.arange(u0, iu.max() + 1), np.arange(v0, iv.max() + 1))
+    centers = np.stack([isl.grid[0] + cu.ravel() * STUD, isl.grid[1] + cv.ravel() * STUD], 1)
+    r = STUD_SIZE * STUD / 2 + MARGIN                  # half a stud and a small margin
+    fits = np.ones(len(centers), bool)
+    for sx, sy in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+        fits &= inside_polys(centers + (sx * r, sy * r), isl.polys)
+    return fits.reshape(cu.shape)[iv - v0, iu - u0]
 
 
 def paint_texture(islands, spots, bands, density, palette):
@@ -541,9 +652,10 @@ def paint_texture(islands, spots, bands, density, palette):
         uu, vv = np.meshgrid(u, v)
         shade = np.ones_like(uu)
         if isl.studs:
-            du = uu - isl.grid[0] - np.round((uu - isl.grid[0]) / STUD) * STUD
-            dv = vv - isl.grid[1] - np.round((vv - isl.grid[1]) / STUD) * STUD
-            shade = stud_shade(du, dv, px)
+            iu = np.round((uu - isl.grid[0]) / STUD).astype(int)
+            iv = np.round((vv - isl.grid[1]) / STUD).astype(int)
+            du, dv = uu - isl.grid[0] - iu * STUD, vv - isl.grid[1] - iv * STUD
+            shade = np.where(whole_studs(isl, iu, iv), stud_shade(du, dv, px), 1.0)
         img[y0:y0 + h, x0:x0 + w] = np.clip(base[None, None] * shade[..., None], 0, 1)
     return Image.fromarray((img * 255 + 0.5).astype(np.uint8))
 

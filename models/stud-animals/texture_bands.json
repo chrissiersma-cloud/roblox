@@ -1,296 +1,350 @@
 {
  "Bear": {
-  "pixels_per_stud": 70.5,
-  "triangles": 724,
+  "pixels_per_stud": 77.63,
+  "triangles": 1212,
   "bands": {
    "brown": {
     "top_row": 0,
-    "bottom_row": 763
+    "bottom_row": 755
    },
    "light": {
-    "top_row": 763,
-    "bottom_row": 822
+    "top_row": 755,
+    "bottom_row": 807
    },
    "dark": {
-    "top_row": 822,
-    "bottom_row": 944
+    "top_row": 807,
+    "bottom_row": 928
    },
    "nose": {
-    "top_row": 944,
-    "bottom_row": 969
+    "top_row": 928,
+    "bottom_row": 959
+   },
+   "eyewhite": {
+    "top_row": 959,
+    "bottom_row": 989
    },
    "eye": {
-    "top_row": 969,
-    "bottom_row": 994
+    "top_row": 989,
+    "bottom_row": 1010
    },
    "glint": {
-    "top_row": 994,
-    "bottom_row": 1007
+    "top_row": 1010,
+    "bottom_row": 1023
    }
   }
  },
  "Boar": {
-  "pixels_per_stud": 111.47,
-  "triangles": 788,
+  "pixels_per_stud": 110.78,
+  "triangles": 1332,
   "bands": {
    "brown": {
     "top_row": 0,
-    "bottom_row": 643
+    "bottom_row": 587
    },
    "dark": {
-    "top_row": 643,
-    "bottom_row": 777
+    "top_row": 587,
+    "bottom_row": 732
    },
    "snout": {
-    "top_row": 777,
-    "bottom_row": 826
+    "top_row": 732,
+    "bottom_row": 792
    },
    "tusk": {
-    "top_row": 826,
-    "bottom_row": 860
+    "top_row": 792,
+    "bottom_row": 847
    },
    "hoof": {
-    "top_row": 860,
-    "bottom_row": 964
+    "top_row": 847,
+    "bottom_row": 923
    },
    "nose": {
-    "top_row": 964,
-    "bottom_row": 983
+    "top_row": 923,
+    "bottom_row": 947
+   },
+   "eyewhite": {
+    "top_row": 947,
+    "bottom_row": 978
    },
    "eye": {
-    "top_row": 983,
-    "bottom_row": 1007
+    "top_row": 978,
+    "bottom_row": 1000
    },
    "glint": {
-    "top_row": 1007,
-    "bottom_row": 1023
+    "top_row": 1000,
+    "bottom_row": 1015
    }
   }
  },
  "Deer": {
-  "pixels_per_stud": 80.56,
-  "triangles": 1040,
+  "pixels_per_stud": 74.49,
+  "triangles": 1884,
   "bands": {
    "brown": {
     "top_row": 0,
-    "bottom_row": 543
+    "bottom_row": 549
    },
    "cream": {
-    "top_row": 543,
-    "bottom_row": 764
-   },
-   "white": {
-    "top_row": 764,
-    "bottom_row": 796
+    "top_row": 549,
+    "bottom_row": 781
    },
    "antler": {
-    "top_row": 796,
-    "bottom_row": 858
+    "top_row": 781,
+    "bottom_row": 865
    },
    "hoof": {
-    "top_row": 858,
-    "bottom_row": 963
+    "top_row": 865,
+    "bottom_row": 933
    },
    "nose": {
-    "top_row": 963,
-    "bottom_row": 984
+    "top_row": 933,
+    "bottom_row": 960
+   },
+   "eyewhite": {
+    "top_row": 960,
+    "bottom_row": 992
    },
    "eye": {
-    "top_row": 984,
-    "bottom_row": 1011
+    "top_row": 992,
+    "bottom_row": 1014
    },
    "glint": {
-    "top_row": 1011,
-    "bottom_row": 1023
+    "top_row": 1014,
+    "bottom_row": 1024
    }
   }
  },
  "Fox": {
-  "pixels_per_stud": 125.97,
-  "triangles": 776,
+  "pixels_per_stud": 101.56,
+  "triangles": 1404,
   "bands": {
    "orange": {
     "top_row": 0,
-    "bottom_row": 536
+    "bottom_row": 544
    },
    "white": {
-    "top_row": 536,
-    "bottom_row": 764
+    "top_row": 544,
+    "bottom_row": 842
    },
    "dark": {
-    "top_row": 764,
-    "bottom_row": 956
+    "top_row": 842,
+    "bottom_row": 933
    },
    "nose": {
-    "top_row": 956,
-    "bottom_row": 975
+    "top_row": 933,
+    "bottom_row": 955
+   },
+   "eyewhite": {
+    "top_row": 955,
+    "bottom_row": 987
    },
    "eye": {
-    "top_row": 975,
-    "bottom_row": 1007
+    "top_row": 987,
+    "bottom_row": 1009
    },
    "glint": {
-    "top_row": 1007,
+    "top_row": 1009,
     "bottom_row": 1024
    }
   }
  },
  "GorillaKing": {
-  "pixels_per_stud": 55.53,
-  "triangles": 4062,
+  "pixels_per_stud": 55.0,
+  "triangles": 3420,
   "bands": {
    "fur": {
     "top_row": 0,
-    "bottom_row": 417
+    "bottom_row": 391
    },
    "silver": {
-    "top_row": 417,
-    "bottom_row": 470
+    "top_row": 391,
+    "bottom_row": 493
    },
    "skin": {
-    "top_row": 470,
-    "bottom_row": 709
+    "top_row": 493,
+    "bottom_row": 673
    },
    "gold": {
-    "top_row": 709,
-    "bottom_row": 841
+    "top_row": 673,
+    "bottom_row": 802
    },
    "ruby": {
-    "top_row": 841,
-    "bottom_row": 855
+    "top_row": 802,
+    "bottom_row": 816
    },
    "diamond": {
-    "top_row": 855,
-    "bottom_row": 878
+    "top_row": 816,
+    "bottom_row": 843
    },
    "black": {
-    "top_row": 878,
-    "bottom_row": 898
+    "top_row": 843,
+    "bottom_row": 854
+   },
+   "eyewhite": {
+    "top_row": 854,
+    "bottom_row": 874
    },
    "eye": {
-    "top_row": 898,
-    "bottom_row": 919
+    "top_row": 874,
+    "bottom_row": 889
    },
    "glint": {
-    "top_row": 919,
-    "bottom_row": 931
+    "top_row": 889,
+    "bottom_row": 900
    },
    "crown": {
-    "top_row": 931,
-    "bottom_row": 1023
+    "top_row": 900,
+    "bottom_row": 1016
    }
   }
  },
  "Owl": {
-  "pixels_per_stud": 143.88,
-  "triangles": 542,
+  "pixels_per_stud": 116.6,
+  "triangles": 1194,
   "bands": {
    "brown": {
     "top_row": 0,
-    "bottom_row": 336
+    "bottom_row": 344
    },
    "light": {
-    "top_row": 336,
-    "bottom_row": 534
+    "top_row": 344,
+    "bottom_row": 558
    },
    "dark": {
-    "top_row": 534,
-    "bottom_row": 783
+    "top_row": 558,
+    "bottom_row": 805
    },
    "feet": {
-    "top_row": 783,
-    "bottom_row": 870
-   },
-   "iris": {
-    "top_row": 870,
-    "bottom_row": 928
+    "top_row": 805,
+    "bottom_row": 887
    },
    "beak": {
-    "top_row": 928,
-    "bottom_row": 969
+    "top_row": 887,
+    "bottom_row": 922
+   },
+   "eyewhite": {
+    "top_row": 922,
+    "bottom_row": 977
    },
    "eye": {
-    "top_row": 969,
-    "bottom_row": 1004
+    "top_row": 977,
+    "bottom_row": 1008
    },
    "glint": {
-    "top_row": 1004,
-    "bottom_row": 1022
+    "top_row": 1008,
+    "bottom_row": 1024
    }
   }
  },
  "Phoenix": {
-  "pixels_per_stud": 64.96,
-  "triangles": 2236,
+  "pixels_per_stud": 56.42,
+  "triangles": 4128,
   "bands": {
    "red": {
     "top_row": 0,
-    "bottom_row": 237
+    "bottom_row": 258
    },
    "orange": {
-    "top_row": 237,
-    "bottom_row": 516
+    "top_row": 258,
+    "bottom_row": 474
    },
    "yellow": {
-    "top_row": 516,
-    "bottom_row": 659
+    "top_row": 474,
+    "bottom_row": 666
    },
    "gold": {
-    "top_row": 659,
-    "bottom_row": 710
+    "top_row": 666,
+    "bottom_row": 771
    },
    "beak": {
-    "top_row": 710,
-    "bottom_row": 736
+    "top_row": 771,
+    "bottom_row": 801
    },
    "claw": {
-    "top_row": 736,
-    "bottom_row": 755
+    "top_row": 801,
+    "bottom_row": 820
    },
-   "eyering": {
-    "top_row": 755,
-    "bottom_row": 778
+   "eyewhite": {
+    "top_row": 820,
+    "bottom_row": 845
    },
    "eye": {
-    "top_row": 778,
-    "bottom_row": 796
+    "top_row": 845,
+    "bottom_row": 863
    },
    "glint": {
-    "top_row": 796,
-    "bottom_row": 808
+    "top_row": 863,
+    "bottom_row": 872
    },
    "flame": {
-    "top_row": 808,
+    "top_row": 872,
     "bottom_row": 1024
    }
   }
  },
  "Rabbit": {
-  "pixels_per_stud": 130.47,
-  "triangles": 584,
+  "pixels_per_stud": 119.3,
+  "triangles": 1212,
   "bands": {
    "brown": {
     "top_row": 0,
-    "bottom_row": 624
+    "bottom_row": 466
    },
    "cream": {
-    "top_row": 624,
-    "bottom_row": 811
+    "top_row": 466,
+    "bottom_row": 737
    },
    "white": {
-    "top_row": 811,
-    "bottom_row": 870
+    "top_row": 737,
+    "bottom_row": 777
    },
    "pink": {
-    "top_row": 870,
-    "bottom_row": 941
+    "top_row": 777,
+    "bottom_row": 915
    },
    "nose": {
-    "top_row": 941,
-    "bottom_row": 966
+    "top_row": 915,
+    "bottom_row": 943
+   },
+   "eyewhite": {
+    "top_row": 943,
+    "bottom_row": 982
    },
    "eye": {
-    "top_row": 966,
+    "top_row": 982,
+    "bottom_row": 1008
+   },
+   "glint": {
+    "top_row": 1008,
+    "bottom_row": 1024
+   }
+  }
+ },
+ "Raccoon": {
+  "pixels_per_stud": 118.75,
+  "triangles": 1572,
+  "bands": {
+   "grey": {
+    "top_row": 0,
+    "bottom_row": 428
+   },
+   "light": {
+    "top_row": 428,
+    "bottom_row": 631
+   },
+   "dark": {
+    "top_row": 631,
+    "bottom_row": 925
+   },
+   "nose": {
+    "top_row": 925,
+    "bottom_row": 947
+   },
+   "eyewhite": {
+    "top_row": 947,
+    "bottom_row": 982
+   },
+   "eye": {
+    "top_row": 982,
     "bottom_row": 1006
    },
    "glint": {
@@ -299,147 +353,125 @@
    }
   }
  },
- "Raccoon": {
-  "pixels_per_stud": 149.36,
-  "triangles": 704,
-  "bands": {
-   "grey": {
-    "top_row": 0,
-    "bottom_row": 509
-   },
-   "light": {
-    "top_row": 509,
-    "bottom_row": 665
-   },
-   "dark": {
-    "top_row": 665,
-    "bottom_row": 901
-   },
-   "eyering": {
-    "top_row": 901,
-    "bottom_row": 948
-   },
-   "nose": {
-    "top_row": 948,
-    "bottom_row": 969
-   },
-   "eye": {
-    "top_row": 969,
-    "bottom_row": 1005
-   },
-   "glint": {
-    "top_row": 1005,
-    "bottom_row": 1024
-   }
-  }
- },
  "Thunderhoof": {
-  "pixels_per_stud": 61.41,
-  "triangles": 1126,
+  "pixels_per_stud": 45.77,
+  "triangles": 2982,
   "bands": {
    "white": {
     "top_row": 0,
-    "bottom_row": 443
+    "bottom_row": 356
    },
    "blue": {
-    "top_row": 443,
-    "bottom_row": 592
+    "top_row": 356,
+    "bottom_row": 595
    },
    "cyan": {
-    "top_row": 592,
-    "bottom_row": 635
+    "top_row": 595,
+    "bottom_row": 629
    },
    "hoof": {
-    "top_row": 635,
-    "bottom_row": 720
+    "top_row": 629,
+    "bottom_row": 675
    },
    "nose": {
-    "top_row": 720,
-    "bottom_row": 739
+    "top_row": 675,
+    "bottom_row": 699
+   },
+   "eyewhite": {
+    "top_row": 699,
+    "bottom_row": 724
    },
    "eye": {
-    "top_row": 739,
-    "bottom_row": 764
+    "top_row": 724,
+    "bottom_row": 742
    },
    "glint": {
-    "top_row": 764,
-    "bottom_row": 776
+    "top_row": 742,
+    "bottom_row": 751
    },
    "bolt": {
-    "top_row": 776,
-    "bottom_row": 967
+    "top_row": 751,
+    "bottom_row": 949
    },
    "mane": {
-    "top_row": 967,
-    "bottom_row": 1019
+    "top_row": 949,
+    "bottom_row": 1024
    }
   }
  },
  "Voidwhisker": {
-  "pixels_per_stud": 90.77,
-  "triangles": 928,
+  "pixels_per_stud": 76.32,
+  "triangles": 1832,
   "bands": {
    "fur": {
     "top_row": 0,
-    "bottom_row": 572
+    "bottom_row": 464
    },
    "soft": {
-    "top_row": 572,
-    "bottom_row": 751
+    "top_row": 464,
+    "bottom_row": 698
    },
    "inner": {
-    "top_row": 751,
-    "bottom_row": 805
+    "top_row": 698,
+    "bottom_row": 741
    },
    "nose": {
-    "top_row": 805,
-    "bottom_row": 822
+    "top_row": 741,
+    "bottom_row": 759
+   },
+   "eyewhite": {
+    "top_row": 759,
+    "bottom_row": 793
    },
    "eye": {
-    "top_row": 822,
-    "bottom_row": 853
+    "top_row": 793,
+    "bottom_row": 821
    },
    "glint": {
-    "top_row": 853,
-    "bottom_row": 868
+    "top_row": 821,
+    "bottom_row": 834
    },
    "void": {
-    "top_row": 868,
-    "bottom_row": 991
+    "top_row": 834,
+    "bottom_row": 987
    },
    "gem": {
-    "top_row": 991,
-    "bottom_row": 1024
+    "top_row": 987,
+    "bottom_row": 1020
    }
   }
  },
  "Wolf": {
-  "pixels_per_stud": 93.85,
-  "triangles": 842,
+  "pixels_per_stud": 83.33,
+  "triangles": 1428,
   "bands": {
    "grey": {
     "top_row": 0,
-    "bottom_row": 524
+    "bottom_row": 404
    },
    "light": {
-    "top_row": 524,
-    "bottom_row": 822
+    "top_row": 404,
+    "bottom_row": 715
    },
    "dark": {
-    "top_row": 822,
-    "bottom_row": 959
+    "top_row": 715,
+    "bottom_row": 941
    },
    "nose": {
-    "top_row": 959,
-    "bottom_row": 981
+    "top_row": 941,
+    "bottom_row": 962
+   },
+   "eyewhite": {
+    "top_row": 962,
+    "bottom_row": 989
    },
    "eye": {
-    "top_row": 981,
-    "bottom_row": 1010
+    "top_row": 989,
+    "bottom_row": 1008
    },
    "glint": {
-    "top_row": 1010,
-    "bottom_row": 1024
+    "top_row": 1008,
+    "bottom_row": 1021
    }
   }
  }
