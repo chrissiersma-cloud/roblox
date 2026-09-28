@@ -10,6 +10,7 @@
 	  - joins the body parts with Motor6D joints (legs, and head, tail or wings where the animal has them)
 	    so they can be animated,
 	  - adds an OverheadAttachment for a name tag and the attributes AnimalId, DisplayName and Rarity,
+	  - makes glowing parts Neon and adds sparkles, flames and a light (only animals that have them),
 	  - moves the finished model to ReplicatedStorage.ZooAnimals and selects it.
 	Animals that were already set up are skipped, so running it twice is safe.
 	To get an .rbxm file: right-click the selected animal in the Explorer and choose "Save to File...".
@@ -26,6 +27,56 @@ end
 
 local function flat(v)
 	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function rgb(t)
+	return Color3.fromRGB(t[1], t[2], t[3])
+end
+
+local PARTICLE_TEXTURES = {
+	Sparkles = "rbxasset://textures/particles/sparkles_main.dds",
+	Fire = "rbxasset://textures/particles/fire_main.dds",
+	Smoke = "rbxasset://textures/particles/smoke_main.dds",
+}
+
+-- Glowing parts become Neon in one color; effects are ParticleEmitters; light is a PointLight.
+local function addEffects(info, parts, root)
+	for name, color in pairs(info.glow or {}) do
+		local part = parts[name]
+		if part then
+			part.Material = Enum.Material.Neon
+			part.Color = rgb(color)
+			part.TextureID = ""
+		end
+	end
+	for _, e in ipairs(info.effects or {}) do
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Name = e.name
+		emitter.Texture = PARTICLE_TEXTURES[e.kind]
+		emitter.Color = ColorSequence.new(rgb(e.color), rgb(e.color2))
+		emitter.Rate = e.rate
+		emitter.Lifetime = NumberRange.new(e.lifetime[1], e.lifetime[2])
+		emitter.Speed = NumberRange.new(e.speed[1], e.speed[2])
+		emitter.SpreadAngle = Vector2.new(e.spread, e.spread)
+		emitter.Acceleration = vec(e.accel)
+		emitter.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, e.size[1]),
+			NumberSequenceKeypoint.new(1, e.size[2]),
+		})
+		emitter.Transparency = NumberSequence.new(e.transparency, 1)
+		emitter.LightEmission = e.lightEmission
+		emitter.LightInfluence = 0
+		emitter.RotSpeed = NumberRange.new(-90, 90)
+		emitter.Parent = parts[e.part] or root
+	end
+	if info.light then
+		local light = Instance.new("PointLight")
+		light.Name = "Glow"
+		light.Color = rgb(info.light.color)
+		light.Brightness = info.light.brightness
+		light.Range = info.light.range
+		light.Parent = parts[info.light.part] or root
+	end
 end
 
 local function findMeshParts(model)
@@ -140,6 +191,7 @@ local function setup(model, id)
 	if math.abs(k - 1) > 0.01 then
 		model:ScaleTo(model:GetScale() / k)
 	end
+	addEffects(info, parts, root)
 
 	local folder = ReplicatedStorage:FindFirstChild("ZooAnimals")
 	if not folder then

@@ -10,6 +10,7 @@
 	  - joins the body parts with Motor6D joints (legs, and head, tail or wings where the animal has them)
 	    so they can be animated,
 	  - adds an OverheadAttachment for a name tag and the attributes AnimalId, DisplayName and Rarity,
+	  - makes glowing parts Neon and adds sparkles, flames and a light (only animals that have them),
 	  - moves the finished model to ReplicatedStorage.ZooAnimals and selects it.
 	Animals that were already set up are skipped, so running it twice is safe.
 	To get an .rbxm file: right-click the selected animal in the Explorer and choose "Save to File...".
@@ -321,6 +322,147 @@ local DATA = {
 			"WingR",
 		},
 	},
+	PhoenixFox = {
+		display = "Phoenix Fox",
+		rarity = "Mythic",
+		root = {
+			center = { 0.0, 2.281, -0.1755 },
+			size = { 3.9, 4.562, 5.681 },
+		},
+		overhead = { 0.0, 5.562, -0.1755 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 2.7689, -0.1755 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.351, 1.69, -1.04 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.351, 1.69, -1.04 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.39, 1.69, 1.105 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.39, 1.69, 1.105 },
+				parent = "Body",
+			},
+			{
+				name = "WingL",
+				pivot = { -0.52, 2.47, -0.715 },
+				parent = "Body",
+			},
+			{
+				name = "WingR",
+				pivot = { 0.52, 2.47, -0.715 },
+				parent = "Body",
+			},
+			{
+				name = "Crest",
+				pivot = { -0.0, 4.0361, -1.781 },
+				parent = "Body",
+			},
+			{
+				name = "TailFlames",
+				pivot = { -0.0, 3.9218, 2.392 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 2.7689, -0.1755 },
+				size = { 2.0944, 2.7558, 5.681 },
+			},
+			LegFL = {
+				center = { -0.351, 1.0075, -1.105 },
+				size = { 0.572, 2.015, 0.754 },
+			},
+			LegFR = {
+				center = { 0.351, 1.0075, -1.105 },
+				size = { 0.572, 2.015, 0.754 },
+			},
+			LegBL = {
+				center = { -0.39, 1.04, 1.144 },
+				size = { 0.702, 2.08, 0.936 },
+			},
+			LegBR = {
+				center = { 0.39, 1.04, 1.144 },
+				size = { 0.702, 2.08, 0.936 },
+			},
+			WingL = {
+				center = { -1.235, 3.2045, -0.4355 },
+				size = { 1.43, 1.651, 1.469 },
+			},
+			WingR = {
+				center = { 1.235, 3.2045, -0.4355 },
+				size = { 1.43, 1.651, 1.469 },
+			},
+			Crest = {
+				center = { 0.0, 4.036, -1.781 },
+				size = { 1.3422, 1.0521, 0.442 },
+			},
+			TailFlames = {
+				center = { 0.0, 3.9219, 2.392 },
+				size = { 2.5214, 1.1263, 0.442 },
+			},
+		},
+		glow = {
+			Crest = { 255.0, 192.0, 46.0 },
+			TailFlames = { 255.0, 192.0, 46.0 },
+			WingL = { 255.0, 138.0, 26.0 },
+			WingR = { 255.0, 138.0, 26.0 },
+		},
+		effects = {
+			{
+				name = "TailFire",
+				part = "TailFlames",
+				kind = "Fire",
+				color = { 255.0, 140.0, 26.0 },
+				color2 = { 255.0, 59.0, 31.0 },
+				rate = 12,
+				size = { 1.0, 0.0 },
+				lifetime = { 0.4, 0.7 },
+				speed = { 1.5, 2.5 },
+				spread = 20,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+			{
+				name = "Embers",
+				part = "Body",
+				kind = "Sparkles",
+				color = { 255.0, 210.0, 63.0 },
+				color2 = { 255.0, 59.0, 31.0 },
+				rate = 5,
+				size = { 0.4, 0.0 },
+				lifetime = { 0.6, 1.2 },
+				speed = { 0.5, 1.2 },
+				spread = 180,
+				accel = { 0.0, 2.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+		},
+		light = {
+			part = "Body",
+			color = { 255.0, 140.0, 26.0 },
+			brightness = 1.5,
+			range = 14,
+		},
+		ref = {
+			"Crest",
+			"TailFlames",
+		},
+	},
 	Rabbit = {
 		display = "Rabbit",
 		rarity = "Common",
@@ -443,6 +585,354 @@ local DATA = {
 			"LegBR",
 		},
 	},
+	StarlightKitsune = {
+		display = "Starlight Kitsune",
+		rarity = "Secret",
+		root = {
+			center = { 0.0, 2.106, -0.2405 },
+			size = { 3.1406, 4.212, 5.551 },
+		},
+		overhead = { 0.0, 5.212, -0.2405 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 2.7689, -0.2405 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.351, 1.69, -1.04 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.351, 1.69, -1.04 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.39, 1.69, 1.105 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.39, 1.69, 1.105 },
+				parent = "Body",
+			},
+			{
+				name = "Crown",
+				pivot = { -0.0, 3.601, -1.0911 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 2.7689, -0.2405 },
+				size = { 3.1406, 2.7558, 5.551 },
+			},
+			LegFL = {
+				center = { -0.351, 1.0075, -1.105 },
+				size = { 0.572, 2.015, 0.754 },
+			},
+			LegFR = {
+				center = { 0.351, 1.0075, -1.105 },
+				size = { 0.572, 2.015, 0.754 },
+			},
+			LegBL = {
+				center = { -0.39, 1.04, 1.144 },
+				size = { 0.702, 2.08, 0.936 },
+			},
+			LegBR = {
+				center = { 0.39, 1.04, 1.144 },
+				size = { 0.702, 2.08, 0.936 },
+			},
+			Crown = {
+				center = { 0.0, 3.601, -1.0911 },
+				size = { 2.7076, 1.222, 1.8998 },
+			},
+		},
+		glow = {
+			Crown = { 255.0, 224.0, 102.0 },
+		},
+		effects = {
+			{
+				name = "Starfall",
+				part = "Body",
+				kind = "Sparkles",
+				color = { 255.0, 156.0, 242.0 },
+				color2 = { 127.0, 232.0, 255.0 },
+				rate = 8,
+				size = { 0.5, 0.0 },
+				lifetime = { 0.6, 1.2 },
+				speed = { 0.4, 1.2 },
+				spread = 180,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+			{
+				name = "CrownSparkles",
+				part = "Crown",
+				kind = "Sparkles",
+				color = { 255.0, 224.0, 102.0 },
+				color2 = { 255.0, 255.0, 255.0 },
+				rate = 4,
+				size = { 0.4, 0.0 },
+				lifetime = { 0.6, 1.2 },
+				speed = { 0.3, 0.8 },
+				spread = 180,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+		},
+		light = {
+			part = "Body",
+			color = { 217.0, 184.0, 255.0 },
+			brightness = 1.4,
+			range = 16,
+		},
+		ref = {
+			"LegFL",
+			"LegBR",
+		},
+	},
+	Thunderhoof = {
+		display = "Thunderhoof",
+		rarity = "Legendary",
+		root = {
+			center = { 0.0, 3.91, -0.0115 },
+			size = { 2.714, 7.82, 6.3481 },
+		},
+		overhead = { 0.0, 8.82, -0.0115 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 4.1585, -0.2013 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.5175, 2.645, -1.2075 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.5175, 2.645, -1.2075 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.552, 2.645, 1.495 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.552, 2.645, 1.495 },
+				parent = "Body",
+			},
+			{
+				name = "Lightning",
+				pivot = { -0.0, 5.2325, 0.5101 },
+				parent = "Body",
+			},
+			{
+				name = "Mane",
+				pivot = { -0.0, 4.8656, -1.2882 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 4.1585, -0.2013 },
+				size = { 2.584, 3.9469, 5.9685 },
+			},
+			LegFL = {
+				center = { -0.5175, 1.4663, -1.2305 },
+				size = { 0.713, 2.9325, 0.805 },
+			},
+			LegFR = {
+				center = { 0.5175, 1.4663, -1.2305 },
+				size = { 0.713, 2.9325, 0.805 },
+			},
+			LegBL = {
+				center = { -0.552, 1.5525, 1.518 },
+				size = { 0.874, 3.105, 1.081 },
+			},
+			LegBR = {
+				center = { 0.552, 1.5525, 1.518 },
+				size = { 0.874, 3.105, 1.081 },
+			},
+			Lightning = {
+				center = { 0.0, 5.2325, 0.5101 },
+				size = { 2.714, 5.175, 5.3049 },
+			},
+			Mane = {
+				center = { 0.0, 4.8657, -1.2882 },
+				size = { 0.368, 2.1357, 1.0018 },
+			},
+		},
+		glow = {
+			Lightning = { 255.0, 226.0, 58.0 },
+			Mane = { 70.0, 210.0, 255.0 },
+		},
+		effects = {
+			{
+				name = "Sparks",
+				part = "Lightning",
+				kind = "Sparkles",
+				color = { 255.0, 226.0, 58.0 },
+				color2 = { 255.0, 255.0, 255.0 },
+				rate = 8,
+				size = { 0.5, 0.0 },
+				lifetime = { 0.2, 0.5 },
+				speed = { 3.0, 6.0 },
+				spread = 180,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+		},
+		light = {
+			part = "Lightning",
+			color = { 159.0, 230.0, 255.0 },
+			brightness = 1.5,
+			range = 14,
+		},
+		ref = {
+			"LegFL",
+			"LegBR",
+		},
+	},
+	Voidwhisker = {
+		display = "Voidwhisker",
+		rarity = "Mythic",
+		root = {
+			center = { 0.0, 2.475, -0.025 },
+			size = { 2.764, 4.95, 4.525 },
+		},
+		overhead = { 0.0, 5.95, -0.025 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 2.8724, -0.025 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.35, 1.6875, -0.9375 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.35, 1.6875, -0.9375 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.3875, 1.6875, 1.0 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.3875, 1.6875, 1.0 },
+				parent = "Body",
+			},
+			{
+				name = "Void",
+				pivot = { -0.0, 3.1515, -1.5377 },
+				parent = "Body",
+			},
+			{
+				name = "Gems",
+				pivot = { -0.0, 3.0063, -1.1261 },
+				parent = "Body",
+			},
+			{
+				name = "TailWisp",
+				pivot = { -0.0, 4.575, 1.875 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 2.8724, -0.025 },
+				size = { 1.346, 2.9199, 4.525 },
+			},
+			LegFL = {
+				center = { -0.35, 1.0, -1.0 },
+				size = { 0.525, 2.0, 0.675 },
+			},
+			LegFR = {
+				center = { 0.35, 1.0, -1.0 },
+				size = { 0.525, 2.0, 0.675 },
+			},
+			LegBL = {
+				center = { -0.3875, 1.0312, 1.025 },
+				size = { 0.675, 2.0625, 0.9 },
+			},
+			LegBR = {
+				center = { 0.3875, 1.0312, 1.025 },
+				size = { 0.675, 2.0625, 0.9 },
+			},
+			Void = {
+				center = { 0.0, 3.1515, -1.5377 },
+				size = { 1.613, 0.903, 1.2254 },
+			},
+			Gems = {
+				center = { 0.0, 3.0062, -1.126 },
+				size = { 2.764, 0.7875, 1.8911 },
+			},
+			TailWisp = {
+				center = { 0.0, 4.575, 1.875 },
+				size = { 0.6718, 0.75, 0.6718 },
+			},
+		},
+		glow = {
+			Void = { 177.0, 77.0, 255.0 },
+			Gems = { 255.0, 156.0, 242.0 },
+			TailWisp = { 177.0, 77.0, 255.0 },
+		},
+		effects = {
+			{
+				name = "VoidSparks",
+				part = "TailWisp",
+				kind = "Sparkles",
+				color = { 177.0, 77.0, 255.0 },
+				color2 = { 255.0, 156.0, 242.0 },
+				rate = 6,
+				size = { 0.5, 0.0 },
+				lifetime = { 0.6, 1.2 },
+				speed = { 0.3, 0.9 },
+				spread = 180,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+			{
+				name = "ShadowWisps",
+				part = "Body",
+				kind = "Smoke",
+				color = { 58.0, 20.0, 102.0 },
+				color2 = { 58.0, 20.0, 102.0 },
+				rate = 5,
+				size = { 1.2, 2.6 },
+				lifetime = { 1.0, 1.6 },
+				speed = { 0.2, 0.6 },
+				spread = 180,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.5,
+				lightEmission = 0,
+			},
+		},
+		light = {
+			part = "Body",
+			color = { 177.0, 77.0, 255.0 },
+			brightness = 1.2,
+			range = 12,
+		},
+		ref = {
+			"Void",
+			"TailWisp",
+		},
+	},
 	Wolf = {
 		display = "Wolf",
 		rarity = "Rare",
@@ -515,6 +1005,56 @@ end
 
 local function flat(v)
 	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function rgb(t)
+	return Color3.fromRGB(t[1], t[2], t[3])
+end
+
+local PARTICLE_TEXTURES = {
+	Sparkles = "rbxasset://textures/particles/sparkles_main.dds",
+	Fire = "rbxasset://textures/particles/fire_main.dds",
+	Smoke = "rbxasset://textures/particles/smoke_main.dds",
+}
+
+-- Glowing parts become Neon in one color; effects are ParticleEmitters; light is a PointLight.
+local function addEffects(info, parts, root)
+	for name, color in pairs(info.glow or {}) do
+		local part = parts[name]
+		if part then
+			part.Material = Enum.Material.Neon
+			part.Color = rgb(color)
+			part.TextureID = ""
+		end
+	end
+	for _, e in ipairs(info.effects or {}) do
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Name = e.name
+		emitter.Texture = PARTICLE_TEXTURES[e.kind]
+		emitter.Color = ColorSequence.new(rgb(e.color), rgb(e.color2))
+		emitter.Rate = e.rate
+		emitter.Lifetime = NumberRange.new(e.lifetime[1], e.lifetime[2])
+		emitter.Speed = NumberRange.new(e.speed[1], e.speed[2])
+		emitter.SpreadAngle = Vector2.new(e.spread, e.spread)
+		emitter.Acceleration = vec(e.accel)
+		emitter.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, e.size[1]),
+			NumberSequenceKeypoint.new(1, e.size[2]),
+		})
+		emitter.Transparency = NumberSequence.new(e.transparency, 1)
+		emitter.LightEmission = e.lightEmission
+		emitter.LightInfluence = 0
+		emitter.RotSpeed = NumberRange.new(-90, 90)
+		emitter.Parent = parts[e.part] or root
+	end
+	if info.light then
+		local light = Instance.new("PointLight")
+		light.Name = "Glow"
+		light.Color = rgb(info.light.color)
+		light.Brightness = info.light.brightness
+		light.Range = info.light.range
+		light.Parent = parts[info.light.part] or root
+	end
 end
 
 local function findMeshParts(model)
@@ -629,6 +1169,7 @@ local function setup(model, id)
 	if math.abs(k - 1) > 0.01 then
 		model:ScaleTo(model:GetScale() / k)
 	end
+	addEffects(info, parts, root)
 
 	local folder = ReplicatedStorage:FindFirstChild("ZooAnimals")
 	if not folder then

@@ -1,0 +1,242 @@
+{
+ "id": "StarlightKitsune",
+ "display": "Starlight Kitsune",
+ "rarity": "Secret",
+ "root": {
+  "center": [
+   0.0,
+   2.106,
+   -0.2405
+  ],
+  "size": [
+   3.1406,
+   4.212,
+   5.551
+  ]
+ },
+ "overhead": [
+  0.0,
+  5.212,
+  -0.2405
+ ],
+ "bones": [
+  {
+   "name": "Body",
+   "pivot": [
+    0.0,
+    2.7689,
+    -0.2405
+   ]
+  },
+  {
+   "name": "LegFL",
+   "pivot": [
+    -0.351,
+    1.69,
+    -1.04
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegFR",
+   "pivot": [
+    0.351,
+    1.69,
+    -1.04
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegBL",
+   "pivot": [
+    -0.39,
+    1.69,
+    1.105
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegBR",
+   "pivot": [
+    0.39,
+    1.69,
+    1.105
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "Crown",
+   "pivot": [
+    -0.0,
+    3.601,
+    -1.0911
+   ],
+   "parent": "Body"
+  }
+ ],
+ "parts": {
+  "Body": {
+   "center": [
+    0.0,
+    2.7689,
+    -0.2405
+   ],
+   "size": [
+    3.1406,
+    2.7558,
+    5.551
+   ]
+  },
+  "LegFL": {
+   "center": [
+    -0.351,
+    1.0075,
+    -1.105
+   ],
+   "size": [
+    0.572,
+    2.015,
+    0.754
+   ]
+  },
+  "LegFR": {
+   "center": [
+    0.351,
+    1.0075,
+    -1.105
+   ],
+   "size": [
+    0.572,
+    2.015,
+    0.754
+   ]
+  },
+  "LegBL": {
+   "center": [
+    -0.39,
+    1.04,
+    1.144
+   ],
+   "size": [
+    0.702,
+    2.08,
+    0.936
+   ]
+  },
+  "LegBR": {
+   "center": [
+    0.39,
+    1.04,
+    1.144
+   ],
+   "size": [
+    0.702,
+    2.08,
+    0.936
+   ]
+  },
+  "Crown": {
+   "center": [
+    0.0,
+    3.601,
+    -1.0911
+   ],
+   "size": [
+    2.7076,
+    1.222,
+    1.8998
+   ]
+  }
+ },
+ "glow": {
+  "Crown": [
+   255,
+   224,
+   102
+  ]
+ },
+ "effects": [
+  {
+   "name": "Starfall",
+   "part": "Body",
+   "kind": "Sparkles",
+   "color": [
+    255,
+    156,
+    242
+   ],
+   "color2": [
+    127,
+    232,
+    255
+   ],
+   "rate": 8,
+   "size": [
+    0.5,
+    0
+   ],
+   "lifetime": [
+    0.6,
+    1.2
+   ],
+   "speed": [
+    0.4,
+    1.2
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "CrownSparkles",
+   "part": "Crown",
+   "kind": "Sparkles",
+   "color": [
+    255,
+    224,
+    102
+   ],
+   "color2": [
+    255,
+    255,
+    255
+   ],
+   "rate": 4,
+   "size": [
+    0.4,
+    0
+   ],
+   "lifetime": [
+    0.6,
+    1.2
+   ],
+   "speed": [
+    0.3,
+    0.8
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  }
+ ],
+ "light": {
+  "part": "Body",
+  "color": [
+   217,
+   184,
+   255
+  ],
+  "brightness": 1.4,
+  "range": 16
+ }
+}

@@ -51,12 +51,30 @@ class Animal:
     palette, golden: {color key: "#rrggbb"}; the order is the order of the bands in the texture.
     no_studs: color keys painted flat (eyes, nose). parts: function returning the Parts: first the Body,
     then the parts that turn around their origin (legs, wings).
-    close: (point, distance) for the close-up picture of the head."""
+    close: (point, distance) for the close-up picture of the head.
+    glow: {part name: "#rrggbb"}: parts that glow (Neon in Roblox, made by the setup script).
+    effects: particle effects for the setup script, see effect(). light: (part name, "#rrggbb", brightness, range)
+    for a PointLight."""
 
-    def __init__(self, id, rarity, palette, golden, parts, close, no_studs=("nose", "eye", "glint"), display=None):
+    def __init__(self, id, rarity, palette, golden, parts, close, no_studs=("nose", "eye", "glint"), display=None,
+                 glow=None, effects=(), light=None):
         self.id, self.display, self.rarity = id, display or id, rarity
         self.palette, self.golden, self.no_studs = palette, golden, set(no_studs)
         self.parts, self.close = parts, close
+        self.glow, self.effects, self.light = glow or {}, list(effects), light
+
+
+def effect(name, part, kind, color, color2=None, rate=5, size=(0.4, 0.0), lifetime=(0.6, 1.2), speed=(0.5, 1.5),
+           spread=180, accel=(0, 0, 0), transparency=0.2, light_emission=1):
+    """A particle effect for the setup script. kind: "Sparkles", "Fire" or "Smoke" (Roblox's own particle
+    pictures). size: (at the start, at the end) in studs; accel: Roblox directions (y is up)."""
+    return {"name": name, "part": part, "kind": kind, "color": rgb(color), "color2": rgb(color2 or color),
+            "rate": rate, "size": list(size), "lifetime": list(lifetime), "speed": list(speed), "spread": spread,
+            "accel": list(accel), "transparency": transparency, "lightEmission": light_emission}
+
+
+def rgb(h):
+    return [int(h[i:i + 2], 16) for i in (1, 3, 5)]
 
 
 # ------------------------------------------------------------------ shapes ----
@@ -147,6 +165,57 @@ def slab(part, center, normal, w, h, depth, paint, corner=0.0):
     center = np.asarray(center, float)
     shape = (lambda c: ring(c, side, up, w, h, corner)) if corner else (lambda c: square(c, side, up, w, h))
     loft(part, [shape(center - n * 0.06), shape(center + n * depth)], paint)
+
+
+def tube(part, points, sizes, paint, tip=None):
+    """A square stick through the points (lightning bolts, whiskers): one straight piece per stretch, a little
+    longer so the pieces overlap at the bends. sizes: thickness at every point. tip: end in a point there."""
+    pts = [np.asarray(p, float) for p in points] + ([np.asarray(tip, float)] if tip is not None else [])
+    last = len(pts) - 2
+    for i, (p, q) in enumerate(zip(pts, pts[1:])):
+        d = unit(q - p)
+        a = unit(np.cross(d, Z)) if abs(d[2]) < 0.95 else X
+        b = np.cross(a, d)
+        start = square(p - (d * sizes[i] / 2 if i else 0), a, b, sizes[i], sizes[i])
+        if tip is not None and i == last:
+            loft(part, [start], paint, caps=(True, False), tip=q)       # the point, along its own stretch
+        else:
+            end = q + (d * sizes[i + 1] / 2 if i < last else 0)
+            loft(part, [start, square(end, a, b, sizes[i + 1], sizes[i + 1])], paint)
+
+
+def diamond(part, center, width, height, paint):
+    """A gem: two pyramids back to back (floating orbs, crystals)."""
+    center = np.asarray(center, float)
+    band = square(center, unit(X + Y), unit(Y - X), width, width)
+    for tip in (center + Z * height / 2, center - Z * height / 2):
+        loft(part, [band], paint, caps=(False, False), tip=tip)
+
+
+def turn(rings, pivot, axis, degrees):
+    """Rings (lists of points) turned around the line through pivot along axis."""
+    k, t = unit(np.asarray(axis, float)), math.radians(degrees)
+    pivot = np.asarray(pivot, float)
+
+    def one(p):
+        v = np.asarray(p, float) - pivot
+        return pivot + v * math.cos(t) + np.cross(k, v) * math.sin(t) + k * np.dot(k, v) * (1 - math.cos(t))
+    return [[one(p) for p in r] for r in rings]
+
+
+def scaled(parts, k):
+    """Makes every part k times bigger (seen from the point on the ground under the middle of the animal)."""
+    for part in parts:
+        part.verts = [v * k for v in part.verts]
+        part.origin = part.origin * k
+    return parts
+
+
+def centered(part):
+    """Puts the origin of a part in the middle of its box (for parts that do not turn, like glowing bits)."""
+    co = np.array(part.verts)
+    part.origin = (co.min(0) + co.max(0)) / 2
+    return part
 
 
 def mirror(pts):
@@ -449,9 +518,29 @@ def rig_info(animal, parts):
     bones = [{"name": body, "pivot": boxes[body]["center"]}]
     bones += [{"name": p.name, "pivot": to_roblox(p.origin), "parent": body} for p in parts[1:]]
     r = lambda v: [round(float(x), 4) for x in v]
-    return {"id": animal.id, "display": animal.display, "rarity": animal.rarity,
+    info = {"id": animal.id, "display": animal.display, "rarity": animal.rarity,
             "root": {"center": r((lo + hi) / 2), "size": r(hi - lo)},
             "overhead": r((0, hi[1] + 1.0, (lo[2] + hi[2]) / 2)), "bones": bones, "parts": boxes}
+    if animal.glow:
+        info["glow"] = {name: rgb(color) for name, color in animal.glow.items()}
+    if animal.effects:
+        info["effects"] = animal.effects
+    if animal.light:
+        part, color, brightness, range_ = animal.light
+        info["light"] = {"part": part, "color": rgb(color), "brightness": brightness, "range": range_}
+    return info
+
+
+def glow_material(name, color):
+    """A material that shines by itself, like Neon in Roblox (only in the .blend and the pictures)."""
+    linear = [c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4 for c in hex_srgb(color)]
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    bsdf = mat.node_tree.nodes["Principled BSDF"]
+    bsdf.inputs["Base Color"].default_value = (*(c * 0.3 for c in linear), 1)
+    bsdf.inputs["Emission Color"].default_value = (*linear, 1)
+    bsdf.inputs["Emission Strength"].default_value = 1.0
+    return mat
 
 
 def export_glb(root, objs, path):
@@ -573,6 +662,10 @@ def build(animal, out=None):
     (out / f"{animal.id}.rig.json").write_text(json.dumps(rig_info(animal, parts), indent=1))
     setup_script.write(out)
     export_glb(root, objs, out / f"{animal.id}.glb")
+    for o in objs:
+        if o.name in animal.glow:
+            o.data.materials.clear()
+            o.data.materials.append(glow_material(f"{o.name}Glow", animal.glow[o.name]))
     bpy.context.preferences.filepaths.save_version = 0      # no .blend1 backup next to it
     bpy.ops.wm.save_as_mainfile(filepath=str(out / f"{animal.id}.blend"), compress=True)
 
