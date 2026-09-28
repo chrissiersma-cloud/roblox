@@ -16,6 +16,128 @@
 ]]
 
 local DATA = {
+	Bear = {
+		display = "Bear",
+		rarity = "Epic",
+		root = {
+			center = { 0.0, 2.124, -0.654 },
+			size = { 2.76, 4.248, 6.684 },
+		},
+		overhead = { 0.0, 5.248, -0.654 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 2.904, -0.654 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.744, 2.04, -1.56 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.744, 2.04, -1.56 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.792, 2.04, 1.68 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.792, 2.04, 1.68 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 2.904, -0.654 },
+				size = { 2.52, 2.688, 6.684 },
+			},
+			LegFL = {
+				center = { -0.744, 1.23, -1.638 },
+				size = { 1.032, 2.46, 1.236 },
+			},
+			LegFR = {
+				center = { 0.744, 1.23, -1.638 },
+				size = { 1.032, 2.46, 1.236 },
+			},
+			LegBL = {
+				center = { -0.792, 1.29, 1.704 },
+				size = { 1.176, 2.58, 1.44 },
+			},
+			LegBR = {
+				center = { 0.792, 1.29, 1.704 },
+				size = { 1.176, 2.58, 1.44 },
+			},
+		},
+		ref = {
+			"LegFL",
+			"LegBR",
+		},
+	},
+	Boar = {
+		display = "Boar",
+		rarity = "Rare",
+		root = {
+			center = { 0.0, 1.245, -0.4725 },
+			size = { 1.62, 2.49, 4.605 },
+		},
+		overhead = { 0.0, 3.49, -0.4725 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 1.645, -0.4725 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.42, 0.85, -0.95 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.42, 0.85, -0.95 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.45, 0.85, 1.0 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.45, 0.85, 1.0 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 1.645, -0.4725 },
+				size = { 1.62, 1.69, 4.605 },
+			},
+			LegFL = {
+				center = { -0.42, 0.575, -0.955 },
+				size = { 0.56, 1.15, 0.61 },
+			},
+			LegFR = {
+				center = { 0.42, 0.575, -0.955 },
+				size = { 0.56, 1.15, 0.61 },
+			},
+			LegBL = {
+				center = { -0.45, 0.625, 1.02 },
+				size = { 0.66, 1.25, 0.84 },
+			},
+			LegBR = {
+				center = { 0.45, 0.625, 1.02 },
+				size = { 0.66, 1.25, 0.84 },
+			},
+		},
+		ref = {
+			"LegFL",
+			"LegBR",
+		},
+	},
 	Deer = {
 		display = "Deer",
 		rarity = "Common",
@@ -77,6 +199,128 @@ local DATA = {
 			"LegBR",
 		},
 	},
+	Fox = {
+		display = "Fox",
+		rarity = "Common",
+		root = {
+			center = { 0.0, 1.5949, 0.2 },
+			size = { 1.14, 3.1898, 5.04 },
+		},
+		overhead = { 0.0, 4.1898, 0.2 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 2.0599, 0.2 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.27, 1.3, -0.8 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.27, 1.3, -0.8 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.3, 1.3, 0.85 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.3, 1.3, 0.85 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 2.0599, 0.2 },
+				size = { 1.06, 2.2598, 5.04 },
+			},
+			LegFL = {
+				center = { -0.27, 0.775, -0.85 },
+				size = { 0.44, 1.55, 0.58 },
+			},
+			LegFR = {
+				center = { 0.27, 0.775, -0.85 },
+				size = { 0.44, 1.55, 0.58 },
+			},
+			LegBL = {
+				center = { -0.3, 0.8, 0.88 },
+				size = { 0.54, 1.6, 0.72 },
+			},
+			LegBR = {
+				center = { 0.3, 0.8, 0.88 },
+				size = { 0.54, 1.6, 0.72 },
+			},
+		},
+		ref = {
+			"LegFL",
+			"LegBR",
+		},
+	},
+	Owl = {
+		display = "Owl",
+		rarity = "Rare",
+		root = {
+			center = { 0.0, 1.4557, -0.046 },
+			size = { 1.64, 2.9113, 1.372 },
+		},
+		overhead = { 0.0, 3.9113, -0.046 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 1.6657, -0.046 },
+			},
+			{
+				name = "WingL",
+				pivot = { -0.6, 1.85, 0.06 },
+				parent = "Body",
+			},
+			{
+				name = "WingR",
+				pivot = { 0.6, 1.85, 0.06 },
+				parent = "Body",
+			},
+			{
+				name = "LegL",
+				pivot = { -0.28, 0.55, 0.0 },
+				parent = "Body",
+			},
+			{
+				name = "LegR",
+				pivot = { 0.28, 0.55, 0.0 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 1.6657, -0.046 },
+				size = { 1.34, 2.4913, 1.372 },
+			},
+			WingL = {
+				center = { -0.66, 1.215, 0.12 },
+				size = { 0.32, 1.33, 0.88 },
+			},
+			WingR = {
+				center = { 0.66, 1.215, 0.12 },
+				size = { 0.32, 1.33, 0.88 },
+			},
+			LegL = {
+				center = { -0.28, 0.31, -0.12 },
+				size = { 0.38, 0.62, 0.56 },
+			},
+			LegR = {
+				center = { 0.28, 0.31, -0.12 },
+				size = { 0.38, 0.62, 0.56 },
+			},
+		},
+		ref = {
+			"WingL",
+			"WingR",
+		},
+	},
 	Rabbit = {
 		display = "Rabbit",
 		rarity = "Common",
@@ -131,6 +375,67 @@ local DATA = {
 			LegBR = {
 				center = { 0.46, 0.6, 0.415 },
 				size = { 0.58, 1.2, 1.29 },
+			},
+		},
+		ref = {
+			"LegFL",
+			"LegBR",
+		},
+	},
+	Raccoon = {
+		display = "Raccoon",
+		rarity = "Common",
+		root = {
+			center = { 0.0, 1.1373, 0.36 },
+			size = { 1.3, 2.2746, 3.96 },
+		},
+		overhead = { 0.0, 3.2746, 0.36 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 1.4323, 0.36 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.3, 0.75, -0.5 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.3, 0.75, -0.5 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.36, 0.85, 0.55 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.36, 0.85, 0.55 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 1.4323, 0.36 },
+				size = { 1.3, 1.6845, 3.96 },
+			},
+			LegFL = {
+				center = { -0.3, 0.475, -0.555 },
+				size = { 0.42, 0.95, 0.53 },
+			},
+			LegFR = {
+				center = { 0.3, 0.475, -0.555 },
+				size = { 0.42, 0.95, 0.53 },
+			},
+			LegBL = {
+				center = { -0.36, 0.55, 0.555 },
+				size = { 0.52, 1.1, 0.71 },
+			},
+			LegBR = {
+				center = { 0.36, 0.55, 0.555 },
+				size = { 0.52, 1.1, 0.71 },
 			},
 		},
 		ref = {

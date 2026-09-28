@@ -1,8 +1,8 @@
 """Shared toolkit for the low-poly Create a Zoo animals with classic Roblox studs painted in their texture.
 
-Every animal has its own small script (stud_deer.py, stud_rabbit.py, stud_wolf.py) that describes its
+Every animal has its own small script (stud_deer.py, stud_fox.py, stud_owl.py, ...) that describes its
 shape and colors and then calls `build(animal)`. Run one of those:
-    python3 tools/blender/stud_wolf.py [out_dir]            (default out_dir: models/stud-animals)
+    python3 tools/blender/stud_fox.py [out_dir]             (default out_dir: models/stud-animals)
 Needs: pip install bpy numpy pillow scipy                    (scipy is only used for the setup script)
 
 For an animal with id <Id>, build() writes <Id>.blend, <Id>.glb, <Id>Studs.png, <Id>Studs_Golden.png and
@@ -49,7 +49,8 @@ X, Y, Z = np.eye(3)
 class Animal:
     """What build() needs to know about an animal.
     palette, golden: {color key: "#rrggbb"}; the order is the order of the bands in the texture.
-    no_studs: color keys painted flat (eyes, nose). parts: function returning [Body, legs...] Parts.
+    no_studs: color keys painted flat (eyes, nose). parts: function returning the Parts: first the Body,
+    then the parts that turn around their origin (legs, wings).
     close: (point, distance) for the close-up picture of the head."""
 
     def __init__(self, id, rarity, palette, golden, parts, close, no_studs=("nose", "eye", "glint"), display=None):
@@ -136,14 +137,16 @@ def loft(part, rings, paint, caps=(True, True), tip=None):
         part.face(ids[-1], centers[-1] + (centers[-2] - centers[-1]) * 0.01, paint)
 
 
-def slab(part, center, normal, w, h, depth, paint):
-    """A thin box lying on a surface (eyes, nose): its front is `depth` above the surface at `center`."""
+def slab(part, center, normal, w, h, depth, paint, corner=0.0):
+    """A thin box lying on a surface (eyes, nose): its front is `depth` above the surface at `center`.
+    corner > 0 cuts its corners off, so it looks round."""
     n = unit(np.asarray(normal, float))
     up = Z - np.dot(Z, n) * n
     up = unit(up) if np.linalg.norm(up) > 1e-3 else unit(-Y - np.dot(-Y, n) * n)
     side = np.cross(up, n)
     center = np.asarray(center, float)
-    loft(part, [square(center - n * 0.06, side, up, w, h), square(center + n * depth, side, up, w, h)], paint)
+    shape = (lambda c: ring(c, side, up, w, h, corner)) if corner else (lambda c: square(c, side, up, w, h))
+    loft(part, [shape(center - n * 0.06), shape(center + n * depth)], paint)
 
 
 def mirror(pts):
@@ -162,12 +165,15 @@ def plane_point(p0, n, y, z):
     return np.array([x, y, z])
 
 
-def eyes(part, ring_a, ring_b, y, z, w=0.22, h=0.26):
-    """Black eyes with a small white glint on both side faces between two standing head rings."""
+def eyes(part, ring_a, ring_b, y, z, w=0.22, h=0.26, rim=None):
+    """Black eyes with a small white glint on both side faces between two standing head rings.
+    rim: color key of a thin border around each eye (for eyes on a dark patch of fur)."""
     a, b = ring_a[0], ring_b[0]                        # lower corners of the left side face
     n = unit(np.cross(ring_a[1] - a, b - a))
     for sign in (1, -1):
         nn, p0 = n * (sign, 1, 1), a * (sign, 1, 1)
+        if rim:
+            slab(part, plane_point(p0, nn, y, z), nn, w + 0.07, h + 0.07, 0.015, rim)
         slab(part, plane_point(p0, nn, y, z), nn, w, h, 0.03, "eye")
         slab(part, plane_point(p0, nn, y - 0.05, z + 0.06) + nn * 0.03, nn, 0.07, 0.07, 0.015, "glint")
 

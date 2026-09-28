@@ -1,39 +1,175 @@
 {
- "Deer": {
-  "pixels_per_stud": 81.82,
-  "triangles": 1028,
+ "Bear": {
+  "pixels_per_stud": 70.5,
+  "triangles": 724,
   "bands": {
    "brown": {
     "top_row": 0,
-    "bottom_row": 525
+    "bottom_row": 763
    },
-   "cream": {
-    "top_row": 525,
-    "bottom_row": 749
+   "light": {
+    "top_row": 763,
+    "bottom_row": 822
    },
-   "white": {
-    "top_row": 749,
-    "bottom_row": 781
-   },
-   "antler": {
-    "top_row": 781,
-    "bottom_row": 845
-   },
-   "hoof": {
-    "top_row": 845,
-    "bottom_row": 952
+   "dark": {
+    "top_row": 822,
+    "bottom_row": 944
    },
    "nose": {
-    "top_row": 952,
-    "bottom_row": 973
+    "top_row": 944,
+    "bottom_row": 969
    },
    "eye": {
-    "top_row": 973,
-    "bottom_row": 1001
+    "top_row": 969,
+    "bottom_row": 994
    },
    "glint": {
-    "top_row": 1001,
-    "bottom_row": 1014
+    "top_row": 994,
+    "bottom_row": 1007
+   }
+  }
+ },
+ "Boar": {
+  "pixels_per_stud": 111.47,
+  "triangles": 788,
+  "bands": {
+   "brown": {
+    "top_row": 0,
+    "bottom_row": 643
+   },
+   "dark": {
+    "top_row": 643,
+    "bottom_row": 777
+   },
+   "snout": {
+    "top_row": 777,
+    "bottom_row": 826
+   },
+   "tusk": {
+    "top_row": 826,
+    "bottom_row": 860
+   },
+   "hoof": {
+    "top_row": 860,
+    "bottom_row": 964
+   },
+   "nose": {
+    "top_row": 964,
+    "bottom_row": 983
+   },
+   "eye": {
+    "top_row": 983,
+    "bottom_row": 1007
+   },
+   "glint": {
+    "top_row": 1007,
+    "bottom_row": 1023
+   }
+  }
+ },
+ "Deer": {
+  "pixels_per_stud": 80.56,
+  "triangles": 1040,
+  "bands": {
+   "brown": {
+    "top_row": 0,
+    "bottom_row": 543
+   },
+   "cream": {
+    "top_row": 543,
+    "bottom_row": 764
+   },
+   "white": {
+    "top_row": 764,
+    "bottom_row": 796
+   },
+   "antler": {
+    "top_row": 796,
+    "bottom_row": 858
+   },
+   "hoof": {
+    "top_row": 858,
+    "bottom_row": 963
+   },
+   "nose": {
+    "top_row": 963,
+    "bottom_row": 984
+   },
+   "eye": {
+    "top_row": 984,
+    "bottom_row": 1011
+   },
+   "glint": {
+    "top_row": 1011,
+    "bottom_row": 1023
+   }
+  }
+ },
+ "Fox": {
+  "pixels_per_stud": 125.97,
+  "triangles": 776,
+  "bands": {
+   "orange": {
+    "top_row": 0,
+    "bottom_row": 536
+   },
+   "white": {
+    "top_row": 536,
+    "bottom_row": 764
+   },
+   "dark": {
+    "top_row": 764,
+    "bottom_row": 956
+   },
+   "nose": {
+    "top_row": 956,
+    "bottom_row": 975
+   },
+   "eye": {
+    "top_row": 975,
+    "bottom_row": 1007
+   },
+   "glint": {
+    "top_row": 1007,
+    "bottom_row": 1024
+   }
+  }
+ },
+ "Owl": {
+  "pixels_per_stud": 143.88,
+  "triangles": 542,
+  "bands": {
+   "brown": {
+    "top_row": 0,
+    "bottom_row": 336
+   },
+   "light": {
+    "top_row": 336,
+    "bottom_row": 534
+   },
+   "dark": {
+    "top_row": 534,
+    "bottom_row": 783
+   },
+   "feet": {
+    "top_row": 783,
+    "bottom_row": 870
+   },
+   "iris": {
+    "top_row": 870,
+    "bottom_row": 928
+   },
+   "beak": {
+    "top_row": 928,
+    "bottom_row": 969
+   },
+   "eye": {
+    "top_row": 969,
+    "bottom_row": 1004
+   },
+   "glint": {
+    "top_row": 1004,
+    "bottom_row": 1022
    }
   }
  },
@@ -71,28 +207,62 @@
    }
   }
  },
- "Wolf": {
-  "pixels_per_stud": 97.14,
-  "triangles": 830,
+ "Raccoon": {
+  "pixels_per_stud": 149.36,
+  "triangles": 704,
   "bands": {
    "grey": {
     "top_row": 0,
-    "bottom_row": 508
+    "bottom_row": 509
    },
    "light": {
-    "top_row": 508,
-    "bottom_row": 816
+    "top_row": 509,
+    "bottom_row": 665
    },
    "dark": {
-    "top_row": 816,
-    "bottom_row": 958
+    "top_row": 665,
+    "bottom_row": 901
+   },
+   "eyering": {
+    "top_row": 901,
+    "bottom_row": 948
    },
    "nose": {
-    "top_row": 958,
-    "bottom_row": 980
+    "top_row": 948,
+    "bottom_row": 969
    },
    "eye": {
-    "top_row": 980,
+    "top_row": 969,
+    "bottom_row": 1005
+   },
+   "glint": {
+    "top_row": 1005,
+    "bottom_row": 1024
+   }
+  }
+ },
+ "Wolf": {
+  "pixels_per_stud": 93.85,
+  "triangles": 842,
+  "bands": {
+   "grey": {
+    "top_row": 0,
+    "bottom_row": 524
+   },
+   "light": {
+    "top_row": 524,
+    "bottom_row": 822
+   },
+   "dark": {
+    "top_row": 822,
+    "bottom_row": 959
+   },
+   "nose": {
+    "top_row": 959,
+    "bottom_row": 981
+   },
+   "eye": {
+    "top_row": 981,
     "bottom_row": 1010
    },
    "glint": {

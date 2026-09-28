@@ -85,7 +85,7 @@ def build_body():
              (3.30, -1.44, 0.92, 0.94, 0.24),
              (3.85, -1.64, 0.84, 0.86, 0.22),
              (4.35, -1.80, 0.80, 0.82, 0.20)]
-    loft(body, [ring((0, y, z), X, Y, w, d, c) for z, y, w, d, c in rings], neck_paint, caps=(False, False))
+    loft(body, [ring((0, y, z), X, Y, w, d, c) for z, y, w, d, c in rings], neck_paint)
 
     # Head: rings standing across the head, from the back of the head to the snout.
     rings = [(-1.38, 4.56, 0.90, 0.84, 0.26, 0.24),
