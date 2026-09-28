@@ -15,9 +15,9 @@ dieren (Legendary, Mythic en Secret) hebben ook delen die gloeien, vonken, vlamm
 | Owl | Rare | 2,9 studs (met oorpluimen) | 542 | bruin, lichte borst en gezicht, donkere vleugels, gele ogen, oranje snavel en poten |
 | Bear | Epic | 4,2 studs (tot de oren) | 724 | bruin, lichtbruine snuit en binnenkant oren, donkere poten |
 | Thunderhoof | Legendary | 7,8 studs (met gewei) | 1.126 | wit en lichtblauw, gouden hoeven, blauwe ogen; gloeit: gele bliksemschichten als gewei, op de flanken en uit de staart, en blauwe manen |
-| Phoenix Fox | Mythic | 4,6 studs (met vlammen) | 1.004 | vuuroranje, crème borst en staartpunten, donkerrode sokken; gloeit: vlammenvleugels, een vlammenkam op de kop en vlammen op de drie staarten |
 | Voidwhisker | Mythic | 5 studs (met staart) | 928 | bijna zwart paars, roze ogen, paars in de oren; gloeit: een rune op het voorhoofd, een halsband met roze edelsteen, snorharen, twee zwevende edelstenen en een kristal op de staart |
-| Starlight Kitsune | Secret | 4,2 studs (met kroon) | 1.458 | wit en lila, paarse oorpunten en pootjes, roze ster op het voorhoofd, negen staarten met elk een regenboogkleur; gloeit: een gouden kroon en twee zwevende gouden edelstenen |
+| Phoenix | Mythic | 5,5 studs (met vleugels) | 662 | een echte vuurvogel: rood, oranje borst, gouden poten, snavel en ringen om de ogen, grote vleugels en drie lange staartveren die van rood via oranje naar geel gaan; gloeit: een vlammenkam en vlammen aan de vleugels en de staart |
+| Gorilla King | Secret | 5,3 studs (met kroon) | 1.308 | helemaal dripped out: zwarte vacht, zilveren rug, grijze borst en gezicht, oranje ogen, zware wenkbrauwen; gloeit: een gouden kroon met robijn; glimt: gouden grills (twee tanden zijn diamanten), een dikke gouden ketting met een groot medaillon en gouden armbanden |
 
 ![Hert](../../previews/stud_deer_views.png)
 ![Konijn](../../previews/stud_rabbit_views.png)
@@ -28,17 +28,17 @@ dieren (Legendary, Mythic en Secret) hebben ook delen die gloeien, vonken, vlamm
 ![Uil](../../previews/stud_owl_views.png)
 ![Beer](../../previews/stud_bear_views.png)
 ![Thunderhoof](../../previews/stud_thunderhoof_views.png)
-![Phoenix Fox](../../previews/stud_phoenixfox_views.png)
 ![Voidwhisker](../../previews/stud_voidwhisker_views.png)
-![Starlight Kitsune](../../previews/stud_starlightkitsune_views.png)
+![Phoenix](../../previews/stud_phoenix_views.png)
+![Gorilla King](../../previews/stud_gorillaking_views.png)
 
-Een Roblox-speler is ongeveer 5 studs hoog. De dieren hebben 500 tot 1.500 driehoekjes. Kleine dieren hebben
+Een Roblox-speler is ongeveer 5 studs hoog. De dieren hebben 500 tot 1.300 driehoekjes. Kleine dieren hebben
 er minder nodig, want meer vlakjes zou je daar niet zien. Een Roblox-MeshPart mag er tot 20.000 hebben, dus alle
 dieren zijn erg licht. Bij alle dieren geldt:
 
 - **Onderdelen:** `Body` (met kop, oren, staart en de rest) en de poten `LegFL`, `LegFR`, `LegBL`, `LegBR`
-  (F = voor, B = achter, L = links, R = rechts). De uil staat rechtop en heeft daarom `Body`, de vleugels `WingL`
-  en `WingR` en de poten `LegL` en `LegR`. De oorsprong van elke poot en vleugel zit waar hij draait (bovenaan).
+  (F = voor, B = achter, L = links, R = rechts). Bij de Gorilla King zijn `LegFL` en `LegFR` de armen. De uil en
+  de Phoenix staan rechtop en hebben daarom `Body`, de vleugels `WingL` en `WingR` en de poten `LegL` en `LegR`. De oorsprong van elke poot en vleugel zit waar hij draait (bovenaan).
   De oorsprong van `Body` ligt op de grond tussen de poten. De vier zeldzaamste dieren hebben ook gloeiende
   delen (zie hieronder).
 - **Richting:** het dier kijkt naar -Y in Blender (je ziet zijn gezicht in de Front view). 1 Blender-eenheid
@@ -47,8 +47,8 @@ dieren zijn erg licht. Bij alle dieren geldt:
 
 ## De bestanden
 
-Voor elk dier (`Deer`, `Rabbit`, `Fox`, `Raccoon`, `Wolf`, `Boar`, `Owl`, `Bear`, `Thunderhoof`, `PhoenixFox`,
-`Voidwhisker`, `StarlightKitsune`):
+Voor elk dier (`Deer`, `Rabbit`, `Fox`, `Raccoon`, `Wolf`, `Boar`, `Owl`, `Bear`, `Thunderhoof`, `Voidwhisker`,
+`Phoenix`, `GorillaKing`):
 
 | Bestand | Wat het is |
 |---|---|
@@ -98,27 +98,32 @@ en kleuren van één dier, en `stud_animal.py` doet de rest (noppen, textuur, ex
   | Owl | bruin, licht, donker (vleugels, staart), poten, iris (geel), snavel, zwart, lichtpuntje |
   | Bear | bruin, licht (snuit, oren), donker (poten), neus, zwart, lichtpuntje |
   | Thunderhoof | wit, lichtblauw, cyaan (oren), hoeven, neus, blauw (ogen), lichtpuntje, bliksem, manen |
-  | PhoenixFox | vuur, crème, donkerrood (sokken), neus, zwart, lichtpuntje, vlam, vleugel |
   | Voidwhisker | vacht, zacht paars, paars (oren), neus, roze (ogen), lichtpuntje, void (paars), edelsteen (roze) |
-  | StarlightKitsune | wit, lila, violet, de negen staartkleuren, ster, neus, violet (ogen), lichtpuntje, goud |
+  | Phoenix | rood, oranje, geel, goud (poten), snavel, oogrand, zwart, lichtpuntje, vlam |
+  | GorillaKing | vacht, zilver, huid, goud, robijn, diamant, mond, neus, oranje (ogen), lichtpuntje, kroon |
 
   In `texture_bands.json` staat per dier precies in welke rijen elke kleur staat.
 
 ## Gloeiende delen en effecten
 
-Thunderhoof, Phoenix Fox, Voidwhisker en Starlight Kitsune hebben extra MeshParts die gloeien. Die draaien niet
-zelf, maar zitten vast aan `Body`. Het setup-script maakt ze **Neon** in één kleur, en zet er deeltjes
-(ParticleEmitters, met Roblox' eigen plaatjes voor vonken, vuur en rook) en een lichtje (PointLight) bij:
+Thunderhoof, Voidwhisker, Phoenix en Gorilla King hebben extra MeshParts die gloeien. Die draaien niet zelf, maar
+zitten vast aan `Body`, of aan het deel waar ze bij horen: de vlammen `WingFlameL`/`WingFlameR` van de Phoenix
+bewegen mee met de vleugels. Het setup-script maakt ze **Neon** in één kleur, en zet er deeltjes (ParticleEmitters,
+met Roblox' eigen plaatjes voor vonken, vuur en rook) en een lichtje (PointLight) bij:
 
 | Dier | Gloeiende MeshParts | Effecten |
 |---|---|---|
 | Thunderhoof | `Lightning` (geel), `Mane` (blauw) | vonken rond de bliksem, blauw licht |
-| Phoenix Fox | `WingL`, `WingR` (oranje; ze draaien bij de schouder), `Crest`, `TailFlames` (geel) | vuur op de staarten, gloeiende vonkjes die opstijgen, oranje licht |
 | Voidwhisker | `Void` (paars: rune, halsband, snorharen), `Gems` (roze), `TailWisp` (paars) | paarse vonken bij de staart, donkere rookslierten, paars licht |
-| Starlight Kitsune | `Crown` (goud: kroon en zwevende edelstenen) | vallende sterretjes, gouden vonken bij de kroon, lila licht |
+| Phoenix | `Crest`, `TailFlames`, `WingFlameL`, `WingFlameR` (geel) | vuur op de staart en de vleugels, gloeiende vonkjes die opstijgen, oranje licht |
+| Gorilla King | `Crown` (goud) | gouden vonken bij de kroon en de ketting, witte glinsters bij de grills, goudkleurig licht |
 
-In Blender en op de plaatjes gloeien die delen ook. In de `.glb` hebben ze gewoon hun kleur in de textuur (zonder
-noppen), zodat het dier ook zonder het script goed uitziet.
+Het goud van de Gorilla King glimt: het setup-script geeft `Chains` (de ketting met het medaillon), `Grills` (de
+gouden tanden) en de armbanden `BraceletL` en `BraceletR` een **Reflectance** (0,35 tot 0,4). De armbanden zitten
+vast aan de armen en bewegen dus mee.
+
+In Blender en op de plaatjes gloeien en glimmen die delen ook. In de `.glb` hebben ze gewoon hun kleur in de
+textuur (zonder noppen), zodat het dier ook zonder het script goed uitziet.
 
 ## In Roblox Studio zetten (3 stappen)
 
@@ -130,7 +135,8 @@ noppen), zodat het dier ook zonder het script goed uitziet.
    - voegt een onzichtbare **RootPart** toe (hitbox en `PrimaryPart`, met de pivot onder de poten);
    - maakt **Motor6D**-gewrichten voor de poten (en de vleugels van de uil), zodat je ze kunt animeren;
    - zet elk dier terug op zijn eigen grootte, als Studio het bij het importeren anders heeft gemaakt;
-   - maakt de gloeiende delen Neon en zet de effecten erbij (bij de vier zeldzaamste dieren);
+   - maakt de gloeiende delen Neon, laat het goud glimmen en zet de effecten erbij (bij de vier zeldzaamste
+     dieren);
    - zet de dieren in **ReplicatedStorage → ZooAnimals**.
 3. **Opslaan als .rbxm:** klik met de rechtermuisknop op een dier en kies **Save to File...**.
 
@@ -141,7 +147,7 @@ script vervangt dus een dier met dezelfde naam dat al in ReplicatedStorage → Z
 
 - **Klaar plaatje:** upload `<Dier>Studs_Golden.png` in Studio, bijvoorbeeld via de Asset Manager. Zet daarna
   de **TextureID** van alle MeshParts van dat dier (`Body` en de poten, bij de uil ook de vleugels) op dat
-  plaatje. De gloeiende Neon-delen houden hun eigen kleur.
+  plaatje. De gloeiende Neon-delen houden hun eigen kleur; het goud van de Gorilla King blijft ook goud.
 - **Zelf een kleur maken:** kleur in een tekenprogramma een band uit de textuur anders. Gebruik
   "kleurtoon/verzadiging" (hue/saturation), dan blijven de lichtjes en schaduwen van de noppen goed. Of pas
   `GOLDEN` of `PALETTE` bovenin het script van het dier aan en maak het opnieuw.

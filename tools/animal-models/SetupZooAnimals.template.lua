@@ -39,7 +39,8 @@ local PARTICLE_TEXTURES = {
 	Smoke = "rbxasset://textures/particles/smoke_main.dds",
 }
 
--- Glowing parts become Neon in one color; effects are ParticleEmitters; light is a PointLight.
+-- Glowing parts become Neon in one color, shiny parts reflect; effects are ParticleEmitters; light is a
+-- PointLight.
 local function addEffects(info, parts, root)
 	for name, color in pairs(info.glow or {}) do
 		local part = parts[name]
@@ -47,6 +48,12 @@ local function addEffects(info, parts, root)
 			part.Material = Enum.Material.Neon
 			part.Color = rgb(color)
 			part.TextureID = ""
+		end
+	end
+	for name, reflectance in pairs(info.shine or {}) do
+		local part = parts[name]
+		if part then
+			part.Reflectance = reflectance
 		end
 	end
 	for _, e in ipairs(info.effects or {}) do

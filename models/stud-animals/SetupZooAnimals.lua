@@ -261,6 +261,174 @@ local DATA = {
 			"LegBR",
 		},
 	},
+	GorillaKing = {
+		display = "Gorilla King",
+		rarity = "Secret",
+		root = {
+			center = { 0.0, 2.6595, -0.4117 },
+			size = { 3.9224, 5.319, 4.0635 },
+		},
+		overhead = { 0.0, 6.319, -0.4117 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 3.1725, -0.4995 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -1.2825, 3.645, -0.837 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 1.2825, 3.645, -0.837 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.675, 2.025, 0.972 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.675, 2.025, 0.972 },
+				parent = "Body",
+			},
+			{
+				name = "Crown",
+				pivot = { -0.0, 4.968, -1.485 },
+				parent = "Body",
+			},
+			{
+				name = "Chains",
+				pivot = { -0.0, 3.1073, -1.3706 },
+				parent = "Body",
+			},
+			{
+				name = "Grills",
+				pivot = { -0.0, 3.3851, -2.3828 },
+				parent = "Body",
+			},
+			{
+				name = "BraceletL",
+				pivot = { -1.2825, 0.702, -0.972 },
+				parent = "LegFL",
+			},
+			{
+				name = "BraceletR",
+				pivot = { 1.2825, 0.702, -0.972 },
+				parent = "LegFR",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 3.1725, -0.4995 },
+				size = { 2.916, 3.429, 3.834 },
+			},
+			LegFL = {
+				center = { -1.2825, 1.9912, -0.9315 },
+				size = { 1.161, 3.9825, 1.35 },
+			},
+			LegFR = {
+				center = { 1.2825, 1.9912, -0.9315 },
+				size = { 1.161, 3.9825, 1.35 },
+			},
+			LegBL = {
+				center = { -0.675, 1.2825, 0.8708 },
+				size = { 1.08, 2.565, 1.4985 },
+			},
+			LegBR = {
+				center = { 0.675, 1.2825, 0.8708 },
+				size = { 1.08, 2.565, 1.4985 },
+			},
+			Crown = {
+				center = { 0.0, 4.968, -1.485 },
+				size = { 0.8776, 0.702, 0.8776 },
+			},
+			Chains = {
+				center = { 0.0, 3.1073, -1.3706 },
+				size = { 2.3564, 1.8136, 0.5797 },
+			},
+			Grills = {
+				center = { 0.0, 3.3852, -2.3827 },
+				size = { 0.5872, 0.1957, 0.1215 },
+			},
+			BraceletL = {
+				center = { -1.2825, 0.702, -0.972 },
+				size = { 1.3574, 0.27, 1.3842 },
+			},
+			BraceletR = {
+				center = { 1.2825, 0.702, -0.972 },
+				size = { 1.3574, 0.27, 1.3842 },
+			},
+		},
+		glow = {
+			Crown = { 255.0, 210.0, 58.0 },
+		},
+		shine = {
+			Chains = 0.35,
+			Grills = 0.4,
+			BraceletL = 0.35,
+			BraceletR = 0.35,
+		},
+		effects = {
+			{
+				name = "CrownSparkles",
+				part = "Crown",
+				kind = "Sparkles",
+				color = { 255.0, 210.0, 58.0 },
+				color2 = { 255.0, 255.0, 255.0 },
+				rate = 5,
+				size = { 0.4, 0.0 },
+				lifetime = { 0.6, 1.2 },
+				speed = { 0.3, 0.8 },
+				spread = 180,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+			{
+				name = "GoldSparkles",
+				part = "Chains",
+				kind = "Sparkles",
+				color = { 255.0, 210.0, 58.0 },
+				color2 = { 255.0, 210.0, 58.0 },
+				rate = 4,
+				size = { 0.3, 0.0 },
+				lifetime = { 0.6, 1.2 },
+				speed = { 0.2, 0.5 },
+				spread = 180,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+			{
+				name = "GrillShine",
+				part = "Grills",
+				kind = "Sparkles",
+				color = { 255.0, 255.0, 255.0 },
+				color2 = { 191.0, 239.0, 255.0 },
+				rate = 2,
+				size = { 0.25, 0.0 },
+				lifetime = { 0.3, 0.6 },
+				speed = { 0.1, 0.3 },
+				spread = 180,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+		},
+		light = {
+			part = "Crown",
+			color = { 255.0, 210.0, 58.0 },
+			brightness = 1.2,
+			range = 12,
+		},
+		ref = {
+			"LegBL",
+			"Grills",
+		},
+	},
 	Owl = {
 		display = "Owl",
 		rarity = "Rare",
@@ -322,103 +490,103 @@ local DATA = {
 			"WingR",
 		},
 	},
-	PhoenixFox = {
-		display = "Phoenix Fox",
+	Phoenix = {
+		display = "Phoenix",
 		rarity = "Mythic",
 		root = {
-			center = { 0.0, 2.281, -0.1755 },
-			size = { 3.9, 4.562, 5.681 },
+			center = { 0.0, 2.7718, 1.0574 },
+			size = { 7.0197, 5.5437, 4.8148 },
 		},
-		overhead = { 0.0, 5.562, -0.1755 },
+		overhead = { 0.0, 6.5437, 1.0574 },
 		bones = {
 			{
 				name = "Body",
-				pivot = { 0.0, 2.7689, -0.1755 },
-			},
-			{
-				name = "LegFL",
-				pivot = { -0.351, 1.69, -1.04 },
-				parent = "Body",
-			},
-			{
-				name = "LegFR",
-				pivot = { 0.351, 1.69, -1.04 },
-				parent = "Body",
-			},
-			{
-				name = "LegBL",
-				pivot = { -0.39, 1.69, 1.105 },
-				parent = "Body",
-			},
-			{
-				name = "LegBR",
-				pivot = { 0.39, 1.69, 1.105 },
-				parent = "Body",
+				pivot = { 0.0, 2.7098, 0.8421 },
 			},
 			{
 				name = "WingL",
-				pivot = { -0.52, 2.47, -0.715 },
+				pivot = { -0.525, 2.75, 0.0625 },
 				parent = "Body",
 			},
 			{
 				name = "WingR",
-				pivot = { 0.52, 2.47, -0.715 },
+				pivot = { 0.525, 2.75, 0.0625 },
 				parent = "Body",
 			},
 			{
+				name = "LegL",
+				pivot = { -0.325, 1.25, 0.125 },
+				parent = "Body",
+			},
+			{
+				name = "LegR",
+				pivot = { 0.325, 1.25, 0.125 },
+				parent = "Body",
+			},
+			{
+				name = "WingFlameL",
+				pivot = { -1.9507, 4.6218, 0.6248 },
+				parent = "WingL",
+			},
+			{
+				name = "WingFlameR",
+				pivot = { 1.9507, 4.6218, 0.6248 },
+				parent = "WingR",
+			},
+			{
 				name = "Crest",
-				pivot = { -0.0, 4.0361, -1.781 },
+				pivot = { -0.0, 4.8438, -0.2563 },
 				parent = "Body",
 			},
 			{
 				name = "TailFlames",
-				pivot = { -0.0, 3.9218, 2.392 },
+				pivot = { -0.0, 2.0062, 3.0351 },
 				parent = "Body",
 			},
 		},
 		parts = {
 			Body = {
-				center = { 0.0, 2.7689, -0.1755 },
-				size = { 2.0944, 2.7558, 5.681 },
-			},
-			LegFL = {
-				center = { -0.351, 1.0075, -1.105 },
-				size = { 0.572, 2.015, 0.754 },
-			},
-			LegFR = {
-				center = { 0.351, 1.0075, -1.105 },
-				size = { 0.572, 2.015, 0.754 },
-			},
-			LegBL = {
-				center = { -0.39, 1.04, 1.144 },
-				size = { 0.702, 2.08, 0.936 },
-			},
-			LegBR = {
-				center = { 0.39, 1.04, 1.144 },
-				size = { 0.702, 2.08, 0.936 },
+				center = { 0.0, 2.7098, 0.8421 },
+				size = { 2.5042, 3.5803, 4.3843 },
 			},
 			WingL = {
-				center = { -1.235, 3.2045, -0.4355 },
-				size = { 1.43, 1.651, 1.469 },
+				center = { -1.5307, 3.7015, 0.3154 },
+				size = { 2.6113, 2.6641, 1.1684 },
 			},
 			WingR = {
-				center = { 1.235, 3.2045, -0.4355 },
-				size = { 1.43, 1.651, 1.469 },
+				center = { 1.5307, 3.7015, 0.3154 },
+				size = { 2.6113, 2.6641, 1.1684 },
+			},
+			LegL = {
+				center = { -0.325, 0.6875, -0.075 },
+				size = { 0.45, 1.375, 0.75 },
+			},
+			LegR = {
+				center = { 0.325, 0.6875, -0.075 },
+				size = { 0.45, 1.375, 0.75 },
+			},
+			WingFlameL = {
+				center = { -1.9506, 4.6219, 0.6249 },
+				size = { 3.1185, 1.8435, 0.7529 },
+			},
+			WingFlameR = {
+				center = { 1.9506, 4.6219, 0.6249 },
+				size = { 3.1185, 1.8435, 0.7529 },
 			},
 			Crest = {
-				center = { 0.0, 4.036, -1.781 },
-				size = { 1.3422, 1.0521, 0.442 },
+				center = { 0.0, 4.8438, -0.2562 },
+				size = { 1.0, 0.9375, 0.7625 },
 			},
 			TailFlames = {
-				center = { 0.0, 3.9219, 2.392 },
-				size = { 2.5214, 1.1263, 0.442 },
+				center = { 0.0, 2.0062, 3.0351 },
+				size = { 2.5446, 0.6649, 0.8593 },
 			},
 		},
 		glow = {
 			Crest = { 255.0, 192.0, 46.0 },
 			TailFlames = { 255.0, 192.0, 46.0 },
-			WingL = { 255.0, 138.0, 26.0 },
-			WingR = { 255.0, 138.0, 26.0 },
+			WingFlameL = { 255.0, 192.0, 46.0 },
+			WingFlameR = { 255.0, 192.0, 46.0 },
 		},
 		effects = {
 			{
@@ -427,11 +595,41 @@ local DATA = {
 				kind = "Fire",
 				color = { 255.0, 140.0, 26.0 },
 				color2 = { 255.0, 59.0, 31.0 },
-				rate = 12,
-				size = { 1.0, 0.0 },
+				rate = 14,
+				size = { 1.1, 0.0 },
 				lifetime = { 0.4, 0.7 },
 				speed = { 1.5, 2.5 },
-				spread = 20,
+				spread = 25,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+			{
+				name = "WingFire",
+				part = "WingFlameL",
+				kind = "Fire",
+				color = { 255.0, 178.0, 26.0 },
+				color2 = { 255.0, 59.0, 31.0 },
+				rate = 8,
+				size = { 0.9, 0.0 },
+				lifetime = { 0.3, 0.6 },
+				speed = { 1.0, 2.0 },
+				spread = 25,
+				accel = { 0.0, 0.0, 0.0 },
+				transparency = 0.2,
+				lightEmission = 1,
+			},
+			{
+				name = "WingFire",
+				part = "WingFlameR",
+				kind = "Fire",
+				color = { 255.0, 178.0, 26.0 },
+				color2 = { 255.0, 59.0, 31.0 },
+				rate = 8,
+				size = { 0.9, 0.0 },
+				lifetime = { 0.3, 0.6 },
+				speed = { 1.0, 2.0 },
+				spread = 25,
 				accel = { 0.0, 0.0, 0.0 },
 				transparency = 0.2,
 				lightEmission = 1,
@@ -442,12 +640,12 @@ local DATA = {
 				kind = "Sparkles",
 				color = { 255.0, 210.0, 63.0 },
 				color2 = { 255.0, 59.0, 31.0 },
-				rate = 5,
+				rate = 8,
 				size = { 0.4, 0.0 },
 				lifetime = { 0.6, 1.2 },
-				speed = { 0.5, 1.2 },
+				speed = { 0.5, 1.5 },
 				spread = 180,
-				accel = { 0.0, 2.0, 0.0 },
+				accel = { 0.0, 3.0, 0.0 },
 				transparency = 0.2,
 				lightEmission = 1,
 			},
@@ -455,12 +653,12 @@ local DATA = {
 		light = {
 			part = "Body",
 			color = { 255.0, 140.0, 26.0 },
-			brightness = 1.5,
-			range = 14,
+			brightness = 1.8,
+			range = 18,
 		},
 		ref = {
-			"Crest",
-			"TailFlames",
+			"WingFlameL",
+			"WingFlameR",
 		},
 	},
 	Rabbit = {
@@ -579,117 +777,6 @@ local DATA = {
 				center = { 0.36, 0.55, 0.555 },
 				size = { 0.52, 1.1, 0.71 },
 			},
-		},
-		ref = {
-			"LegFL",
-			"LegBR",
-		},
-	},
-	StarlightKitsune = {
-		display = "Starlight Kitsune",
-		rarity = "Secret",
-		root = {
-			center = { 0.0, 2.106, -0.2405 },
-			size = { 3.1406, 4.212, 5.551 },
-		},
-		overhead = { 0.0, 5.212, -0.2405 },
-		bones = {
-			{
-				name = "Body",
-				pivot = { 0.0, 2.7689, -0.2405 },
-			},
-			{
-				name = "LegFL",
-				pivot = { -0.351, 1.69, -1.04 },
-				parent = "Body",
-			},
-			{
-				name = "LegFR",
-				pivot = { 0.351, 1.69, -1.04 },
-				parent = "Body",
-			},
-			{
-				name = "LegBL",
-				pivot = { -0.39, 1.69, 1.105 },
-				parent = "Body",
-			},
-			{
-				name = "LegBR",
-				pivot = { 0.39, 1.69, 1.105 },
-				parent = "Body",
-			},
-			{
-				name = "Crown",
-				pivot = { -0.0, 3.601, -1.0911 },
-				parent = "Body",
-			},
-		},
-		parts = {
-			Body = {
-				center = { 0.0, 2.7689, -0.2405 },
-				size = { 3.1406, 2.7558, 5.551 },
-			},
-			LegFL = {
-				center = { -0.351, 1.0075, -1.105 },
-				size = { 0.572, 2.015, 0.754 },
-			},
-			LegFR = {
-				center = { 0.351, 1.0075, -1.105 },
-				size = { 0.572, 2.015, 0.754 },
-			},
-			LegBL = {
-				center = { -0.39, 1.04, 1.144 },
-				size = { 0.702, 2.08, 0.936 },
-			},
-			LegBR = {
-				center = { 0.39, 1.04, 1.144 },
-				size = { 0.702, 2.08, 0.936 },
-			},
-			Crown = {
-				center = { 0.0, 3.601, -1.0911 },
-				size = { 2.7076, 1.222, 1.8998 },
-			},
-		},
-		glow = {
-			Crown = { 255.0, 224.0, 102.0 },
-		},
-		effects = {
-			{
-				name = "Starfall",
-				part = "Body",
-				kind = "Sparkles",
-				color = { 255.0, 156.0, 242.0 },
-				color2 = { 127.0, 232.0, 255.0 },
-				rate = 8,
-				size = { 0.5, 0.0 },
-				lifetime = { 0.6, 1.2 },
-				speed = { 0.4, 1.2 },
-				spread = 180,
-				accel = { 0.0, 0.0, 0.0 },
-				transparency = 0.2,
-				lightEmission = 1,
-			},
-			{
-				name = "CrownSparkles",
-				part = "Crown",
-				kind = "Sparkles",
-				color = { 255.0, 224.0, 102.0 },
-				color2 = { 255.0, 255.0, 255.0 },
-				rate = 4,
-				size = { 0.4, 0.0 },
-				lifetime = { 0.6, 1.2 },
-				speed = { 0.3, 0.8 },
-				spread = 180,
-				accel = { 0.0, 0.0, 0.0 },
-				transparency = 0.2,
-				lightEmission = 1,
-			},
-		},
-		light = {
-			part = "Body",
-			color = { 217.0, 184.0, 255.0 },
-			brightness = 1.4,
-			range = 16,
 		},
 		ref = {
 			"LegFL",
@@ -1017,7 +1104,8 @@ local PARTICLE_TEXTURES = {
 	Smoke = "rbxasset://textures/particles/smoke_main.dds",
 }
 
--- Glowing parts become Neon in one color; effects are ParticleEmitters; light is a PointLight.
+-- Glowing parts become Neon in one color, shiny parts reflect; effects are ParticleEmitters; light is a
+-- PointLight.
 local function addEffects(info, parts, root)
 	for name, color in pairs(info.glow or {}) do
 		local part = parts[name]
@@ -1025,6 +1113,12 @@ local function addEffects(info, parts, root)
 			part.Material = Enum.Material.Neon
 			part.Color = rgb(color)
 			part.TextureID = ""
+		end
+	end
+	for name, reflectance in pairs(info.shine or {}) do
+		local part = parts[name]
+		if part then
+			part.Reflectance = reflectance
 		end
 	end
 	for _, e in ipairs(info.effects or {}) do

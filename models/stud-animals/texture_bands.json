@@ -135,6 +135,56 @@
    }
   }
  },
+ "GorillaKing": {
+  "pixels_per_stud": 59.05,
+  "triangles": 1308,
+  "bands": {
+   "fur": {
+    "top_row": 0,
+    "bottom_row": 383
+   },
+   "silver": {
+    "top_row": 383,
+    "bottom_row": 472
+   },
+   "skin": {
+    "top_row": 472,
+    "bottom_row": 698
+   },
+   "gold": {
+    "top_row": 698,
+    "bottom_row": 864
+   },
+   "ruby": {
+    "top_row": 864,
+    "bottom_row": 885
+   },
+   "diamond": {
+    "top_row": 885,
+    "bottom_row": 899
+   },
+   "mouth": {
+    "top_row": 899,
+    "bottom_row": 920
+   },
+   "nose": {
+    "top_row": 920,
+    "bottom_row": 936
+   },
+   "eye": {
+    "top_row": 936,
+    "bottom_row": 956
+   },
+   "glint": {
+    "top_row": 956,
+    "bottom_row": 970
+   },
+   "crown": {
+    "top_row": 970,
+    "bottom_row": 1021
+   }
+  }
+ },
  "Owl": {
   "pixels_per_stud": 143.88,
   "triangles": 542,
@@ -173,40 +223,44 @@
    }
   }
  },
- "PhoenixFox": {
-  "pixels_per_stud": 72.73,
-  "triangles": 1004,
+ "Phoenix": {
+  "pixels_per_stud": 67.63,
+  "triangles": 662,
   "bands": {
-   "fire": {
+   "red": {
     "top_row": 0,
-    "bottom_row": 432
+    "bottom_row": 246
    },
-   "cream": {
-    "top_row": 432,
-    "bottom_row": 615
+   "orange": {
+    "top_row": 246,
+    "bottom_row": 490
    },
-   "ember": {
-    "top_row": 615,
-    "bottom_row": 728
+   "yellow": {
+    "top_row": 490,
+    "bottom_row": 659
    },
-   "nose": {
-    "top_row": 728,
-    "bottom_row": 744
+   "gold": {
+    "top_row": 659,
+    "bottom_row": 732
+   },
+   "beak": {
+    "top_row": 732,
+    "bottom_row": 765
+   },
+   "eyering": {
+    "top_row": 765,
+    "bottom_row": 792
    },
    "eye": {
-    "top_row": 744,
-    "bottom_row": 769
+    "top_row": 792,
+    "bottom_row": 813
    },
    "glint": {
-    "top_row": 769,
-    "bottom_row": 783
+    "top_row": 813,
+    "bottom_row": 826
    },
    "flame": {
-    "top_row": 783,
-    "bottom_row": 903
-   },
-   "wing": {
-    "top_row": 903,
+    "top_row": 826,
     "bottom_row": 1024
    }
   }
@@ -275,80 +329,6 @@
    },
    "glint": {
     "top_row": 1005,
-    "bottom_row": 1024
-   }
-  }
- },
- "StarlightKitsune": {
-  "pixels_per_stud": 57.76,
-  "triangles": 1458,
-  "bands": {
-   "white": {
-    "top_row": 0,
-    "bottom_row": 421
-   },
-   "lilac": {
-    "top_row": 421,
-    "bottom_row": 516
-   },
-   "violet": {
-    "top_row": 516,
-    "bottom_row": 585
-   },
-   "tail1": {
-    "top_row": 585,
-    "bottom_row": 622
-   },
-   "tail2": {
-    "top_row": 622,
-    "bottom_row": 659
-   },
-   "tail3": {
-    "top_row": 659,
-    "bottom_row": 698
-   },
-   "tail4": {
-    "top_row": 698,
-    "bottom_row": 737
-   },
-   "tail5": {
-    "top_row": 737,
-    "bottom_row": 774
-   },
-   "tail6": {
-    "top_row": 774,
-    "bottom_row": 813
-   },
-   "tail7": {
-    "top_row": 813,
-    "bottom_row": 852
-   },
-   "tail8": {
-    "top_row": 852,
-    "bottom_row": 889
-   },
-   "tail9": {
-    "top_row": 889,
-    "bottom_row": 926
-   },
-   "star": {
-    "top_row": 926,
-    "bottom_row": 943
-   },
-   "nose": {
-    "top_row": 943,
-    "bottom_row": 957
-   },
-   "eye": {
-    "top_row": 957,
-    "bottom_row": 979
-   },
-   "glint": {
-    "top_row": 979,
-    "bottom_row": 992
-   },
-   "gold": {
-    "top_row": 992,
     "bottom_row": 1024
    }
   }

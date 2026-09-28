@@ -1,0 +1,368 @@
+{
+ "id": "GorillaKing",
+ "display": "Gorilla King",
+ "rarity": "Secret",
+ "root": {
+  "center": [
+   0.0,
+   2.6595,
+   -0.4117
+  ],
+  "size": [
+   3.9224,
+   5.319,
+   4.0635
+  ]
+ },
+ "overhead": [
+  0.0,
+  6.319,
+  -0.4117
+ ],
+ "bones": [
+  {
+   "name": "Body",
+   "pivot": [
+    0.0,
+    3.1725,
+    -0.4995
+   ]
+  },
+  {
+   "name": "LegFL",
+   "pivot": [
+    -1.2825,
+    3.645,
+    -0.837
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegFR",
+   "pivot": [
+    1.2825,
+    3.645,
+    -0.837
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegBL",
+   "pivot": [
+    -0.675,
+    2.025,
+    0.972
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegBR",
+   "pivot": [
+    0.675,
+    2.025,
+    0.972
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "Crown",
+   "pivot": [
+    -0.0,
+    4.968,
+    -1.485
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "Chains",
+   "pivot": [
+    -0.0,
+    3.1073,
+    -1.3706
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "Grills",
+   "pivot": [
+    -0.0,
+    3.3851,
+    -2.3828
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "BraceletL",
+   "pivot": [
+    -1.2825,
+    0.702,
+    -0.972
+   ],
+   "parent": "LegFL"
+  },
+  {
+   "name": "BraceletR",
+   "pivot": [
+    1.2825,
+    0.702,
+    -0.972
+   ],
+   "parent": "LegFR"
+  }
+ ],
+ "parts": {
+  "Body": {
+   "center": [
+    0.0,
+    3.1725,
+    -0.4995
+   ],
+   "size": [
+    2.916,
+    3.429,
+    3.834
+   ]
+  },
+  "LegFL": {
+   "center": [
+    -1.2825,
+    1.9912,
+    -0.9315
+   ],
+   "size": [
+    1.161,
+    3.9825,
+    1.35
+   ]
+  },
+  "LegFR": {
+   "center": [
+    1.2825,
+    1.9912,
+    -0.9315
+   ],
+   "size": [
+    1.161,
+    3.9825,
+    1.35
+   ]
+  },
+  "LegBL": {
+   "center": [
+    -0.675,
+    1.2825,
+    0.8708
+   ],
+   "size": [
+    1.08,
+    2.565,
+    1.4985
+   ]
+  },
+  "LegBR": {
+   "center": [
+    0.675,
+    1.2825,
+    0.8708
+   ],
+   "size": [
+    1.08,
+    2.565,
+    1.4985
+   ]
+  },
+  "Crown": {
+   "center": [
+    0.0,
+    4.968,
+    -1.485
+   ],
+   "size": [
+    0.8776,
+    0.702,
+    0.8776
+   ]
+  },
+  "Chains": {
+   "center": [
+    0.0,
+    3.1073,
+    -1.3706
+   ],
+   "size": [
+    2.3564,
+    1.8136,
+    0.5797
+   ]
+  },
+  "Grills": {
+   "center": [
+    0.0,
+    3.3852,
+    -2.3827
+   ],
+   "size": [
+    0.5872,
+    0.1957,
+    0.1215
+   ]
+  },
+  "BraceletL": {
+   "center": [
+    -1.2825,
+    0.702,
+    -0.972
+   ],
+   "size": [
+    1.3574,
+    0.27,
+    1.3842
+   ]
+  },
+  "BraceletR": {
+   "center": [
+    1.2825,
+    0.702,
+    -0.972
+   ],
+   "size": [
+    1.3574,
+    0.27,
+    1.3842
+   ]
+  }
+ },
+ "glow": {
+  "Crown": [
+   255,
+   210,
+   58
+  ]
+ },
+ "shine": {
+  "Chains": 0.35,
+  "Grills": 0.4,
+  "BraceletL": 0.35,
+  "BraceletR": 0.35
+ },
+ "effects": [
+  {
+   "name": "CrownSparkles",
+   "part": "Crown",
+   "kind": "Sparkles",
+   "color": [
+    255,
+    210,
+    58
+   ],
+   "color2": [
+    255,
+    255,
+    255
+   ],
+   "rate": 5,
+   "size": [
+    0.4,
+    0
+   ],
+   "lifetime": [
+    0.6,
+    1.2
+   ],
+   "speed": [
+    0.3,
+    0.8
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "GoldSparkles",
+   "part": "Chains",
+   "kind": "Sparkles",
+   "color": [
+    255,
+    210,
+    58
+   ],
+   "color2": [
+    255,
+    210,
+    58
+   ],
+   "rate": 4,
+   "size": [
+    0.3,
+    0
+   ],
+   "lifetime": [
+    0.6,
+    1.2
+   ],
+   "speed": [
+    0.2,
+    0.5
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "GrillShine",
+   "part": "Grills",
+   "kind": "Sparkles",
+   "color": [
+    255,
+    255,
+    255
+   ],
+   "color2": [
+    191,
+    239,
+    255
+   ],
+   "rate": 2,
+   "size": [
+    0.25,
+    0
+   ],
+   "lifetime": [
+    0.3,
+    0.6
+   ],
+   "speed": [
+    0.1,
+    0.3
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  }
+ ],
+ "light": {
+  "part": "Crown",
+  "color": [
+   255,
+   210,
+   58
+  ],
+  "brightness": 1.2,
+  "range": 12
+ }
+}

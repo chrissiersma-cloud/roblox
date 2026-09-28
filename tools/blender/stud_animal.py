@@ -53,15 +53,16 @@ class Animal:
     then the parts that turn around their origin (legs, wings).
     close: (point, distance) for the close-up picture of the head.
     glow: {part name: "#rrggbb"}: parts that glow (Neon in Roblox, made by the setup script).
+    shine: {part name: reflectance}: shiny metal parts (gold chains); they keep their texture.
     effects: particle effects for the setup script, see effect(). light: (part name, "#rrggbb", brightness, range)
     for a PointLight."""
 
     def __init__(self, id, rarity, palette, golden, parts, close, no_studs=("nose", "eye", "glint"), display=None,
-                 glow=None, effects=(), light=None):
+                 glow=None, shine=None, effects=(), light=None):
         self.id, self.display, self.rarity = id, display or id, rarity
         self.palette, self.golden, self.no_studs = palette, golden, set(no_studs)
         self.parts, self.close = parts, close
-        self.glow, self.effects, self.light = glow or {}, list(effects), light
+        self.glow, self.shine, self.effects, self.light = glow or {}, shine or {}, list(effects), light
 
 
 def effect(name, part, kind, color, color2=None, rate=5, size=(0.4, 0.0), lifetime=(0.6, 1.2), speed=(0.5, 1.5),
@@ -92,10 +93,11 @@ def newell(pts):
 
 
 class Part:
-    """One Blender object: vertices, flat faces and a color per face. `origin` becomes the object origin."""
+    """One Blender object: vertices, flat faces and a color per face. `origin` becomes the object origin.
+    parent: the part it is attached to (default: the Body), like a cuff that moves with its arm."""
 
-    def __init__(self, name, origin=(0, 0, 0)):
-        self.name, self.origin = name, np.array(origin, float)
+    def __init__(self, name, origin=(0, 0, 0), parent=None):
+        self.name, self.origin, self.parent = name, np.array(origin, float), parent
         self.verts, self.faces, self.colors = [], [], []
 
     def vert(self, p):
@@ -516,13 +518,15 @@ def rig_info(animal, parts):
     lo[1] = 0.0
     body = parts[0].name
     bones = [{"name": body, "pivot": boxes[body]["center"]}]
-    bones += [{"name": p.name, "pivot": to_roblox(p.origin), "parent": body} for p in parts[1:]]
+    bones += [{"name": p.name, "pivot": to_roblox(p.origin), "parent": p.parent or body} for p in parts[1:]]
     r = lambda v: [round(float(x), 4) for x in v]
     info = {"id": animal.id, "display": animal.display, "rarity": animal.rarity,
             "root": {"center": r((lo + hi) / 2), "size": r(hi - lo)},
             "overhead": r((0, hi[1] + 1.0, (lo[2] + hi[2]) / 2)), "bones": bones, "parts": boxes}
     if animal.glow:
         info["glow"] = {name: rgb(color) for name, color in animal.glow.items()}
+    if animal.shine:
+        info["shine"] = animal.shine
     if animal.effects:
         info["effects"] = animal.effects
     if animal.light:
@@ -540,6 +544,20 @@ def glow_material(name, color):
     bsdf.inputs["Base Color"].default_value = (*(c * 0.3 for c in linear), 1)
     bsdf.inputs["Emission Color"].default_value = (*linear, 1)
     bsdf.inputs["Emission Strength"].default_value = 1.0
+    return mat
+
+
+def metal_material(name, image):
+    """Shiny metal with the texture's colors (only in the .blend and the pictures)."""
+    mat = bpy.data.materials.new(name)
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes["Principled BSDF"]
+    bsdf.inputs["Metallic"].default_value = 0.8
+    bsdf.inputs["Roughness"].default_value = 0.3
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = image
+    nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
     return mat
 
 
@@ -666,6 +684,9 @@ def build(animal, out=None):
         if o.name in animal.glow:
             o.data.materials.clear()
             o.data.materials.append(glow_material(f"{o.name}Glow", animal.glow[o.name]))
+        elif o.name in animal.shine:
+            o.data.materials.clear()
+            o.data.materials.append(metal_material(f"{o.name}Metal", image))
     bpy.context.preferences.filepaths.save_version = 0      # no .blend1 backup next to it
     bpy.ops.wm.save_as_mainfile(filepath=str(out / f"{animal.id}.blend"), compress=True)
 
