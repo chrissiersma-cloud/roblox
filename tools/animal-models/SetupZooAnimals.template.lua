@@ -10,9 +10,11 @@
 	  - joins the body parts with Motor6D joints (legs, and head, tail or wings where the animal has them)
 	    so they can be animated,
 	  - adds an OverheadAttachment for a name tag and the attributes AnimalId, DisplayName and Rarity,
-	  - moves the finished model to ReplicatedStorage.ZooAnimals and selects it.
-	Animals that were already set up are skipped, so running it twice is safe.
-	To get an .rbxm file: right-click the selected animal in the Explorer and choose "Save to File...".
+	  - makes glowing parts Neon and adds sparkles, flames and a light (only animals that have them),
+	  - gives Rare animals and up soft sparkles in the color of their rarity,
+	  - moves the finished model to ReplicatedStorage.ZooAnimals.
+	At the end it selects the ZooAnimals folder. Animals that were already set up are skipped, so running it
+	twice is safe. To get one .rbxm file with every animal: right-click ZooAnimals and choose "Save to File...".
 ]]
 
 local DATA = --[[DATA]]
@@ -26,6 +28,93 @@ end
 
 local function flat(v)
 	return Vector3.new(v.X, 0, v.Z)
+end
+
+local function rgb(t)
+	return Color3.fromRGB(t[1], t[2], t[3])
+end
+
+local PARTICLE_TEXTURES = {
+	Sparkles = "rbxasset://textures/particles/sparkles_main.dds",
+	Fire = "rbxasset://textures/particles/fire_main.dds",
+	Smoke = "rbxasset://textures/particles/smoke_main.dds",
+}
+
+-- Rare animals and up get soft sparkles around them in the color of their rarity, so players can see it.
+local RARITY_AURA = {
+	Rare = { 69, 166, 255 },
+	Epic = { 184, 97, 255 },
+	Legendary = { 255, 204, 51 },
+	Mythic = { 255, 74, 74 },
+	Secret = { 255, 123, 229 },
+}
+
+local function addAura(info, root)
+	local color = RARITY_AURA[info.rarity]
+	if not color then
+		return
+	end
+	local aura = Instance.new("ParticleEmitter")
+	aura.Name = "RarityAura"
+	aura.Texture = PARTICLE_TEXTURES.Sparkles
+	aura.Color = ColorSequence.new(rgb(color), Color3.new(1, 1, 1))
+	aura.Rate = 3
+	aura.Lifetime = NumberRange.new(1, 1.8)
+	aura.Speed = NumberRange.new(0.3, 0.8)
+	aura.SpreadAngle = Vector2.new(180, 180)
+	aura.Acceleration = Vector3.new(0, 0.6, 0)
+	aura.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+	aura.Transparency = NumberSequence.new(0.3, 1)
+	aura.LightEmission = 1
+	aura.LightInfluence = 0
+	aura.Parent = root
+end
+
+-- Glowing parts become Neon in one color, shiny parts reflect; effects are ParticleEmitters (out of a whole part,
+-- or out of one spot: an Attachment); light is a PointLight.
+local function addEffects(info, parts, root, spots)
+	for name, color in pairs(info.glow or {}) do
+		local part = parts[name]
+		if part then
+			part.Material = Enum.Material.Neon
+			part.Color = rgb(color)
+			part.TextureID = ""
+		end
+	end
+	for name, reflectance in pairs(info.shine or {}) do
+		local part = parts[name]
+		if part then
+			part.Reflectance = reflectance
+		end
+	end
+	for i, e in ipairs(info.effects or {}) do
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Name = e.name
+		emitter.Texture = PARTICLE_TEXTURES[e.kind]
+		emitter.Color = ColorSequence.new(rgb(e.color), rgb(e.color2))
+		emitter.Rate = e.rate
+		emitter.Lifetime = NumberRange.new(e.lifetime[1], e.lifetime[2])
+		emitter.Speed = NumberRange.new(e.speed[1], e.speed[2])
+		emitter.SpreadAngle = Vector2.new(e.spread, e.spread)
+		emitter.Acceleration = vec(e.accel)
+		emitter.Size = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, e.size[1]),
+			NumberSequenceKeypoint.new(1, e.size[2]),
+		})
+		emitter.Transparency = NumberSequence.new(e.transparency, 1)
+		emitter.LightEmission = e.lightEmission
+		emitter.LightInfluence = 0
+		emitter.RotSpeed = NumberRange.new(-90, 90)
+		emitter.Parent = spots[i] or parts[e.part] or root
+	end
+	if info.light then
+		local light = Instance.new("PointLight")
+		light.Name = "Glow"
+		light.Color = rgb(info.light.color)
+		light.Brightness = info.light.brightness
+		light.Range = info.light.range
+		light.Parent = parts[info.light.part] or root
+	end
 end
 
 local function findMeshParts(model)
@@ -136,10 +225,25 @@ local function setup(model, id)
 	model:SetAttribute("Rarity", info.rarity)
 	CollectionService:AddTag(model, "ZooAnimal")
 
+	-- Spots for effects that come out of one point (like sparks from a hoof). They are made before the scaling
+	-- below, so they move along with their parts.
+	local spots = {}
+	for i, e in ipairs(info.effects or {}) do
+		if e.at then
+			local spot = Instance.new("Attachment")
+			spot.Name = e.name .. "Spot"
+			spot.Parent = parts[e.part] or root
+			spot.WorldPosition = toWorld(e.at)
+			spots[i] = spot
+		end
+	end
+
 	-- Back to the designed size if Studio scaled the import (for example meters to studs).
 	if math.abs(k - 1) > 0.01 then
 		model:ScaleTo(model:GetScale() / k)
 	end
+	addEffects(info, parts, root, spots)
+	addAura(info, root)
 
 	local folder = ReplicatedStorage:FindFirstChild("ZooAnimals")
 	if not folder then
@@ -156,12 +260,10 @@ local function setup(model, id)
 end
 
 local done, failed = 0, 0
-local finished = {}
 for model, id in pairs(findImported()) do
 	local ok, result = pcall(setup, model, id)
 	if ok and result then
 		done += 1
-		table.insert(finished, model)
 		print(("Set up %s"):format(id))
 	else
 		failed += 1
@@ -170,6 +272,7 @@ for model, id in pairs(findImported()) do
 end
 print(("Create a Zoo: %d animals set up, %d failed. Find them in ReplicatedStorage.ZooAnimals."):format(done, failed))
 if done > 0 then
-	game:GetService("Selection"):Set(finished)
-	print('To save them as .rbxm: right-click the selected animal in the Explorer and choose "Save to File..."')
+	-- Select the whole folder: "Save to File..." then makes one .rbxm with every animal in it.
+	game:GetService("Selection"):Set({ ReplicatedStorage.ZooAnimals })
+	print('To save all animals as one .rbxm: right-click ZooAnimals (selected) and choose "Save to File..."')
 end

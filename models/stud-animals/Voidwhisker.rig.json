@@ -1,0 +1,294 @@
+{
+ "id": "Voidwhisker",
+ "display": "Voidwhisker",
+ "rarity": "Mythic",
+ "root": {
+  "center": [
+   0.0,
+   2.475,
+   -0.025
+  ],
+  "size": [
+   2.764,
+   4.95,
+   4.525
+  ]
+ },
+ "overhead": [
+  0.0,
+  5.95,
+  -0.025
+ ],
+ "bones": [
+  {
+   "name": "Body",
+   "pivot": [
+    0.0,
+    2.8724,
+    -0.025
+   ]
+  },
+  {
+   "name": "LegFL",
+   "pivot": [
+    -0.35,
+    1.6875,
+    -0.9375
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegFR",
+   "pivot": [
+    0.35,
+    1.6875,
+    -0.9375
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegBL",
+   "pivot": [
+    -0.3875,
+    1.6875,
+    1.0
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegBR",
+   "pivot": [
+    0.3875,
+    1.6875,
+    1.0
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "Void",
+   "pivot": [
+    -0.0,
+    3.1515,
+    -1.5377
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "Gems",
+   "pivot": [
+    -0.0,
+    3.0063,
+    -1.1261
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "TailWisp",
+   "pivot": [
+    -0.0,
+    4.575,
+    1.875
+   ],
+   "parent": "Body"
+  }
+ ],
+ "parts": {
+  "Body": {
+   "center": [
+    0.0,
+    2.8724,
+    -0.025
+   ],
+   "size": [
+    1.346,
+    2.9199,
+    4.525
+   ]
+  },
+  "LegFL": {
+   "center": [
+    -0.35,
+    1.0,
+    -1.0
+   ],
+   "size": [
+    0.525,
+    2.0,
+    0.675
+   ]
+  },
+  "LegFR": {
+   "center": [
+    0.35,
+    1.0,
+    -1.0
+   ],
+   "size": [
+    0.525,
+    2.0,
+    0.675
+   ]
+  },
+  "LegBL": {
+   "center": [
+    -0.3875,
+    1.0312,
+    1.025
+   ],
+   "size": [
+    0.675,
+    2.0625,
+    0.9
+   ]
+  },
+  "LegBR": {
+   "center": [
+    0.3875,
+    1.0312,
+    1.025
+   ],
+   "size": [
+    0.675,
+    2.0625,
+    0.9
+   ]
+  },
+  "Void": {
+   "center": [
+    0.0,
+    3.1515,
+    -1.5377
+   ],
+   "size": [
+    1.613,
+    0.903,
+    1.2254
+   ]
+  },
+  "Gems": {
+   "center": [
+    0.0,
+    3.0062,
+    -1.126
+   ],
+   "size": [
+    2.764,
+    0.7875,
+    1.8911
+   ]
+  },
+  "TailWisp": {
+   "center": [
+    0.0,
+    4.575,
+    1.875
+   ],
+   "size": [
+    0.6718,
+    0.75,
+    0.6718
+   ]
+  }
+ },
+ "glow": {
+  "Void": [
+   177,
+   77,
+   255
+  ],
+  "Gems": [
+   255,
+   156,
+   242
+  ],
+  "TailWisp": [
+   177,
+   77,
+   255
+  ]
+ },
+ "effects": [
+  {
+   "name": "VoidSparks",
+   "part": "TailWisp",
+   "kind": "Sparkles",
+   "color": [
+    177,
+    77,
+    255
+   ],
+   "color2": [
+    255,
+    156,
+    242
+   ],
+   "rate": 6,
+   "size": [
+    0.5,
+    0
+   ],
+   "lifetime": [
+    0.6,
+    1.2
+   ],
+   "speed": [
+    0.3,
+    0.9
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "ShadowWisps",
+   "part": "Body",
+   "kind": "Smoke",
+   "color": [
+    58,
+    20,
+    102
+   ],
+   "color2": [
+    58,
+    20,
+    102
+   ],
+   "rate": 5,
+   "size": [
+    1.2,
+    2.6
+   ],
+   "lifetime": [
+    1.0,
+    1.6
+   ],
+   "speed": [
+    0.2,
+    0.6
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.5,
+   "lightEmission": 0
+  }
+ ],
+ "light": {
+  "part": "Body",
+  "color": [
+   177,
+   77,
+   255
+  ],
+  "brightness": 1.2,
+  "range": 12
+ }
+}

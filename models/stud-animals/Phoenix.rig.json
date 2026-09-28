@@ -1,0 +1,433 @@
+{
+ "id": "Phoenix",
+ "display": "Phoenix",
+ "rarity": "Mythic",
+ "root": {
+  "center": [
+   0.0,
+   2.9012,
+   1.0376
+  ],
+  "size": [
+   8.0083,
+   5.8025,
+   4.775
+  ]
+ },
+ "overhead": [
+  0.0,
+  6.8025,
+  1.0376
+ ],
+ "bones": [
+  {
+   "name": "Body",
+   "pivot": [
+    0.0,
+    2.7348,
+    0.8113
+   ]
+  },
+  {
+   "name": "WingL",
+   "pivot": [
+    -0.55,
+    2.75,
+    0.025
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "WingR",
+   "pivot": [
+    0.55,
+    2.75,
+    0.025
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegL",
+   "pivot": [
+    -0.325,
+    1.25,
+    0.125
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "LegR",
+   "pivot": [
+    0.325,
+    1.25,
+    0.125
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "WingFlameL",
+   "pivot": [
+    -2.1054,
+    4.8521,
+    0.6446
+   ],
+   "parent": "WingL"
+  },
+  {
+   "name": "WingFlameR",
+   "pivot": [
+    2.1054,
+    4.8521,
+    0.6446
+   ],
+   "parent": "WingR"
+  },
+  {
+   "name": "Crest",
+   "pivot": [
+    -0.0,
+    4.8084,
+    -0.125
+   ],
+   "parent": "Body"
+  },
+  {
+   "name": "TailFlames",
+   "pivot": [
+    -0.0,
+    2.0619,
+    2.9012
+   ],
+   "parent": "Body"
+  }
+ ],
+ "parts": {
+  "Body": {
+   "center": [
+    0.0,
+    2.7348,
+    0.8113
+   ],
+   "size": [
+    3.0118,
+    3.6303,
+    4.3225
+   ]
+  },
+  "WingL": {
+   "center": [
+    -1.7452,
+    3.8514,
+    0.3674
+   ],
+   "size": [
+    3.5039,
+    2.9127,
+    1.3014
+   ]
+  },
+  "WingR": {
+   "center": [
+    1.7452,
+    3.8514,
+    0.3674
+   ],
+   "size": [
+    3.5039,
+    2.9127,
+    1.3014
+   ]
+  },
+  "LegL": {
+   "center": [
+    -0.325,
+    0.7,
+    0.1
+   ],
+   "size": [
+    0.5308,
+    1.4,
+    0.85
+   ]
+  },
+  "LegR": {
+   "center": [
+    0.325,
+    0.7,
+    0.1
+   ],
+   "size": [
+    0.5308,
+    1.4,
+    0.85
+   ]
+  },
+  "WingFlameL": {
+   "center": [
+    -2.1054,
+    4.8521,
+    0.6446
+   ],
+   "size": [
+    3.7975,
+    1.9007,
+    1.282
+   ]
+  },
+  "WingFlameR": {
+   "center": [
+    2.1054,
+    4.8521,
+    0.6446
+   ],
+   "size": [
+    3.7975,
+    1.9007,
+    1.282
+   ]
+  },
+  "Crest": {
+   "center": [
+    0.0,
+    4.8085,
+    -0.125
+   ],
+   "size": [
+    1.1258,
+    0.9759,
+    1.0268
+   ]
+  },
+  "TailFlames": {
+   "center": [
+    0.0,
+    2.0618,
+    2.9013
+   ],
+   "size": [
+    3.2712,
+    0.7263,
+    1.0475
+   ]
+  }
+ },
+ "glow": {
+  "Crest": [
+   255,
+   192,
+   46
+  ],
+  "TailFlames": [
+   255,
+   192,
+   46
+  ],
+  "WingFlameL": [
+   255,
+   192,
+   46
+  ],
+  "WingFlameR": [
+   255,
+   192,
+   46
+  ]
+ },
+ "effects": [
+  {
+   "name": "TailFire",
+   "part": "TailFlames",
+   "kind": "Fire",
+   "color": [
+    255,
+    140,
+    26
+   ],
+   "color2": [
+    255,
+    59,
+    31
+   ],
+   "rate": 14,
+   "size": [
+    1.1,
+    0
+   ],
+   "lifetime": [
+    0.4,
+    0.7
+   ],
+   "speed": [
+    1.5,
+    2.5
+   ],
+   "spread": 25,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "WingFire",
+   "part": "WingFlameL",
+   "kind": "Fire",
+   "color": [
+    255,
+    178,
+    26
+   ],
+   "color2": [
+    255,
+    59,
+    31
+   ],
+   "rate": 8,
+   "size": [
+    0.9,
+    0
+   ],
+   "lifetime": [
+    0.3,
+    0.6
+   ],
+   "speed": [
+    1,
+    2
+   ],
+   "spread": 25,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "WingFire",
+   "part": "WingFlameR",
+   "kind": "Fire",
+   "color": [
+    255,
+    178,
+    26
+   ],
+   "color2": [
+    255,
+    59,
+    31
+   ],
+   "rate": 8,
+   "size": [
+    0.9,
+    0
+   ],
+   "lifetime": [
+    0.3,
+    0.6
+   ],
+   "speed": [
+    1,
+    2
+   ],
+   "spread": 25,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "Embers",
+   "part": "Body",
+   "kind": "Sparkles",
+   "color": [
+    255,
+    210,
+    63
+   ],
+   "color2": [
+    255,
+    59,
+    31
+   ],
+   "rate": 8,
+   "size": [
+    0.4,
+    0
+   ],
+   "lifetime": [
+    0.6,
+    1.2
+   ],
+   "speed": [
+    0.5,
+    1.5
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    3,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "CrestFire",
+   "part": "Crest",
+   "kind": "Fire",
+   "color": [
+    255,
+    210,
+    63
+   ],
+   "color2": [
+    255,
+    59,
+    31
+   ],
+   "rate": 6,
+   "size": [
+    0.5,
+    0
+   ],
+   "lifetime": [
+    0.25,
+    0.45
+   ],
+   "speed": [
+    0.8,
+    1.4
+   ],
+   "spread": 15,
+   "accel": [
+    0,
+    2,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1,
+   "at": [
+    0.0,
+    5.2965,
+    -0.125
+   ]
+  }
+ ],
+ "light": {
+  "part": "Body",
+  "color": [
+   255,
+   140,
+   26
+  ],
+  "brightness": 1.8,
+  "range": 18
+ }
+}
