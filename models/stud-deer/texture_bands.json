@@ -1,0 +1,38 @@
+{
+ "pixels_per_stud": 81.82,
+ "triangles": 1028,
+ "bands": {
+  "brown": {
+   "top_row": 0,
+   "bottom_row": 525
+  },
+  "cream": {
+   "top_row": 525,
+   "bottom_row": 749
+  },
+  "white": {
+   "top_row": 749,
+   "bottom_row": 781
+  },
+  "antler": {
+   "top_row": 781,
+   "bottom_row": 845
+  },
+  "hoof": {
+   "top_row": 845,
+   "bottom_row": 952
+  },
+  "nose": {
+   "top_row": 952,
+   "bottom_row": 973
+  },
+  "eye": {
+   "top_row": 973,
+   "bottom_row": 1001
+  },
+  "glint": {
+   "top_row": 1001,
+   "bottom_row": 1014
+  }
+ }
+}
