@@ -6,6 +6,7 @@ Run: python3 tools/blender/deer.py tools/blender/reference/forest_side_views.web
 Coordinates below are working pixels: the sheet crop (40, 105)-(340, 335) enlarged 4x.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from scipy import ndimage
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import refmodel as rm  # noqa: E402
+import setup_script  # noqa: E402
 
 BOX = (40, 105, 340, 335)
 GROUND = 866          # hoof bottoms (wp)
@@ -130,7 +132,20 @@ def build(ref, out):
     objs = [rb.join([body.obj] + [e.obj for e in ears] + [a.obj for a in antlers], "Body", mat)]
     for name, leg in legs.items():
         objs.append(rb.join([leg.obj], name, mat))
-    rb.export_glb(objs, str(out / "Deer.glb"))
+
+    # Joints for the setup script: every leg turns around the top of the leg (shoulder, or the knee under
+    # the thigh block for the hind legs), at its own side.
+    joints = {"LegFL": (656, 600, -54), "LegFR": (739, 605, 54), "LegBR": (220, 690, 54), "LegBL": (313, 690, -54)}
+    lift = rb.lift_to_ground(objs)
+    pivots = {"Body": (None, None)}
+    for name, (x, y, side) in joints.items():
+        pivots[name] = ("Body", rb.pixel_point(frame, x, y, side) + rb.Vector((0, 0, lift)))
+    rig = rb.rig_info(objs, "Deer", "Deer", "Common", pivots)
+    (out / "Deer.rig.json").write_text(json.dumps(rig, indent=1))
+    setup_script.write(out)
+
+    root = rb.group(objs, "Deer")
+    rb.export_glb([root] + objs, str(out / "Deer.glb"))
     print("triangles", rb.triangles(objs))
     return frame, objs
 

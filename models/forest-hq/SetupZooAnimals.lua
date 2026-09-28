@@ -15,7 +15,69 @@
 	To get an .rbxm file: right-click the selected animal in the Explorer and choose "Save to File...".
 ]]
 
-local DATA = --[[DATA]]
+local DATA = {
+	Deer = {
+		display = "Deer",
+		rarity = "Common",
+		root = {
+			center = { 0.1374, 4.4905, 0.0734 },
+			size = { 4.624, 8.9809, 9.2871 },
+		},
+		overhead = { 0.0, 9.9809, 0.0734 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.1374, 5.3947, -0.0015 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.5848, 2.9312, -0.6065 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.5848, 2.8771, -1.5054 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.5848, 1.9565, 4.1155 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.5848, 1.9565, 3.1083 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.1374, 5.3947, -0.0015 },
+				size = { 4.624, 7.1724, 9.1373 },
+			},
+			LegFL = {
+				center = { -0.5848, 1.6572, -0.5058 },
+				size = { 0.9411, 3.3145, 1.1367 },
+			},
+			LegFR = {
+				center = { 0.5847, 1.6151, -1.534 },
+				size = { 0.85, 3.1852, 1.0362 },
+			},
+			LegBR = {
+				center = { 0.5855, 1.328, 4.207 },
+				size = { 0.7496, 2.5909, 1.0199 },
+			},
+			LegBL = {
+				center = { -0.5851, 1.382, 2.7816 },
+				size = { 0.7484, 2.4571, 1.3185 },
+			},
+		},
+		ref = {
+			"LegFR",
+			"LegBR",
+		},
+	},
+}
 
 local CollectionService = game:GetService("CollectionService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")

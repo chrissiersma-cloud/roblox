@@ -386,6 +386,53 @@ def join(objs, name, mat):
     return obj
 
 
+def lift_to_ground(objs):
+    """Moves the objects up or down so the lowest point (the hooves) is exactly at z = 0. Returns the shift."""
+    low = min(min(v.co.z for v in o.data.vertices) for o in objs)
+    for o in objs:
+        o.data.transform(Matrix.Translation((0, 0, -low)))
+        o.data.update()
+    return -low
+
+
+def group(objs, name):
+    """An empty named after the animal with the pieces under it: Studio's importer turns it into one Model."""
+    root = bpy.data.objects.new(name, None)
+    bpy.context.collection.objects.link(root)
+    for o in objs:
+        o.parent = root
+    return root
+
+
+def to_roblox(p):
+    """Blender (x right, y forward, z up) to Roblox/glTF (x right, y up, facing -z)."""
+    return [round(float(p[0]), 4), round(float(p[2]), 4), round(float(-p[1]), 4)]
+
+
+def rig_info(objs, animal_id, display, rarity, pivots):
+    """Rig data for the setup script: every piece's box (center and size, in Roblox coordinates) and every joint.
+    pivots: {piece name: (parent name, pivot point in Blender coordinates)}; the root piece has parent None."""
+    parts = {}
+    for o in objs:
+        co = np.array([to_roblox(v.co) for v in o.data.vertices])
+        lo, hi = co.min(0), co.max(0)
+        parts[o.name] = {"center": [round(float(c), 4) for c in (lo + hi) / 2],
+                         "size": [round(float(s), 4) for s in hi - lo]}
+    lo = np.min([np.array(p["center"]) - np.array(p["size"]) / 2 for p in parts.values()], axis=0)
+    hi = np.max([np.array(p["center"]) + np.array(p["size"]) / 2 for p in parts.values()], axis=0)
+    lo[1] = 0.0
+    bones = []
+    for name, (parent, pivot) in pivots.items():
+        bone = {"name": name, "pivot": parts[name]["center"] if parent is None else to_roblox(pivot)}
+        if parent:
+            bone["parent"] = parent
+        bones.append(bone)
+    r = lambda v: [round(float(x), 4) for x in v]
+    return {"id": animal_id, "display": display, "rarity": rarity,
+            "root": {"center": r((lo + hi) / 2), "size": r(hi - lo)},
+            "overhead": r((0, hi[1] + 1.0, (lo[2] + hi[2]) / 2)), "bones": bones, "parts": parts}
+
+
 def export_glb(objs, path):
     bpy.ops.object.select_all(action="DESELECT")
     for o in objs:
