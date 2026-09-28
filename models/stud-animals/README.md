@@ -1,8 +1,11 @@
 # Create a Zoo – dieren met noppen (low-poly)
 
 Twaalf dieren, helemaal in Blender gemaakt, in dezelfde low-poly stijl en met de klassieke Roblox-noppen in de
-textuur. De noppen zijn bij alle dieren even groot, zodat ze bij elkaar en bij je map passen. De vier zeldzaamste
-dieren (Legendary, Mythic en Secret) hebben ook delen die gloeien, vonken, vlammen en een lichtje.
+textuur: kleine vierkante noppen met schuine randjes (licht aan de boven- en linkerkant, donker aan de onder- en
+rechterkant), in een dicht, regelmatig raster over elk vlak, net als de studs-textuur van Roblox. De noppen zijn
+bij alle dieren even groot, zodat ze bij elkaar en bij je map passen. De vier zeldzaamste dieren (Legendary,
+Mythic en Secret) hebben ook delen die gloeien, vonken, vlammen en een lichtje, en alle dieren vanaf Rare krijgen
+glinsters in de kleur van hun zeldzaamheid.
 
 | Dier | Zeldzaamheid | Hoogte | Driehoekjes | Kleuren |
 |---|---|---|---|---|
@@ -80,18 +83,23 @@ en kleuren van één dier, en `stud_animal.py` doet de rest (noppen, textuur, ex
 - **Alle noppen zijn even groot en nergens uitgerekt.** Elk vlak krijgt een eigen plekje in de textuur, en alle
   vlakken van een dier staan daar op dezelfde schaal. Het script controleert dat: de verhouding tussen een rand
   in 3D en in de textuur is overal precies 1.
-- **De noppen lopen netjes door.** De noppen staan in een raster in het midden van elk vlak en de rijen lopen
-  waterpas. Vlakken van dezelfde ring zijn even hoog, dus de rijen liggen rondom een poot of het lijf op gelijke
-  hoogte. De rechterkant is het spiegelbeeld van de linkerkant. Smalle schuine randjes hebben geen noppen, zodat
-  je geen halve noppen krijgt. De ogen, neuzen en de snavel hebben ook geen noppen.
+- **De noppen lopen netjes door.** De noppen bedekken elk vlak in een regelmatig raster, gecentreerd op het vlak,
+  en de rijen lopen waterpas. Vlakken van dezelfde ring zijn even hoog, dus de rijen liggen rondom een poot of het
+  lijf op gelijke hoogte. De rechterkant is het spiegelbeeld van de linkerkant. Ook smalle randjes hebben noppen;
+  aan de rand van een vlak kan een nop afgesneden zijn, net als bij de Roblox-textuur. De ogen, neuzen, snavels,
+  klauwen, het goud en de edelstenen en de gloeiende delen hebben geen noppen.
+- **Hoe een nop eruitziet:** een vierkantje met een schuin randje eromheen. Het licht komt van linksboven: de
+  boven- en linkerrand zijn lichter, de onder- en rechterrand donkerder, en rechtsonder ligt een zacht schaduwtje.
+  Zo lijken ze uit het vlak te steken, terwijl het gewoon een plaatje is.
 - **Extra detail (Phoenix en Gorilla King):** hun ringen hebben ronde hoeken (twee stukjes per hoek in plaats
   van één schuin stukje), er zijn meer ringen, en ze hebben veel meer kleine onderdelen (veren, klauwen, knokkels,
   tanden, schakels). Kleine dingen zoals ogen en tanden worden precies op het oppervlak gezet: het script schiet
   een rechte lijn op het lijf af en kijkt waar hij het raakt. De noppen lopen daar door over de ronde vormen: de
   vlakken rondom een ring worden in stukjes van vier naast elkaar plat gelegd, zoals een etiket van een blikje,
   dus zonder uitrekken.
-- **Noppengrootte:** de noppen zijn half zo groot als op een gewoon Roblox-blok (om de 0,5 stud). Met de volle
-  grootte past er geen enkele hele nop op de poten, want die zijn vaak maar ongeveer 0,5 stud breed.
+- **Noppengrootte:** er staat om de 0,25 stud een nop (vier keer zo dicht op elkaar als op een gewoon
+  Roblox-blok), en elke nop is 0,16 stud breed. Zo passen er ook op smalle vlakken, zoals de poten en de snuit,
+  een paar rijen noppen, en ziet het dier eruit als een dicht noppenraster.
 - **Elke kleur heeft een eigen band in de textuur** (een aantal rijen pixels over de hele breedte). Van boven
   naar beneden:
 
@@ -121,10 +129,27 @@ met Roblox' eigen plaatjes voor vonken, vuur en rook) en een lichtje (PointLight
 
 | Dier | Gloeiende MeshParts | Effecten |
 |---|---|---|
-| Thunderhoof | `Lightning` (geel), `Mane` (blauw) | vonken rond de bliksem, blauw licht |
+| Thunderhoof | `Lightning` (geel), `Mane` (blauw) | vonken rond de bliksem, kleine vonkjes onder elke hoef (zodat hij knettert als hij loopt), blauw licht |
 | Voidwhisker | `Void` (paars: rune, halsband, snorharen), `Gems` (roze), `TailWisp` (paars) | paarse vonken bij de staart, donkere rookslierten, paars licht |
-| Phoenix | `Crest`, `TailFlames`, `WingFlameL`, `WingFlameR` (geel) | vuur op de staart en de vleugels, gloeiende vonkjes die opstijgen, oranje licht |
-| Gorilla King | `Crown` (goud) | gouden vonken bij de kroon en de ketting, witte glinsters bij de grills, goudkleurig licht |
+| Phoenix | `Crest`, `TailFlames`, `WingFlameL`, `WingFlameR` (geel) | vuur op de staart, de vleugels en de kuif op zijn kop, gloeiende vonkjes die opstijgen, oranje licht |
+| Gorilla King | `Crown` (goud) | gouden vonken bij de kroon, de ketting en de armbanden, witte glinsters bij de grills, goudkleurig licht |
+
+Effecten die uit één punt komen (zoals de vonkjes onder de hoeven en het vuur op de kuif) zitten aan een
+**Attachment** op dat punt, die meebeweegt met de poot of de kop.
+
+**Glinsters per zeldzaamheid:** elk dier vanaf Rare krijgt ook een ParticleEmitter `RarityAura` op de RootPart:
+een paar zachte glinsters rondom het dier, in de kleur van zijn zeldzaamheid. Zo zien spelers meteen hoe
+zeldzaam een dier is. Common-dieren krijgen niets, zodat ze gewoon blijven.
+
+| Zeldzaamheid | Kleur van de glinsters |
+|---|---|
+| Rare | blauw |
+| Epic | paars |
+| Legendary | goud |
+| Mythic | rood |
+| Secret | roze |
+
+Wil je andere kleuren, verander dan `RARITY_AURA` bovenin `SetupZooAnimals.lua`.
 
 Het goud van de Gorilla King glimt: het setup-script geeft `Chains` (de ketting met het medaillon), `Grills` (de
 gouden tanden) en de armbanden `BraceletL` en `BraceletR` een **Reflectance** (0,35 tot 0,4). De armbanden zitten
@@ -145,8 +170,21 @@ textuur (zonder noppen), zodat het dier ook zonder het script goed uitziet.
    - zet elk dier terug op zijn eigen grootte, als Studio het bij het importeren anders heeft gemaakt;
    - maakt de gloeiende delen Neon, laat het goud glimmen en zet de effecten erbij (bij de vier zeldzaamste
      dieren);
-   - zet de dieren in **ReplicatedStorage → ZooAnimals**.
-3. **Opslaan als .rbxm:** klik met de rechtermuisknop op een dier en kies **Save to File...**.
+   - geeft elk dier vanaf Rare glinsters in de kleur van zijn zeldzaamheid;
+   - zet de dieren in **ReplicatedStorage → ZooAnimals** en selecteert die map.
+3. **Opslaan als één .rbxm:** klik met de rechtermuisknop op de map **ZooAnimals** (die is al geselecteerd) en
+   kies **Save to File...**. Je krijgt één bestand `ZooAnimals.rbxm` met alle dieren, met hun gewrichten en
+   effecten. Wil je één los dier, klik dan met de rechtermuisknop op dat dier en kies **Save to File...**.
+
+**In een ander spel gebruiken:** open dat spel in Studio, klik met de rechtermuisknop op **ReplicatedStorage** en
+kies **Insert from File...**, en kies `ZooAnimals.rbxm`. In je scripts pak je een dier met bijvoorbeeld
+`ReplicatedStorage.ZooAnimals.Deer:Clone()`.
+
+**Waarom maak je de .rbxm zelf in Studio?** Een MeshPart in een .rbxm verwijst naar een mesh en een plaatje die
+op de Roblox-website staan (een `MeshId` en `TextureID`). Die krijg je pas als Studio ze bij **Import 3D** naar
+jouw account uploadt. Een .rbxm die buiten Studio is gemaakt, zou dus lege, onzichtbare MeshParts hebben. Omdat de
+meshes op jouw account staan, werkt de .rbxm in al jouw eigen spellen (en in groepsspellen, als de groep ze mag
+gebruiken).
 
 Let op: de dieren hebben dezelfde namen als de oudere versies in `models/forest` en `models/forest-hq`. Het
 script vervangt dus een dier met dezelfde naam dat al in ReplicatedStorage → ZooAnimals staat.
@@ -168,10 +206,11 @@ python3 tools/blender/stud_fox.py
 ```
 
 Zo maak je één dier opnieuw (hier de vos). Elk script maakt de bestanden van zijn dier in deze map opnieuw, en
-ook `SetupZooAnimals.lua` en `previews/stud_<dier>_views.png`. Dat duurt ongeveer 2 minuten per dier. Wat je
+ook `SetupZooAnimals.lua` en `previews/stud_<dier>_views.png`. Dat duurt 2 tot 3 minuten per dier. Wat je
 makkelijk kunt veranderen:
 
 - bovenin elk dierscript: `PALETTE` en `GOLDEN` (de kleuren) en de tabellen van de poten; in `build_body()`
   staan de ringen van het lijf, de kop en de rest;
-- bovenin `stud_animal.py`: `STUD`, de afstand tussen de noppen (0,5 = half zo groot als op een Roblox-blok,
-  1,0 = even groot). Dat geldt voor alle dieren tegelijk, zodat ze bij elkaar passen.
+- bovenin `stud_animal.py`: `STUD`, de afstand tussen de noppen (0,25 = een kwart van een Roblox-blok,
+  1,0 = even ver), en `STUD_SIZE`, hoe breed een nop is vergeleken met die afstand (0,64 = ongeveer twee derde,
+  met een smalle naad ertussen). Dat geldt voor alle dieren tegelijk, zodat ze bij elkaar passen.

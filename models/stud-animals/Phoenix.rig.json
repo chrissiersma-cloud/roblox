@@ -377,6 +377,47 @@
    ],
    "transparency": 0.2,
    "lightEmission": 1
+  },
+  {
+   "name": "CrestFire",
+   "part": "Crest",
+   "kind": "Fire",
+   "color": [
+    255,
+    210,
+    63
+   ],
+   "color2": [
+    255,
+    59,
+    31
+   ],
+   "rate": 6,
+   "size": [
+    0.5,
+    0
+   ],
+   "lifetime": [
+    0.25,
+    0.45
+   ],
+   "speed": [
+    0.8,
+    1.4
+   ],
+   "spread": 15,
+   "accel": [
+    0,
+    2,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1,
+   "at": [
+    0.0,
+    5.2965,
+    -0.125
+   ]
   }
  ],
  "light": {

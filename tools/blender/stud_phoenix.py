@@ -210,7 +210,9 @@ PHOENIX = Animal(
              effect("WingFire", "WingFlameR", "Fire", "#ffb21a", "#ff3b1f", rate=8, size=(0.9, 0),
                     lifetime=(0.3, 0.6), speed=(1, 2), spread=25),
              effect("Embers", "Body", "Sparkles", "#ffd23f", "#ff3b1f", rate=8, size=(0.4, 0), speed=(0.5, 1.5),
-                    accel=(0, 3, 0))],
+                    accel=(0, 3, 0)),
+             effect("CrestFire", "Crest", "Fire", "#ffd23f", "#ff3b1f", rate=6, size=(0.5, 0), lifetime=(0.25, 0.45),
+                    speed=(0.8, 1.4), spread=15, accel=(0, 2, 0), at="top")],
     light=("Body", "#ff8c1a", 1.8, 18))
 
 if __name__ == "__main__":

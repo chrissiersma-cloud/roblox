@@ -154,7 +154,10 @@ THUNDERHOOF = Animal(
     "Thunderhoof", "Legendary", PALETTE, GOLDEN, parts, close=((0.35, -1.8, 5.5), 8.2), no_studs=NO_STUDS,
     glow={"Lightning": BOLT, "Mane": MANE},
     effects=[effect("Sparks", "Lightning", "Sparkles", BOLT, "#ffffff", rate=8, size=(0.5, 0), lifetime=(0.2, 0.5),
-                    speed=(3, 6))],
+                    speed=(3, 6))]
+    # small sparks from every hoof, so it crackles when it walks
+    + [effect("HoofSparks", leg, "Sparkles", BOLT, "#ffffff", rate=3, size=(0.3, 0), lifetime=(0.15, 0.35),
+              speed=(1.5, 3), accel=(0, -4, 0), at="bottom") for leg in ("LegFL", "LegFR", "LegBL", "LegBR")],
     light=("Lightning", "#9fe6ff", 1.5, 14))
 
 if __name__ == "__main__":

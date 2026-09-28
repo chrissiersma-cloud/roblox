@@ -254,7 +254,9 @@ GORILLA_KING = Animal(
     effects=[effect("CrownSparkles", "Crown", "Sparkles", CROWN, "#ffffff", rate=5, size=(0.4, 0), speed=(0.3, 0.8)),
              effect("GoldSparkles", "Chains", "Sparkles", CROWN, rate=4, size=(0.3, 0), speed=(0.2, 0.5)),
              effect("GrillShine", "Grills", "Sparkles", "#ffffff", "#bfefff", rate=2, size=(0.25, 0),
-                    lifetime=(0.3, 0.6), speed=(0.1, 0.3))],
+                    lifetime=(0.3, 0.6), speed=(0.1, 0.3)),
+             effect("BraceletSparkles", "BraceletL", "Sparkles", CROWN, rate=2, size=(0.25, 0), speed=(0.1, 0.4)),
+             effect("BraceletSparkles", "BraceletR", "Sparkles", CROWN, rate=2, size=(0.25, 0), speed=(0.1, 0.4))],
     light=("Crown", CROWN, 1.2, 12))
 
 if __name__ == "__main__":

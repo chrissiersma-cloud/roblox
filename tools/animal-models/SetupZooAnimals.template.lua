@@ -11,9 +11,10 @@
 	    so they can be animated,
 	  - adds an OverheadAttachment for a name tag and the attributes AnimalId, DisplayName and Rarity,
 	  - makes glowing parts Neon and adds sparkles, flames and a light (only animals that have them),
-	  - moves the finished model to ReplicatedStorage.ZooAnimals and selects it.
-	Animals that were already set up are skipped, so running it twice is safe.
-	To get an .rbxm file: right-click the selected animal in the Explorer and choose "Save to File...".
+	  - gives Rare animals and up soft sparkles in the color of their rarity,
+	  - moves the finished model to ReplicatedStorage.ZooAnimals.
+	At the end it selects the ZooAnimals folder. Animals that were already set up are skipped, so running it
+	twice is safe. To get one .rbxm file with every animal: right-click ZooAnimals and choose "Save to File...".
 ]]
 
 local DATA = --[[DATA]]
@@ -39,9 +40,39 @@ local PARTICLE_TEXTURES = {
 	Smoke = "rbxasset://textures/particles/smoke_main.dds",
 }
 
--- Glowing parts become Neon in one color, shiny parts reflect; effects are ParticleEmitters; light is a
--- PointLight.
-local function addEffects(info, parts, root)
+-- Rare animals and up get soft sparkles around them in the color of their rarity, so players can see it.
+local RARITY_AURA = {
+	Rare = { 69, 166, 255 },
+	Epic = { 184, 97, 255 },
+	Legendary = { 255, 204, 51 },
+	Mythic = { 255, 74, 74 },
+	Secret = { 255, 123, 229 },
+}
+
+local function addAura(info, root)
+	local color = RARITY_AURA[info.rarity]
+	if not color then
+		return
+	end
+	local aura = Instance.new("ParticleEmitter")
+	aura.Name = "RarityAura"
+	aura.Texture = PARTICLE_TEXTURES.Sparkles
+	aura.Color = ColorSequence.new(rgb(color), Color3.new(1, 1, 1))
+	aura.Rate = 3
+	aura.Lifetime = NumberRange.new(1, 1.8)
+	aura.Speed = NumberRange.new(0.3, 0.8)
+	aura.SpreadAngle = Vector2.new(180, 180)
+	aura.Acceleration = Vector3.new(0, 0.6, 0)
+	aura.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 0) })
+	aura.Transparency = NumberSequence.new(0.3, 1)
+	aura.LightEmission = 1
+	aura.LightInfluence = 0
+	aura.Parent = root
+end
+
+-- Glowing parts become Neon in one color, shiny parts reflect; effects are ParticleEmitters (out of a whole part,
+-- or out of one spot: an Attachment); light is a PointLight.
+local function addEffects(info, parts, root, spots)
 	for name, color in pairs(info.glow or {}) do
 		local part = parts[name]
 		if part then
@@ -56,7 +87,7 @@ local function addEffects(info, parts, root)
 			part.Reflectance = reflectance
 		end
 	end
-	for _, e in ipairs(info.effects or {}) do
+	for i, e in ipairs(info.effects or {}) do
 		local emitter = Instance.new("ParticleEmitter")
 		emitter.Name = e.name
 		emitter.Texture = PARTICLE_TEXTURES[e.kind]
@@ -74,7 +105,7 @@ local function addEffects(info, parts, root)
 		emitter.LightEmission = e.lightEmission
 		emitter.LightInfluence = 0
 		emitter.RotSpeed = NumberRange.new(-90, 90)
-		emitter.Parent = parts[e.part] or root
+		emitter.Parent = spots[i] or parts[e.part] or root
 	end
 	if info.light then
 		local light = Instance.new("PointLight")
@@ -194,11 +225,25 @@ local function setup(model, id)
 	model:SetAttribute("Rarity", info.rarity)
 	CollectionService:AddTag(model, "ZooAnimal")
 
+	-- Spots for effects that come out of one point (like sparks from a hoof). They are made before the scaling
+	-- below, so they move along with their parts.
+	local spots = {}
+	for i, e in ipairs(info.effects or {}) do
+		if e.at then
+			local spot = Instance.new("Attachment")
+			spot.Name = e.name .. "Spot"
+			spot.Parent = parts[e.part] or root
+			spot.WorldPosition = toWorld(e.at)
+			spots[i] = spot
+		end
+	end
+
 	-- Back to the designed size if Studio scaled the import (for example meters to studs).
 	if math.abs(k - 1) > 0.01 then
 		model:ScaleTo(model:GetScale() / k)
 	end
-	addEffects(info, parts, root)
+	addEffects(info, parts, root, spots)
+	addAura(info, root)
 
 	local folder = ReplicatedStorage:FindFirstChild("ZooAnimals")
 	if not folder then
@@ -215,12 +260,10 @@ local function setup(model, id)
 end
 
 local done, failed = 0, 0
-local finished = {}
 for model, id in pairs(findImported()) do
 	local ok, result = pcall(setup, model, id)
 	if ok and result then
 		done += 1
-		table.insert(finished, model)
 		print(("Set up %s"):format(id))
 	else
 		failed += 1
@@ -229,6 +272,7 @@ for model, id in pairs(findImported()) do
 end
 print(("Create a Zoo: %d animals set up, %d failed. Find them in ReplicatedStorage.ZooAnimals."):format(done, failed))
 if done > 0 then
-	game:GetService("Selection"):Set(finished)
-	print('To save them as .rbxm: right-click the selected animal in the Explorer and choose "Save to File..."')
+	-- Select the whole folder: "Save to File..." then makes one .rbxm with every animal in it.
+	game:GetService("Selection"):Set({ ReplicatedStorage.ZooAnimals })
+	print('To save all animals as one .rbxm: right-click ZooAnimals (selected) and choose "Save to File..."')
 end

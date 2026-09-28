@@ -14,9 +14,9 @@ How an animal is made:
      joined by big flat faces. All rings of one loft face the same way, so every face is exactly flat.
   2. Every face gets one flat color (brown, cream, ...) from where it is and which way it faces.
   3. Every face gets its own spot in the texture, all at the same scale, so every stud has the same size.
-     The studs sit in a grid in the middle of each face, rows running level. Faces of the same ring have
-     the same height, so their rows line up all around a leg or the body; the right side is the mirror
-     image of the left side.
+     Small square studs cover every face in a regular grid (like the Roblox studs texture), rows running
+     level and centered on the face. Faces of the same ring have the same height, so their rows line up
+     all around a leg or the body; the right side is the mirror image of the left side.
   4. Faces with the same color are packed together, so every color has its own band in the texture
      (recolor a band to make a mutation, see the animal's GOLDEN colors).
 
@@ -38,8 +38,8 @@ import setup_script  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "models" / "stud-animals"
-STUD = 0.5            # distance between studs in studs: half the size of the studs on a Roblox part
-STUD_SIZE = 0.6       # stud diameter compared to that distance
+STUD = 0.25           # distance between studs in studs: a quarter of the studs on a Roblox part
+STUD_SIZE = 0.64      # the side of a (square) stud compared to that distance
 TEX = 1024            # texture size in pixels
 PAD = 3               # extra pixels around every face in the texture, against color bleeding
 
@@ -67,12 +67,17 @@ class Animal:
 
 
 def effect(name, part, kind, color, color2=None, rate=5, size=(0.4, 0.0), lifetime=(0.6, 1.2), speed=(0.5, 1.5),
-           spread=180, accel=(0, 0, 0), transparency=0.2, light_emission=1):
+           spread=180, accel=(0, 0, 0), transparency=0.2, light_emission=1, at=None):
     """A particle effect for the setup script. kind: "Sparkles", "Fire" or "Smoke" (Roblox's own particle
-    pictures). size: (at the start, at the end) in studs; accel: Roblox directions (y is up)."""
-    return {"name": name, "part": part, "kind": kind, "color": rgb(color), "color2": rgb(color2 or color),
-            "rate": rate, "size": list(size), "lifetime": list(lifetime), "speed": list(speed), "spread": spread,
-            "accel": list(accel), "transparency": transparency, "lightEmission": light_emission}
+    pictures). size: (at the start, at the end) in studs; accel: Roblox directions (y is up).
+    part: the MeshPart (or "RootPart") it belongs to. It comes out of the whole part, or out of one spot when at is
+    "bottom", "top" or "center" (of that part's box), like sparks from a hoof."""
+    e = {"name": name, "part": part, "kind": kind, "color": rgb(color), "color2": rgb(color2 or color),
+         "rate": rate, "size": list(size), "lifetime": list(lifetime), "speed": list(speed), "spread": spread,
+         "accel": list(accel), "transparency": transparency, "lightEmission": light_emission}
+    if at:
+        e["spot"] = at
+    return e
 
 
 def rgb(h):
@@ -315,42 +320,18 @@ class Island:
     """Faces that share one spot in the texture: flat neighbours with the same color and directions."""
 
     def __init__(self, color, polys, studs):
-        self.color, self.polys = color, polys          # polys: (u, v) corner lists, in studs
+        self.color, self.polys, self.studs = color, polys, studs     # polys: (u, v) corner lists, in studs
         uv = np.concatenate(polys)
         self.lo, self.hi = uv.min(0), uv.max(0)
-        self.centers = self._studs() if studs else np.zeros((0, 2))
-
-    def _studs(self):
-        """Stud centers: a grid in the middle of the face; studs whose middle is off the face are left out."""
+        # The stud grid covers the whole face, centered on it: a stud in the middle when an odd number of whole
+        # studs fits across (or none: then one stud in the middle, cut off on both sides), a gap in the middle
+        # when an even number fits.
         size = self.hi - self.lo
-        count = np.floor(size / STUD + 0.4).astype(int)
-        count[(count == 0) & (size >= 0.5 * STUD_SIZE * STUD)] = 1
-        if (count == 0).any():
-            return np.zeros((0, 2))
-        mid = (self.lo + self.hi) / 2
-        axes = [mid[i] + (np.arange(count[i]) - (count[i] - 1) / 2) * STUD for i in (0, 1)]
-        grid = np.array([(u, v) for u in axes[0] for v in axes[1]])
-        margin = 0.15 * STUD_SIZE * STUD
-        keep = np.zeros(len(grid), bool)
-        for poly in self.polys:
-            keep |= inside_convex(poly, grid, margin)
-        return grid[keep]
+        whole = np.floor((size - STUD_SIZE * STUD) / STUD) + 1
+        self.grid = (self.lo + self.hi) / 2 + np.where((whole > 0) & (whole % 2 == 0), STUD / 2, 0.0)
 
     def pixel_size(self, density):
         return np.ceil((self.hi - self.lo) * density).astype(int) + 2 * PAD
-
-
-def inside_convex(poly, pts, margin):
-    poly = np.asarray(poly)
-    area = sum(p[0] * q[1] - q[0] * p[1] for p, q in zip(poly, np.roll(poly, -1, 0)))
-    ok = np.ones(len(pts), bool)
-    for p, q in zip(poly, np.roll(poly, -1, 0)):
-        e = q - p
-        if np.hypot(*e) < 1e-9:
-            continue
-        cross = (e[0] * (pts[:, 1] - p[1]) - e[1] * (pts[:, 0] - p[0])) / np.hypot(*e)
-        ok &= (cross if area > 0 else -cross) >= margin
-    return ok
 
 
 def face_uv(part, fi):
@@ -516,43 +497,53 @@ def hex_srgb(h):
     return np.array([int(h[i:i + 2], 16) for i in (1, 3, 5)], float) / 255
 
 
+def stud_shade(du, dv, px):
+    """How much lighter or darker each pixel is, for small square studs with bevelled edges (like the Roblox studs
+    texture): lit from the top left, so the top and left edges are bright and the bottom and right edges dark,
+    with a soft shadow below and to the right. du, dv: distance from the middle of the nearest stud, in studs."""
+    side = STUD_SIZE * STUD
+    s, bevel = side / 2, max(0.2 * side, 1.5 * px)      # half the side of a stud, and the width of its bevel
+    edge = lambda d, limit: np.clip((limit - d) / px + 0.5, 0, 1)      # 1 inside, 0 outside, smooth
+    m = np.maximum(np.abs(du), np.abs(dv))
+    inside = edge(m, s)
+    flat = edge(m, s - bevel)
+    # which way the bevel faces: up/down where |dv| is bigger, left/right where |du| is bigger
+    facing_u = np.where(np.abs(du) > np.abs(dv), np.sign(du), 0.0)
+    facing_v = np.where(np.abs(du) > np.abs(dv), 0.0, np.sign(dv))
+    light = -0.7 * facing_u + 0.9 * facing_v            # light from the top left
+    shift = max(0.12 * side, px)
+    shadow = edge(np.maximum(np.abs(du - shift), np.abs(dv + shift)), s) * (1 - inside)
+    return (1 - 0.2 * shadow) * (1 + 0.04 * flat + (inside - flat) * 0.36 * light)
+
+
 def paint_texture(islands, spots, bands, density, palette):
-    """The texture: each island's flat color with its studs (lit from above: bright rim on top, shadow below).
-    Empty space in a band gets the band's color, so a whole band can be recolored at once."""
+    """The texture: each island's flat color, covered with a regular grid of studs. Empty space in a band gets
+    the band's color, so a whole band can be recolored at once."""
+    studded = {isl.color for isl in islands if isl.studs}
+
+    def color(name):
+        # Colors with studs are at most 85% bright, so the light edges of the studs can still be lighter
+        # (white studs would otherwise lose their light edges).
+        c = hex_srgb(palette[name])
+        return c * min(1.0, 0.85 / max(c.max(), 1e-6)) if name in studded else c
+
     img = np.zeros((TEX, TEX, 3))
-    img[:] = hex_srgb(next(iter(palette.values())))
-    for color, (top, bottom) in bands.items():
-        img[top:bottom] = hex_srgb(palette[color])
-    r = STUD_SIZE * STUD / 2
+    img[:] = color(next(iter(palette)))
+    for name, (top, bottom) in bands.items():
+        img[top:bottom] = color(name)
     px = 1 / density                                   # one pixel, in studs
     for i, isl in enumerate(islands):
         x0, y0 = spots[i]
         w, h = isl.pixel_size(density)
-        base = hex_srgb(palette[isl.color])
-        cols = np.arange(w) + 0.5
-        rows = np.arange(h) + 0.5
-        u = isl.lo[0] + (cols - PAD) / density
-        v = isl.hi[1] - (rows - PAD) / density
+        base = color(isl.color)
+        u = isl.lo[0] + (np.arange(w) + 0.5 - PAD) / density
+        v = isl.hi[1] - (np.arange(h) + 0.5 - PAD) / density
         uu, vv = np.meshgrid(u, v)
         shade = np.ones_like(uu)
-        if len(isl.centers):
-            # nearest stud for every pixel
-            d2 = np.full(uu.shape, np.inf)
-            du = np.zeros_like(uu)
-            dv = np.zeros_like(uu)
-            for cu, cv in isl.centers:
-                a, b = uu - cu, vv - cv
-                dd = a * a + b * b
-                closer = dd < d2
-                d2[closer], du[closer], dv[closer] = dd[closer], a[closer], b[closer]
-            dist = np.sqrt(d2)
-            edge = lambda d, r0: np.clip((r0 - d) / (1.5 * px) + 0.5, 0, 1)     # 1 inside, 0 outside
-            shadow = edge(np.hypot(du, dv + 0.09 * r), r * 1.04) * (1 - edge(dist, r))
-            top = edge(dist, r)
-            rim = top * (1 - edge(dist, r * 0.78))
-            up = np.clip(dv / np.maximum(dist, 1e-6), -1, 1)
-            shade = (1 - 0.24 * shadow) * (1 + top * (0.05 + rim * (0.32 * np.clip(up, 0, 1)
-                                                                      - 0.16 * np.clip(-up, 0, 1))))
+        if isl.studs:
+            du = uu - isl.grid[0] - np.round((uu - isl.grid[0]) / STUD) * STUD
+            dv = vv - isl.grid[1] - np.round((vv - isl.grid[1]) / STUD) * STUD
+            shade = stud_shade(du, dv, px)
         img[y0:y0 + h, x0:x0 + w] = np.clip(base[None, None] * shade[..., None], 0, 1)
     return Image.fromarray((img * 255 + 0.5).astype(np.uint8))
 
@@ -640,7 +631,15 @@ def rig_info(animal, parts):
     if animal.shine:
         info["shine"] = animal.shine
     if animal.effects:
-        info["effects"] = animal.effects
+        info["effects"] = []
+        for e in animal.effects:
+            e = dict(e)
+            spot = e.pop("spot", None)
+            if spot:                                    # a point on the part's box, in Roblox coordinates
+                box = info["root"] if e["part"] == "RootPart" else boxes[e["part"]]
+                shift = {"bottom": -0.5, "center": 0.0, "top": 0.5}[spot] * box["size"][1]
+                e["at"] = r(np.add(box["center"], (0, shift, 0)))
+            info["effects"].append(e)
     if animal.light:
         part, color, brightness, range_ = animal.light
         info["light"] = {"part": part, "color": rgb(color), "brightness": brightness, "range": range_}

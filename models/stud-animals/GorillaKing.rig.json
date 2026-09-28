@@ -353,6 +353,78 @@
    ],
    "transparency": 0.2,
    "lightEmission": 1
+  },
+  {
+   "name": "BraceletSparkles",
+   "part": "BraceletL",
+   "kind": "Sparkles",
+   "color": [
+    255,
+    210,
+    58
+   ],
+   "color2": [
+    255,
+    210,
+    58
+   ],
+   "rate": 2,
+   "size": [
+    0.25,
+    0
+   ],
+   "lifetime": [
+    0.6,
+    1.2
+   ],
+   "speed": [
+    0.1,
+    0.4
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
+  },
+  {
+   "name": "BraceletSparkles",
+   "part": "BraceletR",
+   "kind": "Sparkles",
+   "color": [
+    255,
+    210,
+    58
+   ],
+   "color2": [
+    255,
+    210,
+    58
+   ],
+   "rate": 2,
+   "size": [
+    0.25,
+    0
+   ],
+   "lifetime": [
+    0.6,
+    1.2
+   ],
+   "speed": [
+    0.1,
+    0.4
+   ],
+   "spread": 180,
+   "accel": [
+    0,
+    0,
+    0
+   ],
+   "transparency": 0.2,
+   "lightEmission": 1
   }
  ],
  "light": {
