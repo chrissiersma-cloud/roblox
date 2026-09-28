@@ -1,0 +1,591 @@
+"""Shared toolkit for the low-poly Create a Zoo animals with classic Roblox studs painted in their texture.
+
+Every animal has its own small script (stud_deer.py, stud_rabbit.py, stud_wolf.py) that describes its
+shape and colors and then calls `build(animal)`. Run one of those:
+    python3 tools/blender/stud_wolf.py [out_dir]            (default out_dir: models/stud-animals)
+Needs: pip install bpy numpy pillow scipy                    (scipy is only used for the setup script)
+
+For an animal with id <Id>, build() writes <Id>.blend, <Id>.glb, <Id>Studs.png, <Id>Studs_Golden.png and
+<Id>.rig.json to out_dir, updates texture_bands.json and SetupZooAnimals.lua (which sets up every animal in
+the folder) and draws previews/stud_<id>_views.png.
+
+How an animal is made:
+  1. Every part (body, neck, head, legs, ...) is a loft: a row of flat rings (boxes with 45 degree corners)
+     joined by big flat faces. All rings of one loft face the same way, so every face is exactly flat.
+  2. Every face gets one flat color (brown, cream, ...) from where it is and which way it faces.
+  3. Every face gets its own spot in the texture, all at the same scale, so every stud has the same size.
+     The studs sit in a grid in the middle of each face, rows running level. Faces of the same ring have
+     the same height, so their rows line up all around a leg or the body; the right side is the mirror
+     image of the left side.
+  4. Faces with the same color are packed together, so every color has its own band in the texture
+     (recolor a band to make a mutation, see the animal's GOLDEN colors).
+
+Blender axes: +Z up, the animal faces -Y (the Front view), +X is its left side. 1 Blender unit = 1 stud.
+"""
+
+import json
+import math
+import sys
+from pathlib import Path
+
+import bpy  # noqa: I001  (bpy must come first)
+import numpy as np
+from mathutils import Vector
+from PIL import Image, ImageDraw, ImageFont
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import setup_script  # noqa: E402
+
+REPO = Path(__file__).resolve().parents[2]
+OUT = REPO / "models" / "stud-animals"
+STUD = 0.5            # distance between studs in studs: half the size of the studs on a Roblox part
+STUD_SIZE = 0.6       # stud diameter compared to that distance
+TEX = 1024            # texture size in pixels
+PAD = 3               # extra pixels around every face in the texture, against color bleeding
+
+X, Y, Z = np.eye(3)
+
+
+class Animal:
+    """What build() needs to know about an animal.
+    palette, golden: {color key: "#rrggbb"}; the order is the order of the bands in the texture.
+    no_studs: color keys painted flat (eyes, nose). parts: function returning [Body, legs...] Parts.
+    close: (point, distance) for the close-up picture of the head."""
+
+    def __init__(self, id, rarity, palette, golden, parts, close, no_studs=("nose", "eye", "glint"), display=None):
+        self.id, self.display, self.rarity = id, display or id, rarity
+        self.palette, self.golden, self.no_studs = palette, golden, set(no_studs)
+        self.parts, self.close = parts, close
+
+
+# ------------------------------------------------------------------ shapes ----
+
+def unit(v):
+    return v / np.linalg.norm(v)
+
+
+def newell(pts):
+    """Normal of a polygon (length = twice its area)."""
+    n = np.zeros(3)
+    for p, q in zip(pts, pts[1:] + pts[:1]):
+        n += np.cross(p, q)
+    return n
+
+
+class Part:
+    """One Blender object: vertices, flat faces and a color per face. `origin` becomes the object origin."""
+
+    def __init__(self, name, origin=(0, 0, 0)):
+        self.name, self.origin = name, np.array(origin, float)
+        self.verts, self.faces, self.colors = [], [], []
+
+    def vert(self, p):
+        self.verts.append(np.array(p, float))
+        return len(self.verts) - 1
+
+    def face(self, idx, inside, paint):
+        """Adds a face turned away from the point `inside`. A face that is not flat becomes two triangles.
+        paint: a color key, or a function (center, normal) -> color key."""
+        pts = [self.verts[i] for i in idx]
+        n = newell(pts)
+        if np.dot(n, np.mean(pts, 0) - inside) < 0:
+            idx, pts, n = idx[::-1], pts[::-1], -n
+        if len(idx) == 4 and np.abs(np.dot(np.array(pts) - pts[0], unit(n))).max() > 1e-5:
+            self.face(idx[:3], inside, paint)
+            self.face([idx[0], idx[2], idx[3]], inside, paint)
+            return
+        color = paint(np.mean(pts, 0), unit(n)) if callable(paint) else paint
+        self.faces.append(list(idx))
+        self.colors.append(color)
+
+
+def ring(center, a, b, w, h, c, cb=None):
+    """Box outline with 45 degree corners around `center`, in the plane of the directions a (width) and
+    b (height). c: corner size on top, cb: at the bottom."""
+    cb = c if cb is None else cb
+    x, y = w / 2, h / 2
+    corners = [(x, -y + cb), (x, y - c), (x - c, y), (-x + c, y), (-x, y - c), (-x, -y + cb), (-x + cb, -y),
+               (x - cb, -y)]
+    center, a, b = (np.asarray(v, float) for v in (center, a, b))
+    return [center + a * u + b * v for u, v in corners]
+
+
+def square(center, a, b, w, h):
+    center, a, b = (np.asarray(v, float) for v in (center, a, b))
+    return [center + a * u + b * v for u, v in ((w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2), (-w / 2, -h / 2))]
+
+
+def loft(part, rings, paint, caps=(True, True), tip=None):
+    """Joins the rings with flat faces; caps close the first and last ring, tip ends in a point instead."""
+    ids = [[part.vert(p) for p in r] for r in rings]
+    centers = [np.mean(r, 0) for r in rings]
+    n = len(rings[0])
+    for i in range(len(rings) - 1):
+        inside = (centers[i] + centers[i + 1]) / 2
+        for j in range(n):
+            k = (j + 1) % n
+            part.face([ids[i][j], ids[i][k], ids[i + 1][k], ids[i + 1][j]], inside, paint)
+    if caps[0]:
+        after = centers[1] if len(rings) > 1 else np.asarray(tip, float)
+        part.face(ids[0], centers[0] + (after - centers[0]) * 0.01, paint)
+    if tip is not None:
+        t = part.vert(tip)
+        for j in range(n):
+            part.face([ids[-1][j], ids[-1][(j + 1) % n], t], centers[-1], paint)
+    elif caps[1]:
+        part.face(ids[-1], centers[-1] + (centers[-2] - centers[-1]) * 0.01, paint)
+
+
+def slab(part, center, normal, w, h, depth, paint):
+    """A thin box lying on a surface (eyes, nose): its front is `depth` above the surface at `center`."""
+    n = unit(np.asarray(normal, float))
+    up = Z - np.dot(Z, n) * n
+    up = unit(up) if np.linalg.norm(up) > 1e-3 else unit(-Y - np.dot(-Y, n) * n)
+    side = np.cross(up, n)
+    center = np.asarray(center, float)
+    loft(part, [square(center - n * 0.06, side, up, w, h), square(center + n * depth, side, up, w, h)], paint)
+
+
+def mirror(pts):
+    return [np.asarray(p, float) * (-1, 1, 1) for p in pts]
+
+
+def sides(rings, tip=None):
+    """The left version (as given) and the mirrored right version of rings (and a tip)."""
+    yield rings, tip
+    yield [mirror(r) for r in rings], None if tip is None else mirror([tip])[0]
+
+
+def plane_point(p0, n, y, z):
+    """Point with the given y and z on the plane through p0 with normal n."""
+    x = p0[0] - (n[1] * (y - p0[1]) + n[2] * (z - p0[2])) / n[0]
+    return np.array([x, y, z])
+
+
+def eyes(part, ring_a, ring_b, y, z, w=0.22, h=0.26):
+    """Black eyes with a small white glint on both side faces between two standing head rings."""
+    a, b = ring_a[0], ring_b[0]                        # lower corners of the left side face
+    n = unit(np.cross(ring_a[1] - a, b - a))
+    for sign in (1, -1):
+        nn, p0 = n * (sign, 1, 1), a * (sign, 1, 1)
+        slab(part, plane_point(p0, nn, y, z), nn, w, h, 0.03, "eye")
+        slab(part, plane_point(p0, nn, y - 0.05, z + 0.06) + nn * 0.03, nn, 0.07, 0.07, 0.015, "glint")
+
+
+def leg(name, x, y, top, rings, paint):
+    """A leg from level rings (height, forward/back shift, width, depth, corner); its origin (the joint) is
+    at (x, y, top)."""
+    part = Part(name, origin=(x, y, top))
+    loft(part, [ring((x, y + dy, z), X, Y, w, d, c) for z, dy, w, d, c in rings], paint)
+    return part
+
+
+# ---------------------------------------------------------------- texture ----
+
+def frame(n):
+    """Directions on a face: t along a row of studs, b "up" (from one row to the next). Level on walls."""
+    axis = X if abs(n[1]) >= 0.8 or abs(n[2]) >= 0.8 else Y
+    t = unit(axis - np.dot(axis, n) * n)
+    b = np.cross(n, t)
+    key = b[2] if abs(b[2]) > 1e-4 else (-b[1] if abs(b[1]) > 1e-4 else -b[0])
+    return (-t, -b) if key < 0 else (t, b)
+
+
+class Island:
+    """Faces that share one spot in the texture: flat neighbours with the same color and directions."""
+
+    def __init__(self, color, polys, studs):
+        self.color, self.polys = color, polys          # polys: (u, v) corner lists, in studs
+        uv = np.concatenate(polys)
+        self.lo, self.hi = uv.min(0), uv.max(0)
+        self.centers = self._studs() if studs else np.zeros((0, 2))
+
+    def _studs(self):
+        """Stud centers: a grid in the middle of the face; studs whose middle is off the face are left out."""
+        size = self.hi - self.lo
+        count = np.floor(size / STUD + 0.4).astype(int)
+        count[(count == 0) & (size >= 0.5 * STUD_SIZE * STUD)] = 1
+        if (count == 0).any():
+            return np.zeros((0, 2))
+        mid = (self.lo + self.hi) / 2
+        axes = [mid[i] + (np.arange(count[i]) - (count[i] - 1) / 2) * STUD for i in (0, 1)]
+        grid = np.array([(u, v) for u in axes[0] for v in axes[1]])
+        margin = 0.15 * STUD_SIZE * STUD
+        keep = np.zeros(len(grid), bool)
+        for poly in self.polys:
+            keep |= inside_convex(poly, grid, margin)
+        return grid[keep]
+
+    def pixel_size(self, density):
+        return np.ceil((self.hi - self.lo) * density).astype(int) + 2 * PAD
+
+
+def inside_convex(poly, pts, margin):
+    poly = np.asarray(poly)
+    area = sum(p[0] * q[1] - q[0] * p[1] for p, q in zip(poly, np.roll(poly, -1, 0)))
+    ok = np.ones(len(pts), bool)
+    for p, q in zip(poly, np.roll(poly, -1, 0)):
+        e = q - p
+        if np.hypot(*e) < 1e-9:
+            continue
+        cross = (e[0] * (pts[:, 1] - p[1]) - e[1] * (pts[:, 0] - p[0])) / np.hypot(*e)
+        ok &= (cross if area > 0 else -cross) >= margin
+    return ok
+
+
+def face_uv(part, fi):
+    """(u, v) in studs of the corners of face fi, and a key for which faces can share an island."""
+    pts = [part.verts[i] + part.origin for i in part.faces[fi]]
+    n = unit(newell(pts))
+    mirrored = np.mean(pts, 0)[0] < -1e-6              # right side: mirror image of the left side
+    if mirrored:
+        pts, n = mirror(pts), n * (-1, 1, 1)
+    t, b = frame(n)
+    uv = np.array([(np.dot(p, t), np.dot(p, b)) for p in pts])
+    plane = np.dot(n, pts[0])
+    return uv, (part.colors[fi], mirrored, *np.round(np.concatenate([t, b, [plane]]), 4))
+
+
+def make_islands(parts, no_studs):
+    """Groups flat neighbouring faces with the same color, and returns the islands and, per face, its island."""
+    islands, owner = [], {}
+    for pi, part in enumerate(parts):
+        uvs, keys = zip(*(face_uv(part, fi) for fi in range(len(part.faces))))
+        group = list(range(len(part.faces)))
+
+        def find(i):
+            while group[i] != i:
+                group[i] = group[group[i]]
+                i = group[i]
+            return i
+
+        edges = {}
+        for fi, f in enumerate(part.faces):
+            for a, b in zip(f, f[1:] + f[:1]):
+                edges.setdefault((min(a, b), max(a, b)), []).append(fi)
+        for fs in edges.values():
+            for f1 in fs:
+                for f2 in fs:
+                    if f1 < f2 and keys[f1] == keys[f2]:
+                        group[find(f1)] = find(f2)
+        members = {}
+        for fi in range(len(part.faces)):
+            members.setdefault(find(fi), []).append(fi)
+        for fis in members.values():
+            color = part.colors[fis[0]]
+            island = Island(color, [uvs[fi] for fi in fis], color not in no_studs)
+            for fi in fis:
+                owner[pi, fi] = (len(islands), uvs[fi])
+            islands.append(island)
+    return islands, owner
+
+
+def pack(islands, density, order):
+    """Shelf packing, one color after the other (each color starts on a new shelf). Returns the top-left
+    pixel of every island and the used height, or None if it does not fit in the width."""
+    spots, x, y, shelf = {}, 0, 0, 0
+    bands = {}
+    for color in order:
+        group = sorted((i for i, isl in enumerate(islands) if isl.color == color),
+                       key=lambda i: -islands[i].pixel_size(density)[1])
+        if not group:
+            continue
+        if x > 0:
+            x, y, shelf = 0, y + shelf, 0
+        top = y
+        for i in group:
+            w, h = islands[i].pixel_size(density)
+            if w > TEX:
+                return None, None, None
+            if x + w > TEX:
+                x, y, shelf = 0, y + shelf, 0
+            spots[i] = (x, y)
+            x += w
+            shelf = max(shelf, h)
+        bands[color] = (top, y + shelf)
+    return spots, y + shelf, bands
+
+
+def layout(islands, order):
+    """The largest texture scale (pixels per stud) at which everything fits."""
+    missing = {isl.color for isl in islands} - set(order)
+    if missing:
+        raise ValueError(f"colors without a palette entry: {sorted(missing)}")
+    lo, hi = 10.0, 400.0
+    for _ in range(30):
+        mid = (lo + hi) / 2
+        spots, height, _ = pack(islands, mid, order)
+        if spots is not None and height <= TEX:
+            lo = mid
+        else:
+            hi = mid
+    spots, _, bands = pack(islands, lo, order)
+    return lo, spots, bands
+
+
+def hex_srgb(h):
+    return np.array([int(h[i:i + 2], 16) for i in (1, 3, 5)], float) / 255
+
+
+def paint_texture(islands, spots, bands, density, palette):
+    """The texture: each island's flat color with its studs (lit from above: bright rim on top, shadow below).
+    Empty space in a band gets the band's color, so a whole band can be recolored at once."""
+    img = np.zeros((TEX, TEX, 3))
+    img[:] = hex_srgb(next(iter(palette.values())))
+    for color, (top, bottom) in bands.items():
+        img[top:bottom] = hex_srgb(palette[color])
+    r = STUD_SIZE * STUD / 2
+    px = 1 / density                                   # one pixel, in studs
+    for i, isl in enumerate(islands):
+        x0, y0 = spots[i]
+        w, h = isl.pixel_size(density)
+        base = hex_srgb(palette[isl.color])
+        cols = np.arange(w) + 0.5
+        rows = np.arange(h) + 0.5
+        u = isl.lo[0] + (cols - PAD) / density
+        v = isl.hi[1] - (rows - PAD) / density
+        uu, vv = np.meshgrid(u, v)
+        shade = np.ones_like(uu)
+        if len(isl.centers):
+            # nearest stud for every pixel
+            d2 = np.full(uu.shape, np.inf)
+            du = np.zeros_like(uu)
+            dv = np.zeros_like(uu)
+            for cu, cv in isl.centers:
+                a, b = uu - cu, vv - cv
+                dd = a * a + b * b
+                closer = dd < d2
+                d2[closer], du[closer], dv[closer] = dd[closer], a[closer], b[closer]
+            dist = np.sqrt(d2)
+            edge = lambda d, r0: np.clip((r0 - d) / (1.5 * px) + 0.5, 0, 1)     # 1 inside, 0 outside
+            shadow = edge(np.hypot(du, dv + 0.09 * r), r * 1.04) * (1 - edge(dist, r))
+            top = edge(dist, r)
+            rim = top * (1 - edge(dist, r * 0.78))
+            up = np.clip(dv / np.maximum(dist, 1e-6), -1, 1)
+            shade = (1 - 0.24 * shadow) * (1 + top * (0.05 + rim * (0.32 * np.clip(up, 0, 1)
+                                                                      - 0.16 * np.clip(-up, 0, 1))))
+        img[y0:y0 + h, x0:x0 + w] = np.clip(base[None, None] * shade[..., None], 0, 1)
+    return Image.fromarray((img * 255 + 0.5).astype(np.uint8))
+
+
+# ---------------------------------------------------------------- blender ----
+
+def to_blender(animal, parts, owner, spots, islands, density, image):
+    mat = bpy.data.materials.new(f"{animal.id}Studs")
+    mat.use_nodes = True
+    nt = mat.node_tree
+    bsdf = nt.nodes["Principled BSDF"]
+    bsdf.inputs["Roughness"].default_value = 0.8
+    bsdf.inputs["Specular IOR Level"].default_value = 0.2
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.image = image
+    nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+
+    root = bpy.data.objects.new(animal.id, None)
+    bpy.context.collection.objects.link(root)
+    objs = []
+    for pi, part in enumerate(parts):
+        mesh = bpy.data.meshes.new(part.name)
+        mesh.from_pydata([tuple(v - part.origin) for v in part.verts], [], part.faces)
+        uv_layer = mesh.uv_layers.new(name="UVMap")
+        for poly in mesh.polygons:
+            ii, uv = owner[pi, poly.index]
+            isl, (x0, y0) = islands[ii], spots[ii]
+            for corner, li in zip(uv, poly.loop_indices):
+                px = x0 + PAD + (corner[0] - isl.lo[0]) * density
+                py = y0 + PAD + (isl.hi[1] - corner[1]) * density
+                uv_layer.data[li].uv = (px / TEX, 1 - py / TEX)
+        mesh.polygons.foreach_set("use_smooth", [False] * len(mesh.polygons))
+        mesh.materials.append(mat)
+        mesh.validate()
+        obj = bpy.data.objects.new(part.name, mesh)
+        obj.location = tuple(part.origin)
+        obj.parent = root
+        bpy.context.collection.objects.link(obj)
+        objs.append(obj)
+    return root, objs, mat
+
+
+def stretch(objs, density):
+    """How much the texture is stretched: the largest ratio between an edge in the texture and in 3D."""
+    worst = 1.0
+    for o in objs:
+        mesh, uv = o.data, o.data.uv_layers[0].data
+        co = lambda li: mesh.vertices[mesh.loops[li].vertex_index].co
+        for poly in mesh.polygons:
+            li = list(poly.loop_indices)
+            for a, b in zip(li, li[1:] + li[:1]):
+                l3 = (co(a) - co(b)).length
+                l2 = (uv[a].uv - uv[b].uv).length * TEX / density
+                if l3 > 1e-3:
+                    worst = max(worst, l2 / l3, l3 / l2)
+    return worst
+
+
+def to_roblox(p):
+    """Blender (the animal faces -y) to Roblox design coordinates (y up, the animal faces -z)."""
+    return [round(float(-p[0]), 4), round(float(p[2]), 4), round(float(p[1]), 4)]
+
+
+def rig_info(animal, parts):
+    """Rig data for SetupZooAnimals.lua: every part's box (Roblox coordinates) and every joint.
+    The first part is the root piece; every other part turns around its origin, attached to the first."""
+    boxes = {}
+    for part in parts:
+        co = np.array([to_roblox(v) for v in part.verts])
+        lo, hi = co.min(0), co.max(0)
+        boxes[part.name] = {"center": [round(float(c), 4) for c in (lo + hi) / 2],
+                            "size": [round(float(s), 4) for s in hi - lo]}
+    lo = np.min([np.subtract(b["center"], np.divide(b["size"], 2)) for b in boxes.values()], 0)
+    hi = np.max([np.add(b["center"], np.divide(b["size"], 2)) for b in boxes.values()], 0)
+    lo[1] = 0.0
+    body = parts[0].name
+    bones = [{"name": body, "pivot": boxes[body]["center"]}]
+    bones += [{"name": p.name, "pivot": to_roblox(p.origin), "parent": body} for p in parts[1:]]
+    r = lambda v: [round(float(x), 4) for x in v]
+    return {"id": animal.id, "display": animal.display, "rarity": animal.rarity,
+            "root": {"center": r((lo + hi) / 2), "size": r(hi - lo)},
+            "overhead": r((0, hi[1] + 1.0, (lo[2] + hi[2]) / 2)), "bones": bones, "parts": boxes}
+
+
+def export_glb(root, objs, path):
+    bpy.ops.object.select_all(action="DESELECT")
+    for o in [root] + objs:
+        o.select_set(True)
+    bpy.ops.export_scene.gltf(filepath=str(path), export_format="GLB", use_selection=True, export_apply=True,
+                              export_yup=True, export_image_format="AUTO", export_materials="EXPORT")
+
+
+# ----------------------------------------------------------------- renders ----
+
+def setup_render(size=900, samples=48):
+    scene = bpy.context.scene
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.samples = samples
+    scene.cycles.use_denoising = True
+    scene.render.resolution_x = scene.render.resolution_y = size
+    scene.render.film_transparent = True
+    scene.view_settings.view_transform = "Standard"
+    world = bpy.data.worlds.new("World")
+    world.use_nodes = True
+    world.node_tree.nodes["Background"].inputs["Color"].default_value = (0.75, 0.82, 0.95, 1)
+    world.node_tree.nodes["Background"].inputs["Strength"].default_value = 1.0
+    scene.world = world
+    bpy.ops.object.light_add(type="SUN", rotation=(math.radians(40), 0, math.radians(-35)))
+    bpy.context.object.data.energy = 2.4
+    bpy.context.object.data.angle = math.radians(10)
+    bpy.ops.mesh.primitive_plane_add(size=60)
+    bpy.context.object.is_shadow_catcher = True
+    cam = bpy.data.objects.new("Camera", bpy.data.cameras.new("Camera"))
+    bpy.context.collection.objects.link(cam)
+    scene.camera = cam
+    return cam
+
+
+def render(cam, path, target, direction, ortho=None, distance=20, lens=60):
+    d = Vector(direction).normalized()
+    cam.location = Vector(target) + d * distance
+    cam.rotation_euler = (-d).to_track_quat("-Z", "Y" if abs(d.z) < 0.99 else "X").to_euler()
+    if abs(d.z) >= 0.99:                               # straight down: head to the top of the picture
+        cam.rotation_euler = (0, 0, math.pi)
+    cam.data.type = "ORTHO" if ortho else "PERSP"
+    if ortho:
+        cam.data.ortho_scale = ortho
+    else:
+        cam.data.lens = lens
+    bpy.context.scene.render.filepath = str(path)
+    bpy.ops.render.render(write_still=True)
+
+
+def views(cam, out, animal, parts):
+    """Front, side, 3/4, top and a close-up of the head, framed from the size of the animal."""
+    co = np.array([v for p in parts for v in p.verts])
+    lo, hi = co.min(0), co.max(0)
+    h, length, width, cy = hi[2], hi[1] - lo[1], hi[0] - lo[0], (lo[1] + hi[1]) / 2
+    big = max(h, length)
+    shots = {"front": ((0, cy, h * 0.52), (0, -1, 0.02), dict(ortho=max(h, width) * 1.17)),
+             "side": ((0, cy, h * 0.52), (1, 0, 0.02), dict(ortho=big * 1.24)),
+             "34": ((0, cy, h * 0.5), (0.85, -1.0, 0.42), dict(distance=big * 2.26, lens=55)),
+             "top": ((0, cy, 0), (0, 0, 1), dict(ortho=max(length, width) * 1.43)),
+             "close": (animal.close[0], (0.9, -1.0, 0.35), dict(distance=animal.close[1], lens=55))}
+    paths = {}
+    for name, (target, direction, kw) in shots.items():
+        paths[name] = out / f"r_{name}.png"
+        render(cam, paths[name], target, direction, **kw)
+    return paths, shots["34"]
+
+
+def sheet(animal, paths, golden, tris, height, path):
+    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf", 26)
+    small = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 22)
+    bg, panel = (26, 34, 44), (160, 200, 150)
+    cell = 560
+    canvas = Image.new("RGB", (20 + 3 * (cell + 20), 110 + 2 * (cell + 60)), bg)
+    d = ImageDraw.Draw(canvas)
+    tall = f"{height:.1f}".replace(".", ",").replace(",0", "")
+    d.text((20, 18), f"{animal.display} (low-poly met noppen) - {tris} driehoekjes, ca. {tall} studs hoog",
+           font=font, fill=(255, 255, 255))
+    d.text((20, 54), "1 Blender-eenheid = 1 stud. Kijkt naar -Y (Front view in Blender).", font=small,
+           fill=(200, 210, 220))
+    items = [(paths["34"], "Schuin van voren"), (paths["side"], "Zijkant"), (paths["front"], "Voorkant"),
+             (paths["top"], "Bovenkant"), (paths["close"], "Dichtbij: de noppen"), (golden, "Golden (andere textuur)")]
+    for i, (p, label) in enumerate(items):
+        x, y = 20 + (i % 3) * (cell + 20), 110 + (i // 3) * (cell + 60)
+        im = Image.open(p).convert("RGBA")
+        tile = Image.new("RGBA", im.size, panel + (255,))
+        canvas.paste(Image.alpha_composite(tile, im).convert("RGB").resize((cell, cell), Image.LANCZOS), (x, y + 40))
+        d.text((x, y + 4), label, font=font, fill=(255, 255, 255))
+    canvas.save(path)
+
+
+# ------------------------------------------------------------------- build ----
+
+def build(animal, out=None):
+    """Builds one animal into `out` (see the top of this file). Returns the triangle count."""
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    out = Path(out or (args[0] if args else OUT)).resolve()
+    out.mkdir(parents=True, exist_ok=True)
+    bpy.ops.wm.read_factory_settings(use_empty=True)
+    bpy.context.scene.unit_settings.system = "METRIC"
+
+    parts = animal.parts()
+    islands, owner = make_islands(parts, animal.no_studs)
+    density, spots, bands = layout(islands, list(animal.palette))
+    tris = sum(len(f) - 2 for p in parts for f in p.faces)
+    print(f"{animal.id}: triangles {tris}, islands {len(islands)}, {density:.1f} pixels per stud")
+
+    tex_path, gold_path = out / f"{animal.id}Studs.png", out / f"{animal.id}Studs_Golden.png"
+    paint_texture(islands, spots, bands, density, animal.palette).save(tex_path)
+    paint_texture(islands, spots, bands, density, animal.golden).save(gold_path)
+    image = bpy.data.images.load(str(tex_path))
+    image.pack()
+    root, objs, mat = to_blender(animal, parts, owner, spots, islands, density, image)
+
+    height = max(v[2] for p in parts for v in p.verts)
+    print(f"{animal.id}: height {height:.2f} studs, stretching {stretch(objs, density):.4f} (1 = none)")
+    (out / f"{animal.id}.rig.json").write_text(json.dumps(rig_info(animal, parts), indent=1))
+    setup_script.write(out)
+    export_glb(root, objs, out / f"{animal.id}.glb")
+    bpy.context.preferences.filepaths.save_version = 0      # no .blend1 backup next to it
+    bpy.ops.wm.save_as_mainfile(filepath=str(out / f"{animal.id}.blend"), compress=True)
+
+    bands_path = out / "texture_bands.json"
+    all_bands = json.loads(bands_path.read_text()) if bands_path.exists() else {}
+    all_bands[animal.id] = {"pixels_per_stud": round(density, 2), "triangles": tris,
+                            "bands": {c: {"top_row": int(a), "bottom_row": int(b)} for c, (a, b) in bands.items()}}
+    bands_path.write_text(json.dumps(dict(sorted(all_bands.items())), indent=1) + "\n")
+
+    # Previews (not saved in the .blend)
+    work = out / f"_render_{animal.id}"
+    work.mkdir(exist_ok=True)
+    cam = setup_render()
+    paths, (target, direction, kw) = views(cam, work, animal, parts)
+    mat.node_tree.nodes["Image Texture"].image = bpy.data.images.load(str(gold_path))
+    render(cam, work / "r_golden.png", target, direction, **kw)
+    sheet(animal, paths, work / "r_golden.png", tris, height, REPO / "previews" / f"stud_{animal.id.lower()}_views.png")
+    if "--keep-renders" not in sys.argv:
+        for p in work.iterdir():
+            p.unlink()
+        work.rmdir()
+    return tris

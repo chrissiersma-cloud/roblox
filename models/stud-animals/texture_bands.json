@@ -1,0 +1,104 @@
+{
+ "Deer": {
+  "pixels_per_stud": 81.82,
+  "triangles": 1028,
+  "bands": {
+   "brown": {
+    "top_row": 0,
+    "bottom_row": 525
+   },
+   "cream": {
+    "top_row": 525,
+    "bottom_row": 749
+   },
+   "white": {
+    "top_row": 749,
+    "bottom_row": 781
+   },
+   "antler": {
+    "top_row": 781,
+    "bottom_row": 845
+   },
+   "hoof": {
+    "top_row": 845,
+    "bottom_row": 952
+   },
+   "nose": {
+    "top_row": 952,
+    "bottom_row": 973
+   },
+   "eye": {
+    "top_row": 973,
+    "bottom_row": 1001
+   },
+   "glint": {
+    "top_row": 1001,
+    "bottom_row": 1014
+   }
+  }
+ },
+ "Rabbit": {
+  "pixels_per_stud": 130.47,
+  "triangles": 584,
+  "bands": {
+   "brown": {
+    "top_row": 0,
+    "bottom_row": 624
+   },
+   "cream": {
+    "top_row": 624,
+    "bottom_row": 811
+   },
+   "white": {
+    "top_row": 811,
+    "bottom_row": 870
+   },
+   "pink": {
+    "top_row": 870,
+    "bottom_row": 941
+   },
+   "nose": {
+    "top_row": 941,
+    "bottom_row": 966
+   },
+   "eye": {
+    "top_row": 966,
+    "bottom_row": 1006
+   },
+   "glint": {
+    "top_row": 1006,
+    "bottom_row": 1022
+   }
+  }
+ },
+ "Wolf": {
+  "pixels_per_stud": 97.14,
+  "triangles": 830,
+  "bands": {
+   "grey": {
+    "top_row": 0,
+    "bottom_row": 508
+   },
+   "light": {
+    "top_row": 508,
+    "bottom_row": 816
+   },
+   "dark": {
+    "top_row": 816,
+    "bottom_row": 958
+   },
+   "nose": {
+    "top_row": 958,
+    "bottom_row": 980
+   },
+   "eye": {
+    "top_row": 980,
+    "bottom_row": 1010
+   },
+   "glint": {
+    "top_row": 1010,
+    "bottom_row": 1024
+   }
+  }
+ }
+}

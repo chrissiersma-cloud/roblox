@@ -77,6 +77,128 @@ local DATA = {
 			"LegBR",
 		},
 	},
+	Rabbit = {
+		display = "Rabbit",
+		rarity = "Common",
+		root = {
+			center = { 0.0, 1.6305, 0.09 },
+			size = { 1.5, 3.2611, 2.5 },
+		},
+		overhead = { 0.0, 4.2611, 0.09 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 1.8005, 0.09 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.3, 0.55, -0.42 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.3, 0.55, -0.42 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.46, 0.9, 0.55 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.46, 0.9, 0.55 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 1.8005, 0.09 },
+				size = { 1.44, 2.9211, 2.5 },
+			},
+			LegFL = {
+				center = { -0.3, 0.4, -0.495 },
+				size = { 0.42, 0.8, 0.59 },
+			},
+			LegFR = {
+				center = { 0.3, 0.4, -0.495 },
+				size = { 0.42, 0.8, 0.59 },
+			},
+			LegBL = {
+				center = { -0.46, 0.6, 0.415 },
+				size = { 0.58, 1.2, 1.29 },
+			},
+			LegBR = {
+				center = { 0.46, 0.6, 0.415 },
+				size = { 0.58, 1.2, 1.29 },
+			},
+		},
+		ref = {
+			"LegFL",
+			"LegBR",
+		},
+	},
+	Wolf = {
+		display = "Wolf",
+		rarity = "Rare",
+		root = {
+			center = { 0.0, 2.075, -0.28 },
+			size = { 1.6, 4.15, 5.64 },
+		},
+		overhead = { 0.0, 5.15, -0.28 },
+		bones = {
+			{
+				name = "Body",
+				pivot = { 0.0, 2.565, -0.28 },
+			},
+			{
+				name = "LegFL",
+				pivot = { -0.42, 1.75, -1.05 },
+				parent = "Body",
+			},
+			{
+				name = "LegFR",
+				pivot = { 0.42, 1.75, -1.05 },
+				parent = "Body",
+			},
+			{
+				name = "LegBL",
+				pivot = { -0.45, 1.75, 1.25 },
+				parent = "Body",
+			},
+			{
+				name = "LegBR",
+				pivot = { 0.45, 1.75, 1.25 },
+				parent = "Body",
+			},
+		},
+		parts = {
+			Body = {
+				center = { 0.0, 2.565, -0.28 },
+				size = { 1.56, 3.17, 5.64 },
+			},
+			LegFL = {
+				center = { -0.42, 1.025, -1.11 },
+				size = { 0.58, 2.05, 0.74 },
+			},
+			LegFR = {
+				center = { 0.42, 1.025, -1.11 },
+				size = { 0.58, 2.05, 0.74 },
+			},
+			LegBL = {
+				center = { -0.45, 1.075, 1.28 },
+				size = { 0.7, 2.15, 0.92 },
+			},
+			LegBR = {
+				center = { 0.45, 1.075, 1.28 },
+				size = { 0.7, 2.15, 0.92 },
+			},
+		},
+		ref = {
+			"LegFL",
+			"LegBR",
+		},
+	},
 }
 
 local CollectionService = game:GetService("CollectionService")
