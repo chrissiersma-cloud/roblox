@@ -55,10 +55,11 @@ class Animal:
     glow: {part name: "#rrggbb"}: parts that glow (Neon in Roblox, made by the setup script).
     shine: {part name: reflectance}: shiny metal parts (gold chains); they keep their texture.
     effects: particle effects for the setup script, see effect(). light: (part name, "#rrggbb", brightness, range)
-    for a PointLight."""
+    for a PointLight. wrap: lay the studs out in strips around round parts (for smooth, detailed animals)."""
 
     def __init__(self, id, rarity, palette, golden, parts, close, no_studs=("nose", "eye", "glint"), display=None,
-                 glow=None, shine=None, effects=(), light=None):
+                 glow=None, shine=None, effects=(), light=None, wrap=False):
+        self.wrap = wrap                                # studs wrap around round shapes (see make_islands)
         self.id, self.display, self.rarity = id, display or id, rarity
         self.palette, self.golden, self.no_studs = palette, golden, set(no_studs)
         self.parts, self.close = parts, close
@@ -99,6 +100,7 @@ class Part:
     def __init__(self, name, origin=(0, 0, 0), parent=None):
         self.name, self.origin, self.parent = name, np.array(origin, float), parent
         self.verts, self.faces, self.colors = [], [], []
+        self.bands, self.band_size = {}, {}           # side faces of lofts: face -> (band, place around the ring)
 
     def vert(self, p):
         self.verts.append(np.array(p, float))
@@ -106,7 +108,7 @@ class Part:
 
     def face(self, idx, inside, paint):
         """Adds a face turned away from the point `inside`. A face that is not flat becomes two triangles.
-        paint: a color key, or a function (center, normal) -> color key."""
+        paint: a color key, or a function (center, normal) -> color key. Returns how many faces it added."""
         pts = [self.verts[i] for i in idx]
         n = newell(pts)
         if np.dot(n, np.mean(pts, 0) - inside) < 0:
@@ -114,19 +116,31 @@ class Part:
         if len(idx) == 4 and np.abs(np.dot(np.array(pts) - pts[0], unit(n))).max() > 1e-5:
             self.face(idx[:3], inside, paint)
             self.face([idx[0], idx[2], idx[3]], inside, paint)
-            return
+            return 2
         color = paint(np.mean(pts, 0), unit(n)) if callable(paint) else paint
         self.faces.append(list(idx))
         self.colors.append(color)
+        return 1
 
 
-def ring(center, a, b, w, h, c, cb=None):
-    """Box outline with 45 degree corners around `center`, in the plane of the directions a (width) and
-    b (height). c: corner size on top, cb: at the bottom."""
+def ring(center, a, b, w, h, c, cb=None, segs=1):
+    """Box outline with cut corners around `center`, in the plane of the directions a (width) and b (height).
+    c: corner size on top, cb: at the bottom. segs: straight pieces per corner (1 = a 45 degree corner, more
+    makes the corner round). Every corner piece points the same way whatever its size, so two rings with the
+    same segs always join with flat faces."""
     cb = c if cb is None else cb
     x, y = w / 2, h / 2
-    corners = [(x, -y + cb), (x, y - c), (x - c, y), (-x + c, y), (-x, y - c), (-x, -y + cb), (-x + cb, -y),
-               (x - cb, -y)]
+    if segs == 1:
+        corners = [(x, -y + cb), (x, y - c), (x - c, y), (-x + c, y), (-x, y - c), (-x, -y + cb), (-x + cb, -y),
+                   (x - cb, -y)]
+    else:
+        corners = [(x, -y + cb)]
+        for (cx, cy), r, start in (((x - c, y - c), c, 0), ((-x + c, y - c), c, 90), ((-x + cb, -y + cb), cb, 180),
+                                   ((x - cb, -y + cb), cb, 270)):
+            for k in range(segs + 1):
+                t = math.radians(start + 90 * k / segs)
+                corners.append((cx + r * math.cos(t), cy + r * math.sin(t)))
+        corners = corners[:-1]                          # the last point is the first one again
     center, a, b = (np.asarray(v, float) for v in (center, a, b))
     return [center + a * u + b * v for u, v in corners]
 
@@ -143,9 +157,12 @@ def loft(part, rings, paint, caps=(True, True), tip=None):
     n = len(rings[0])
     for i in range(len(rings) - 1):
         inside = (centers[i] + centers[i + 1]) / 2
+        band = (ids[i][0], ids[i + 1][0])               # one band of faces all around, between two rings
+        part.band_size[band] = n
         for j in range(n):
             k = (j + 1) % n
-            part.face([ids[i][j], ids[i][k], ids[i + 1][k], ids[i + 1][j]], inside, paint)
+            if part.face([ids[i][j], ids[i][k], ids[i + 1][k], ids[i + 1][j]], inside, paint) == 1:
+                part.bands[len(part.faces) - 1] = (band, j)
     if caps[0]:
         after = centers[1] if len(rings) > 1 else np.asarray(tip, float)
         part.face(ids[0], centers[0] + (after - centers[0]) * 0.01, paint)
@@ -157,16 +174,42 @@ def loft(part, rings, paint, caps=(True, True), tip=None):
         part.face(ids[-1], centers[-1] + (centers[-2] - centers[-1]) * 0.01, paint)
 
 
-def slab(part, center, normal, w, h, depth, paint, corner=0.0):
+def slab(part, center, normal, w, h, depth, paint, corner=0.0, segs=1):
     """A thin box lying on a surface (eyes, nose): its front is `depth` above the surface at `center`.
-    corner > 0 cuts its corners off, so it looks round."""
+    corner > 0 cuts its corners off, so it looks round (rounder with more segs)."""
     n = unit(np.asarray(normal, float))
     up = Z - np.dot(Z, n) * n
     up = unit(up) if np.linalg.norm(up) > 1e-3 else unit(-Y - np.dot(-Y, n) * n)
     side = np.cross(up, n)
     center = np.asarray(center, float)
-    shape = (lambda c: ring(c, side, up, w, h, corner)) if corner else (lambda c: square(c, side, up, w, h))
+    shape = ((lambda c: ring(c, side, up, w, h, corner, segs=segs)) if corner
+             else (lambda c: square(c, side, up, w, h)))
     loft(part, [shape(center - n * 0.06), shape(center + n * depth)], paint)
+
+
+def hit(part, origin, direction, faces=None):
+    """Where a straight line from origin along direction first hits the part: (point, outward normal there).
+    Handy for putting small things (eyes, teeth, a chain) exactly on a surface. faces: only look at these."""
+    o, d = np.asarray(origin, float), unit(np.asarray(direction, float))
+    best = None
+    for fi in faces if faces is not None else range(len(part.faces)):
+        pts = [part.verts[i] for i in part.faces[fi]]
+        for k in range(1, len(pts) - 1):
+            a, e1, e2 = pts[0], pts[k] - pts[0], pts[k + 1] - pts[0]
+            p = np.cross(d, e2)
+            det = np.dot(e1, p)
+            if abs(det) < 1e-12:
+                continue
+            s = o - a
+            u = np.dot(s, p) / det
+            q = np.cross(s, e1)
+            v = np.dot(d, q) / det
+            t = np.dot(e2, q) / det
+            if 0 <= u <= 1 and v >= 0 and u + v <= 1 and t > 1e-6 and (best is None or t < best[0]):
+                best = (t, unit(newell(pts)))
+    if best is None:
+        raise ValueError(f"the line from {tuple(o)} does not hit {part.name}")
+    return o + d * best[0], best[1]
 
 
 def tube(part, points, sizes, paint, tip=None):
@@ -323,11 +366,79 @@ def face_uv(part, fi):
     return uv, (part.colors[fi], mirrored, *np.round(np.concatenate([t, b, [plane]]), 4))
 
 
-def make_islands(parts, no_studs):
-    """Groups flat neighbouring faces with the same color, and returns the islands and, per face, its island."""
+def strips(part):
+    """Runs of side faces next to each other in one loft band, all with the same color. A band that goes all the
+    way around in one color is cut open where it is seen least (the face that looks most down, or back)."""
+    by_band = {}
+    for fi, (band, j) in part.bands.items():
+        by_band.setdefault(band, {})[j] = fi
+    runs = []
+    for band, slots in by_band.items():
+        n = part.band_size[band]
+        color = lambda j: part.colors[slots[j]] if j in slots else None
+
+        def hidden(j):
+            nrm = unit(newell([part.verts[i] for i in part.faces[slots[j]]]))
+            return -2 * nrm[2] + nrm[1]
+        breaks = [j for j in range(n) if color(j) != color((j - 1) % n)]
+        start = breaks[0] if breaks else (max(range(n), key=hidden) + 1) % n
+        run = []
+        for j in [(start + k) % n for k in range(n)] + [None]:
+            if run and (j is None or color(j) != color(run[-1])):
+                runs.append([slots[r] for r in run])
+                run = []
+            if j is not None and j in slots:
+                run.append(j)
+    return runs
+
+
+def unfold(part, fis):
+    """Lays faces that follow each other around a band flat in one piece, like peeling a label off a can: every
+    face keeps its exact shape and size, and the studs run on across the folds."""
+    polys, prev = [], None
+    for fi in fis:
+        pts = [part.verts[i] + part.origin for i in part.faces[fi]]
+        t, b = frame(unit(newell(pts)))
+        uv = np.array([(np.dot(p, t), np.dot(p, b)) for p in pts])
+        if prev is not None:
+            pf, puv = prev
+            shared = [v for v in part.faces[fi] if v in part.faces[pf]]
+            ia, ib = (part.faces[fi].index(v) for v in shared)
+            ja, jb = (part.faces[pf].index(v) for v in shared)
+            d0, d1 = uv[ib] - uv[ia], puv[jb] - puv[ja]
+            turn_by = math.atan2(d1[1], d1[0]) - math.atan2(d0[1], d0[0])
+            rot = np.array([[math.cos(turn_by), -math.sin(turn_by)], [math.sin(turn_by), math.cos(turn_by)]])
+            uv = (uv - uv[ia]) @ rot.T + puv[ja]
+        polys.append(uv)
+        prev = (fi, uv)
+    return polys
+
+
+def make_islands(parts, no_studs, wrap=False):
+    """Groups flat neighbouring faces with the same color, and returns the islands and, per face, its island.
+    wrap: side faces of lofts are laid out in strips around the ring, so studs wrap around round shapes."""
     islands, owner = [], {}
     for pi, part in enumerate(parts):
+        done = set()
+        if wrap:
+            for whole in strips(part):
+                # Short pieces, laid straight: a long strip around a cone curves and would waste texture.
+                pieces = max(1, math.ceil(len(whole) / 4))
+                for run in np.array_split(whole, pieces):
+                    run = [int(fi) for fi in run]
+                    polys = unfold(part, run)
+                    chord = polys[-1].mean(0) - polys[0].mean(0)
+                    if np.linalg.norm(chord) > 1e-6:
+                        a = -math.atan2(chord[1], chord[0])
+                        rot = np.array([[math.cos(a), -math.sin(a)], [math.sin(a), math.cos(a)]])
+                        polys = [p @ rot.T for p in polys]
+                    color = part.colors[run[0]]
+                    for fi, uv in zip(run, polys):
+                        owner[pi, fi] = (len(islands), uv)
+                        done.add(fi)
+                    islands.append(Island(color, polys, color not in no_studs))
         uvs, keys = zip(*(face_uv(part, fi) for fi in range(len(part.faces))))
+        keys = [k if fi not in done else ("strip", fi) for fi, k in enumerate(keys)]
         group = list(range(len(part.faces)))
 
         def find(i):
@@ -347,7 +458,8 @@ def make_islands(parts, no_studs):
                         group[find(f1)] = find(f2)
         members = {}
         for fi in range(len(part.faces)):
-            members.setdefault(find(fi), []).append(fi)
+            if fi not in done:
+                members.setdefault(find(fi), []).append(fi)
         for fis in members.values():
             color = part.colors[fis[0]]
             island = Island(color, [uvs[fi] for fi in fis], color not in no_studs)
@@ -663,7 +775,7 @@ def build(animal, out=None):
     bpy.context.scene.unit_settings.system = "METRIC"
 
     parts = animal.parts()
-    islands, owner = make_islands(parts, animal.no_studs)
+    islands, owner = make_islands(parts, animal.no_studs, animal.wrap)
     density, spots, bands = layout(islands, list(animal.palette))
     tris = sum(len(f) - 2 for p in parts for f in p.faces)
     print(f"{animal.id}: triangles {tris}, islands {len(islands)}, {density:.1f} pixels per stud")

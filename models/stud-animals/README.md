@@ -16,8 +16,8 @@ dieren (Legendary, Mythic en Secret) hebben ook delen die gloeien, vonken, vlamm
 | Bear | Epic | 4,2 studs (tot de oren) | 724 | bruin, lichtbruine snuit en binnenkant oren, donkere poten |
 | Thunderhoof | Legendary | 7,8 studs (met gewei) | 1.126 | wit en lichtblauw, gouden hoeven, blauwe ogen; gloeit: gele bliksemschichten als gewei, op de flanken en uit de staart, en blauwe manen |
 | Voidwhisker | Mythic | 5 studs (met staart) | 928 | bijna zwart paars, roze ogen, paars in de oren; gloeit: een rune op het voorhoofd, een halsband met roze edelsteen, snorharen, twee zwevende edelstenen en een kristal op de staart |
-| Phoenix | Mythic | 5,5 studs (met vleugels) | 662 | een echte vuurvogel: rood, oranje borst, gouden poten, snavel en ringen om de ogen, grote vleugels en drie lange staartveren die van rood via oranje naar geel gaan; gloeit: een vlammenkam en vlammen aan de vleugels en de staart |
-| Gorilla King | Secret | 5,3 studs (met kroon) | 1.308 | helemaal dripped out: zwarte vacht, zilveren rug, grijze borst en gezicht, oranje ogen, zware wenkbrauwen; gloeit: een gouden kroon met robijn; glimt: gouden grills (twee tanden zijn diamanten), een dikke gouden ketting met een groot medaillon en gouden armbanden |
+| Phoenix | Mythic | 5,8 studs (met vleugels) | 2.236 | een echte vuurvogel, extra gedetailleerd: rond lijf, rood met een oranje borst, een kraag van vlammenveren om de hals, een haaksnavel en gouden ringen om de ogen, grote vleugels met lange slagpennen en kortere veren aan de achterrand, vijf lange staartveren die van rood via oranje naar geel gaan, gouden poten met zwarte klauwen; gloeit: vijf vlammenpluimen op de kop en vlammen aan de vleugels en de staart |
+| Gorilla King | Secret | 5,7 studs (met kroon) | 4.062 | helemaal dripped out en extra gedetailleerd: ronde vormen, zwarte vacht, zilveren rug, grijze borst en gezicht, zware wenkbrauwen, oranje ogen met pupillen, een brede neus, oren, knokkels en tenen; gloeit: een gouden kroon met punten, balletjes en robijnen; glimt: gouden grills met diamanten tanden, een dikke gouden ketting met een groot medaillon met diamant, een gouden oorring, en gouden armbanden met diamanten en ringen om de knokkels |
 
 ![Hert](../../previews/stud_deer_views.png)
 ![Konijn](../../previews/stud_rabbit_views.png)
@@ -32,13 +32,15 @@ dieren (Legendary, Mythic en Secret) hebben ook delen die gloeien, vonken, vlamm
 ![Phoenix](../../previews/stud_phoenix_views.png)
 ![Gorilla King](../../previews/stud_gorillaking_views.png)
 
-Een Roblox-speler is ongeveer 5 studs hoog. De dieren hebben 500 tot 1.300 driehoekjes. Kleine dieren hebben
-er minder nodig, want meer vlakjes zou je daar niet zien. Een Roblox-MeshPart mag er tot 20.000 hebben, dus alle
+Een Roblox-speler is ongeveer 5 studs hoog. De meeste dieren hebben 500 tot 1.300 driehoekjes. Kleine dieren
+hebben er minder nodig, want meer vlakjes zou je daar niet zien. De Phoenix en de Gorilla King zijn extra
+gedetailleerd (2.236 en 4.062 driehoekjes, met ronde vormen, zie hieronder). Een Roblox-MeshPart mag er tot 20.000 hebben, dus alle
 dieren zijn erg licht. Bij alle dieren geldt:
 
 - **Onderdelen:** `Body` (met kop, oren, staart en de rest) en de poten `LegFL`, `LegFR`, `LegBL`, `LegBR`
   (F = voor, B = achter, L = links, R = rechts). Bij de Gorilla King zijn `LegFL` en `LegFR` de armen. De uil en
-  de Phoenix staan rechtop en hebben daarom `Body`, de vleugels `WingL` en `WingR` en de poten `LegL` en `LegR`. De oorsprong van elke poot en vleugel zit waar hij draait (bovenaan).
+  de Phoenix staan rechtop en hebben daarom `Body`, de vleugels `WingL` en `WingR` en de poten `LegL` en `LegR`.
+  De oorsprong van elke poot en vleugel zit waar hij draait (bovenaan).
   De oorsprong van `Body` ligt op de grond tussen de poten. De vier zeldzaamste dieren hebben ook gloeiende
   delen (zie hieronder).
 - **Richting:** het dier kijkt naar -Y in Blender (je ziet zijn gezicht in de Front view). 1 Blender-eenheid
@@ -82,6 +84,12 @@ en kleuren van één dier, en `stud_animal.py` doet de rest (noppen, textuur, ex
   waterpas. Vlakken van dezelfde ring zijn even hoog, dus de rijen liggen rondom een poot of het lijf op gelijke
   hoogte. De rechterkant is het spiegelbeeld van de linkerkant. Smalle schuine randjes hebben geen noppen, zodat
   je geen halve noppen krijgt. De ogen, neuzen en de snavel hebben ook geen noppen.
+- **Extra detail (Phoenix en Gorilla King):** hun ringen hebben ronde hoeken (twee stukjes per hoek in plaats
+  van één schuin stukje), er zijn meer ringen, en ze hebben veel meer kleine onderdelen (veren, klauwen, knokkels,
+  tanden, schakels). Kleine dingen zoals ogen en tanden worden precies op het oppervlak gezet: het script schiet
+  een rechte lijn op het lijf af en kijkt waar hij het raakt. De noppen lopen daar door over de ronde vormen: de
+  vlakken rondom een ring worden in stukjes van vier naast elkaar plat gelegd, zoals een etiket van een blikje,
+  dus zonder uitrekken.
 - **Noppengrootte:** de noppen zijn half zo groot als op een gewoon Roblox-blok (om de 0,5 stud). Met de volle
   grootte past er geen enkele hele nop op de poten, want die zijn vaak maar ongeveer 0,5 stud breed.
 - **Elke kleur heeft een eigen band in de textuur** (een aantal rijen pixels over de hele breedte). Van boven

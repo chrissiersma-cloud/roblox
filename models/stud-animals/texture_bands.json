@@ -136,52 +136,48 @@
   }
  },
  "GorillaKing": {
-  "pixels_per_stud": 59.05,
-  "triangles": 1308,
+  "pixels_per_stud": 55.53,
+  "triangles": 4062,
   "bands": {
    "fur": {
     "top_row": 0,
-    "bottom_row": 383
+    "bottom_row": 417
    },
    "silver": {
-    "top_row": 383,
-    "bottom_row": 472
+    "top_row": 417,
+    "bottom_row": 470
    },
    "skin": {
-    "top_row": 472,
-    "bottom_row": 698
+    "top_row": 470,
+    "bottom_row": 709
    },
    "gold": {
-    "top_row": 698,
-    "bottom_row": 864
+    "top_row": 709,
+    "bottom_row": 841
    },
    "ruby": {
-    "top_row": 864,
-    "bottom_row": 885
+    "top_row": 841,
+    "bottom_row": 855
    },
    "diamond": {
-    "top_row": 885,
-    "bottom_row": 899
+    "top_row": 855,
+    "bottom_row": 878
    },
-   "mouth": {
-    "top_row": 899,
-    "bottom_row": 920
-   },
-   "nose": {
-    "top_row": 920,
-    "bottom_row": 936
+   "black": {
+    "top_row": 878,
+    "bottom_row": 898
    },
    "eye": {
-    "top_row": 936,
-    "bottom_row": 956
+    "top_row": 898,
+    "bottom_row": 919
    },
    "glint": {
-    "top_row": 956,
-    "bottom_row": 970
+    "top_row": 919,
+    "bottom_row": 931
    },
    "crown": {
-    "top_row": 970,
-    "bottom_row": 1021
+    "top_row": 931,
+    "bottom_row": 1023
    }
   }
  },
@@ -224,43 +220,47 @@
   }
  },
  "Phoenix": {
-  "pixels_per_stud": 67.63,
-  "triangles": 662,
+  "pixels_per_stud": 64.96,
+  "triangles": 2236,
   "bands": {
    "red": {
     "top_row": 0,
-    "bottom_row": 246
+    "bottom_row": 237
    },
    "orange": {
-    "top_row": 246,
-    "bottom_row": 490
+    "top_row": 237,
+    "bottom_row": 516
    },
    "yellow": {
-    "top_row": 490,
+    "top_row": 516,
     "bottom_row": 659
    },
    "gold": {
     "top_row": 659,
-    "bottom_row": 732
+    "bottom_row": 710
    },
    "beak": {
-    "top_row": 732,
-    "bottom_row": 765
+    "top_row": 710,
+    "bottom_row": 736
+   },
+   "claw": {
+    "top_row": 736,
+    "bottom_row": 755
    },
    "eyering": {
-    "top_row": 765,
-    "bottom_row": 792
+    "top_row": 755,
+    "bottom_row": 778
    },
    "eye": {
-    "top_row": 792,
-    "bottom_row": 813
+    "top_row": 778,
+    "bottom_row": 796
    },
    "glint": {
-    "top_row": 813,
-    "bottom_row": 826
+    "top_row": 796,
+    "bottom_row": 808
    },
    "flame": {
-    "top_row": 826,
+    "top_row": 808,
     "bottom_row": 1024
    }
   }
