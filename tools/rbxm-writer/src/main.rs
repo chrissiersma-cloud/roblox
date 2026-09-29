@@ -8,6 +8,9 @@
 //!   { "class": "Part", "name": "Body", "id": "optional-unique-id",
 //!     "props": { "Size": [1, 2, 3], "Part0": { "ref": "some-id" }, ... },
 //!     "attrs": { "Role": "Fur" }, "tags": ["Animal"], "children": [ ... ] }
+//!
+//! UDim values are [scale, offset], UDim2 values [xScale, xOffset, yScale, yOffset]; Font values are
+//! { "family": "rbxasset://fonts/families/FredokaOne.json", "weight": 700 }.
 
 use std::{collections::HashMap, fs, fs::File, io::BufWriter};
 
@@ -15,8 +18,8 @@ use anyhow::{anyhow, bail, Context, Result};
 use rbx_dom_weak::{
     types::{
         Attributes, CFrame, Color3, Color3uint8, ColorSequence, ColorSequenceKeypoint, Content,
-        ContentId, Enum, Matrix3, NumberRange, NumberSequence, NumberSequenceKeypoint, Ref, Tags,
-        Variant, VariantType, Vector2, Vector3,
+        ContentId, Enum, Font, FontStyle, FontWeight, Matrix3, NumberRange, NumberSequence,
+        NumberSequenceKeypoint, Ref, Tags, UDim, UDim2, Variant, VariantType, Vector2, Vector3,
     },
     ustr, InstanceBuilder, WeakDom,
 };
@@ -190,6 +193,26 @@ impl Builder<'_> {
             )
             .into(),
             VariantType::NumberRange => NumberRange::new(n(0)?, n(1)?).into(),
+            // [scale, offset]
+            VariantType::UDim => UDim::new(n(0)?, n(1)? as i32).into(),
+            // [xScale, xOffset, yScale, yOffset]
+            VariantType::UDim2 => UDim2::new(
+                UDim::new(n(0)?, n(1)? as i32),
+                UDim::new(n(2)?, n(3)? as i32),
+            )
+            .into(),
+            // { "family": "rbxasset://fonts/families/FredokaOne.json", "weight": 700, "italic": false }
+            VariantType::Font => {
+                let family = value["family"].as_str().context("font needs a family")?;
+                let weight = value["weight"].as_u64().unwrap_or(400) as u16;
+                let weight = FontWeight::from_u16(weight).context("bad font weight")?;
+                let style = if value["italic"].as_bool().unwrap_or(false) {
+                    FontStyle::Italic
+                } else {
+                    FontStyle::Normal
+                };
+                Font::new(family, weight, style).into()
+            }
             VariantType::NumberSequence => NumberSequence {
                 keypoints: keypoints(value)?
                     .iter()
