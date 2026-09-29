@@ -47,7 +47,7 @@ const env = { ...sceneData.env, ...(shot.env || {}) };
 function wedgeGeometry() {
   const g = new THREE.BufferGeometry();
   const v = [[-.5,-.5,-.5],[.5,-.5,-.5],[-.5,-.5,.5],[.5,-.5,.5],[-.5,.5,.5],[.5,.5,.5]];
-  const tris = [[0,2,1],[1,2,3],[2,4,3],[3,4,5],[0,1,4],[1,5,4],[0,4,2],[1,3,5]];
+  const tris = [[0,1,2],[1,3,2],[2,3,4],[3,5,4],[0,4,1],[1,4,5],[0,2,4],[1,5,3]];
   const pos = [];
   for (const t of tris) for (const i of t) pos.push(...v[i]);
   g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));

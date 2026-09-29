@@ -12,12 +12,14 @@ Thumbs.db
 # Tool build output
 tools/animal-models/build/
 tools/forest-kit/build/
+tools/statue/build/
 tools/rbxm-writer/target/
 __pycache__/
 
 # Keep the delivered models and the tool lockfile
 !models/*.rbxm
 !models/forest-kit/*.rbxm
+!models/wrangler-camp/*.rbxm
 !tools/rbxm-writer/Cargo.lock
 
 # Viewer dependencies and copied scene data
