@@ -21,6 +21,7 @@ __pycache__/
 !models/forest-kit/*.rbxm
 !models/wrangler-camp/*.rbxm
 !models/dark-woods/*.rbxm
+!models/forest-entrance/*.rbxm
 !tools/rbxm-writer/Cargo.lock
 
 # Viewer dependencies and copied scene data
@@ -28,3 +29,4 @@ tools/viewer/node_modules/
 tools/viewer/*.json
 !tools/viewer/package.json
 tools/concept-art/build/
+tools/forest-entrance/build/
