@@ -21,6 +21,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "animal-models"))
 sys.path.insert(0, str(HERE.parent / "statue"))
 sys.path.insert(0, str(HERE.parent / "forest-entrance"))
+sys.path.insert(0, str(HERE.parent / "dark-woods-kit"))
 
 from lib import IDENTITY, add, aim, angles, apply, cframe, matmul, scale, sub  # noqa: E402
 from build_statue import C, Group, group_instance  # noqa: E402
@@ -1046,6 +1047,130 @@ def upgrade_camp(rng):
     return g, ground
 
 
+# -------------------------------------------------------- dark woods cart ---
+
+VIOLET_GLOW = C("#c77dff")
+
+
+def dark_wagon(g, origin, yaw):
+    """The forest-entrance wagon, dressed for the Dark Woods: purple canvas, dark wood and violet lanterns."""
+    import build_entrance as be
+    swap = {"WOOD": C("#5a4050"), "WOOD_DARK": C("#3e2a36"), "WOOD_LIGHT": C("#6e4f60"), "WOOD_DEEP": C("#2b1d28"),
+            "CANVAS": C("#6b4fa0"), "CANVAS2": C("#5a3f86")}
+    old = {k: getattr(be, k) for k in swap}
+    first = len(g.parts)
+    for k, v in swap.items():
+        setattr(be, k, v)
+    try:
+        wagon(g, origin=origin, yaw=yaw)
+    finally:
+        for k, v in old.items():
+            setattr(be, k, v)
+    # The lanterns glow violet, and the blanket and bedroll turn purple and teal.
+    for p in g.parts[first:]:
+        if p["name"].endswith("Glass"):
+            p["color"] = C("#e3c4ff")
+            for ch in p["children"]:
+                if ch["class"] == "PointLight":
+                    ch["props"]["Color"] = list(VIOLET_GLOW)
+        elif p["name"] == "Blanket":
+            p["color"] = C("#2f6f8f")
+        elif p["name"] == "Bedroll":
+            p["color"] = C("#8a5cc8")
+    R = angles(0, yaw, 0)
+    P = lambda x, y, z: at(origin, R, (x, y, z))
+    # A glowing crescent moon and stars painted on both sides of the canvas (which curves: x shrinks with height).
+    cx = lambda y: 2.35 * math.cos(math.asin(max(-1.0, min(1.0, (y - 4.35) / 3.0)))) + 0.08
+    for sx in (-1, 1):
+        g.cyl("MoonPaint", 0.08, 1.8, P(sx * cx(5.8), 5.8, 0.2), C("#fdf6d8"), R=R, material="Neon", **DS)
+        g.cyl("MoonShade", 0.1, 1.5, P(sx * (cx(6.0) + 0.03), 6.0, 0.65), C("#6b4fa0"), R=R, **DS)
+        for dz, y in ((-1.9, 6.4), (1.9, 6.6), (2.6, 5.4), (-1.3, 5.0)):
+            g.box("StarPaint", (0.06, 0.35, 0.35), P(sx * cx(y), y, 0.2 + dz), C("#fff27a"),
+                  R=matmul(R, angles(45, 0, 0)), material="Neon", **DS)
+    # Glowing crystals and a jar of wisps as cargo at the back.
+    for i, (x, z, kind) in enumerate(((-1.0, 3.6, "#b58cff"), (1.0, 3.3, "#5ef0ff"))):
+        p = P(x, 2.8, z)
+        g.box("CargoCrystal", (0.6, 1.6, 0.6), add(p, (0, 0.8, 0)), C(kind), R=matmul(R, angles(8, 20 * i, -10)),
+              material="Neon", **D)
+    g.octagon("WispJar", 0.4, 0.9, P(0.1, 3.25, 2.6), C("#e3c4ff"), transparency=0.3, collide=False)
+    for dx, dy in ((-0.1, -0.1), (0.15, 0.15), (0, 0.3)):
+        g.box("Wisp", (0.18, 0.18, 0.18), add(P(0.1, 3.25, 2.6), (dx, dy, 0)), C("#fff27a"), material="Neon", **DS)
+
+
+def dark_pad(g, pos, text):
+    """A glowing purple boarding pad with a sign: put your teleport script on BoardingPad."""
+    x, _, z = pos
+    g.cyl("BoardingPad", 0.3, 5.5, (x, 0.15, z), C("#5a3f86"), R=angles(0, 0, 90), pid="DarkWoodsCart.BoardingPad")
+    g.ring("PadGlow", (x, 0.32, z), IDENTITY, 2.5, 0.25, [VIOLET_GLOW, C("#ff7be5")], n=24, twist=False,
+           material="Neon", **DS)
+    g.ring("PadGlow", (x, 0.32, z), IDENTITY, 1.4, 0.2, [C("#e3c4ff")], n=16, twist=False, material="Neon", **DS)
+    sparkles = {"class": "ParticleEmitter", "name": "Wisps", "props": {
+        "Texture": "rbxasset://textures/particles/sparkles_main.dds", "Rate": 8, "Lifetime": [1.2, 2.2],
+        "Speed": [1, 2.5], "SpreadAngle": [15, 15], "Size": [[0, 0.35], [1, 0]], "Transparency": [[0, 0], [1, 1]],
+        "Color": [[0, *C("#ffffff")], [1, *VIOLET_GLOW]], "LightEmission": 1, "LightInfluence": 0}}
+    g.box("PadSparkles", (4.0, 0.1, 4.0), (x, 0.35, z), C("#ffffff"), transparency=1, children=[sparkles], **DS)
+    for sx in (-1, 1):
+        g.octagon("PadPost", 0.25, 3.8, (x + sx * 3.2, 1.9, z + 2.0), C("#3e2a36"))
+        g.octagon("PadPostTop", 0.3, 0.3, (x + sx * 3.2, 3.95, z + 2.0), C("#c77dff"), material="Neon", collide=False)
+    g.box("PadSign", (5.4, 1.1, 0.25), (x, 3.4, z + 2.0), C("#5a3f86"),
+          children=[surface_text(text, "Front", color="#f3e6ff", ppu=70, stroke="#2b1d38"),
+                    surface_text(text, "Back", color="#f3e6ff", ppu=70, stroke="#2b1d38")])
+
+
+def dark_cart(rng):
+    import build_dark_kit  # Dark Woods kit (tools/dark-woods-kit)
+    kit = {a.name: a for a in build_dark_kit.make_kit()}
+    g = Group("DarkWoodsCart")
+    ground = Group("Ground")
+    # A patch of dark, mossy ground where the hub turns into the Dark Woods, and the path into the arch.
+    ground.cyl("DarkGround", 0.2, 34, (0, 0.1, 4), C("#3d2f66"), R=angles(0, 0, 90))
+    ground.cyl("DarkGroundEdge", 0.18, 38, (0, 0.09, 4), C("#5a4a86"), R=angles(0, 0, 90))
+    for i in range(10):
+        ground.box("PathStone", (3.2 + (i % 2) * 0.6, 0.25, 2.2), (0.4 * math.sin(i), 0.2, -9 + i * 2.6),
+                   C("#6b5a86") if i % 2 else C("#5a4a76"), rot=(0, rng.uniform(-10, 10), 0))
+    # The wagon, ready to leave through the root arch into the forest.
+    dark_wagon(g, (0, 0, 1.0), 180)
+    add_asset(g, kit["RootArch"], (0, 0, 13.5), 0, 1.15)
+    add_asset(g, kit["FogPatch"], (0, 0, 15), 0, 1.0)
+    # Boarding pad, a hanging sign and a signpost.
+    dark_pad(g, (7.5, 0, -3.5), "TO THE DARK WOODS")
+    for sx in (-1, 1):
+        g.octagon("SignPost", 0.3, 5.2, (-8.0 + sx * 2.2, 2.6, -5.0), C("#3e2a36"))
+    g.box("SignBeam", (5.2, 0.35, 0.4), (-8.0, 5.2, -5.0), C("#3e2a36"))
+    hanging_sign(g, "Dark Woods Express", (-8.0, 3.8, -5.0), 4.2, 1.2, C("#5a3f86"), frame=C("#2b1d28"),
+                 text_color="#f3e6ff", stroke="#2b1d38", back_text="Dark Woods Express")
+    x, z = 10.0, 5.0
+    g.octagon("ArrowPostBase", 0.55, 0.4, (x, 0.2, z), STONE[2])
+    g.box("ArrowPost", (0.45, 7.0, 0.45), (x, 3.7, z), C("#3e2a36"))
+    for text, y, yaw, color in (("Dark Woods", 6.3, 90, "#8a5cc8"), ("Hub", 5.2, -90, "#d98b3a")):
+        R = angles(0, yaw, 0)
+        length = 3.4
+        g.box("ArrowBoard", (length, 0.8, 0.2), at((x, y, z), R, (-length / 2 - 0.1, 0, 0)), C(color), R=R,
+              children=[surface_text(text, "Front", ppu=70, stroke="#2b1d38"),
+                        surface_text(text, "Back", ppu=70, stroke="#2b1d38")])
+        tip = at((x, y, z), R, (-length - 0.1, 0, 0))
+        for sgn in (-1, 1):
+            g.wedge("ArrowTip", (0.2, 0.4, 0.7), at(tip, R, (-0.3, 0.2 * sgn, 0)), C(color),
+                    R=matmul(R, angles(0, 90, 0 if sgn > 0 else 180)), **D)
+    # Purple lanterns along the path, crystals, glowing mushrooms, a crooked crystal tree and wisps.
+    for name, pos, yaw, k in (("WispLantern", (-5.0, 0, 7.0), 180, 1.0), ("WispLantern", (5.0, 0, 7.5), 0, 1.0),
+                              ("WispLantern", (-4.5, 0, -8.0), 180, 0.9), ("GnarledCrystalTree", (-10.5, 0, 11.0), 30, 1.1),
+                              ("ShadowOakSmall", (11.5, 0, 13.0), 200, 1.0), ("CrystalCluster", (-7.5, 0, 3.5), 20, 1.0),
+                              ("CrystalClusterPink", (8.0, 0, 9.5), -30, 1.0), ("CrystalSmall", (4.5, 0, -8.0), 0, 1.0),
+                              ("GlowShrooms", (-3.5, 0, 9.5), 0, 1.0), ("GlowShrooms", (3.8, 0, 11.0), 90, 1.1),
+                              ("GlowShrooms", (-11.0, 0, -2.0), 40, 1.0), ("ShadowFern", (-12.0, 0, 5.0), 0, 1.0),
+                              ("ShadowFern", (12.5, 0, 1.0), 60, 1.0), ("ThornBrambleSmall", (13.0, 0, 8.0), 0, 1.0),
+                              ("ThornBrambleSmall", (-13.0, 0, 9.0), 90, 1.0), ("PurpleLeaves", (-5.0, 0, -2.0), 0, 1.0),
+                              ("PurpleLeaves", (6.0, 0, 3.0), 0, 1.0), ("GlowMoss", (0.0, 0, -12.0), 0, 1.0),
+                              ("NightBlooms", (-9.5, 0, -8.5), 0, 1.0), ("CrystalShards", (9.0, 0, -8.5), 0, 1.0)):
+        add_asset(g, kit[name], pos, yaw, k)
+    for name in ("Wisps",):
+        for p in kit[name].parts:
+            g.box("WispZone", p["size"], add((0, 0, 8), p["p"]), p["color"], transparency=1, collide=False, shadow=False,
+                  children=p["effects"])
+    return g, ground
+
+
 # ----------------------------------------------------------------- build ---
 
 SWAP_SOURCE = (HERE / "SwapIn.lua").read_text() if (HERE / "SwapIn.lua").exists() else ""
@@ -1078,10 +1203,12 @@ def build():
                   globe_emblem, worlds_extras, [C("#4a7cc4"), C("#6aa0e6")])
     camp_g, ground = camp(rng)
     upg, upg_ground = upgrade_camp(rng)
+    cart, cart_ground = dark_cart(rng)
     buildings = [("LassoShop", [lasso]), ("AnimalMarket", [market]), ("Worlds", [worlds]),
-                 ("WranglerCamp", [camp_g, ground]), ("UpgradeCamp", [upg, upg_ground])]
+                 ("WranglerCamp", [camp_g, ground]), ("UpgradeCamp", [upg, upg_ground]),
+                 ("DarkWoodsCart", [cart, cart_ground])]
     offsets = {"LassoShop": (-60, 0, 0), "AnimalMarket": (0, 0, 0), "Worlds": (60, 0, 0),
-               "WranglerCamp": (0, 0, 80), "UpgradeCamp": (80, 0, 80)}
+               "WranglerCamp": (0, 0, 80), "UpgradeCamp": (80, 0, 80), "DarkWoodsCart": (-80, 0, 80)}
     tree_models = []
     for name, groups in buildings:
         m = model(name, groups, ["HubBuilding"])

@@ -1,6 +1,6 @@
-# Hub-gebouwen: Lasso Shop, Animal Market, Worlds, Wrangler Camp en Upgrade Camp
+# Hub-gebouwen: Lasso Shop, Animal Market, Worlds, Wrangler Camp, Upgrade Camp en Dark Woods Cart
 
-`HubBuildings.rbxm` bevat nieuwe, veel gedetailleerdere versies van vijf dingen uit je hub, in dezelfde warme
+`HubBuildings.rbxm` bevat nieuwe, veel gedetailleerdere versies van zes dingen uit je hub, in dezelfde warme
 blokstijl als je spel. Alles is gemaakt van gewone Parts, dus je hoeft niets te uploaden.
 
 ![Lasso Shop van dichtbij](../../previews/hub_lasso_shop_front.png)
@@ -20,6 +20,10 @@ blokstijl als je spel. Alles is gemaakt van gewone Parts, dus je hoeft niets te 
 ![De stand van Old Pete](../../previews/hub_upgrade_camp_booth.png)
 
 ![Het kampvuur onder de grote eik](../../previews/hub_upgrade_camp_fire.png)
+
+![Dark Woods Cart](../../previews/hub_dark_woods_cart.png)
+
+![De kar voor de wortelboog](../../previews/hub_dark_woods_cart_close.png)
 
 ## Wat er nieuw is
 
@@ -78,6 +82,19 @@ Daarbovenop heeft elke winkel eigen spullen:
 Old Pete (je NPC) staat het mooist achter de toonbank: daar ligt een onzichtbaar onderdeel `TrainerSpot`.
 Zet je NPC op die plek, of verplaats de stand als je hem liever ergens anders hebt.
 
+**Dark Woods Cart** (de kar naar de Dark Woods, voor in je hub):
+
+- de huifkar in **Dark Woods-kleuren**: een paarse huif met een gloeiende **maansikkel en sterren** aan twee
+  kanten, donker hout, **paarse lantaarns** die paars licht geven, en als lading gloeiende kristallen en een pot
+  met dwaallichtjes. De dissel wijst naar het bos: de kar staat klaar om te vertrekken;
+- de **wortelboog** uit de Dark Woods-set boven het pad, met mist erachter;
+- een paars gloeiend **BoardingPad** met een bord **TO THE DARK WOODS** (zet daar je teleport-script op);
+- een hangend bord **Dark Woods Express** en een wegwijzer met **Dark Woods** en **Hub**;
+- paarse lantaarnpalen, kristallen, gloeiende paddenstoelen, varens, doornstruikjes, bloemen die gloeien, een
+  kromme kristalboom, een Shadow Oak en zwevende paarse lichtjes;
+- een stuk donkere, mossige grond met een pad van stapstenen (in een apart model **Ground**), zodat je hub
+  daar mooi overgaat in het donkere bos.
+
 | Model | Parts |
 |---|---|
 | LassoShop | ~1350 |
@@ -85,6 +102,7 @@ Zet je NPC op die plek, of verplaats de stand als je hem liever ergens anders he
 | Worlds | ~1600 |
 | WranglerCamp | ~1400 |
 | UpgradeCamp | ~1410 |
+| DarkWoodsCart | ~1120 |
 
 Alleen muren, veranda's, meubels en grote spullen botsen. Kleine versieringen hebben CanCollide, CanTouch en
 CanQuery uit. Er zijn weinig lampjes, en die hebben geen schaduw.
@@ -104,6 +122,9 @@ swap(workspace.Stagecoach, workspace.HubBuildings.Worlds)
 swap(workspace.WranglerCamp, workspace.HubBuildings.WranglerCamp)
 swap(workspace.UpgradeShop, workspace.HubBuildings.UpgradeCamp)
 ```
+
+De **DarkWoodsCart** is nieuw, dus die zet je gewoon zelf neer: sleep hem naar de plek in je hub waar het pad
+naar de Dark Woods begint. De voorkant (-Z, met het bord en de pad) wijst naar je hub, de boog naar het bos.
 
 SwapIn zet het nieuwe gebouw op precies dezelfde plek, met dezelfde draaiing, en maakt het net zo groot als het
 oude (de grondvlakken passen op elkaar). Het oude gebouw wordt **niet** verwijderd: het gaat naar
