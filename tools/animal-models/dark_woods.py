@@ -918,11 +918,14 @@ def nightshade_drake():
                 a.wedge(f"Talon{j}{S}", (0.22, 0.35, 0.6), (1.75 * s + dx, y - 3.72, 1.1), horn, rot=(0, 0, 0),
                         role="Accent")
             a.wedge(f"Spur{S}", (0.2, 0.3, 0.5), (1.75 * s, y - 3.5, 2.75), horn, rot=(0, 180, 0), role="Accent")
-        with a.bone(f"LegF{S}", "Body", (1.4 * s, y - 0.7, -2.3)):
-            seg(a, f"Arm{S}", (1.45 * s, y - 0.9, -2.3), (1.6 * s, y - 2.1, -2.9), 0.65, body)
-            seg(a, f"Hand{S}", (1.6 * s, y - 2.1, -2.9), (1.5 * s, y - 2.8, -3.5), 0.5, dark)
-            for j, dx in enumerate((-0.25, 0.25)):
-                a.wedge(f"Claw{j}{S}", (0.2, 0.3, 0.45), (1.5 * s + dx, y - 3.0, -3.85), horn, role="Accent")
+        # Front legs built the same way as the hind legs, so it stands on four strong legs.
+        with a.bone(f"LegF{S}", "Body", (1.5 * s, y - 0.6, -2.2)):
+            a.oct(f"FrontThigh{S}", (1.4, 2.2, 2.2), (1.75 * s, y - 1.1, -2.1), body, b=0.4)
+            seg(a, f"FrontShin{S}", (1.75 * s, y - 2.0, -1.7), (1.75 * s, y - 3.4, -2.5), 0.8, dark)
+            a.box(f"FrontFoot{S}", (1.0, 0.4, 1.4), (1.75 * s, y - 3.65, -2.9), dark)
+            for j, dx in enumerate((-0.35, 0, 0.35)):
+                a.wedge(f"FrontTalon{j}{S}", (0.22, 0.35, 0.6), (1.75 * s + dx, y - 3.72, -3.7), horn, role="Accent")
+            a.wedge(f"FrontSpur{S}", (0.2, 0.3, 0.5), (1.75 * s, y - 3.5, -2.05), horn, rot=(0, 180, 0), role="Accent")
 
     # ---- soul flames that circle around it ----
     with a.bone("Orbit", "Body", (0, y, 0.4)):
