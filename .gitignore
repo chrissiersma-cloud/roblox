@@ -13,6 +13,7 @@ Thumbs.db
 tools/animal-models/build/
 tools/forest-kit/build/
 tools/dark-woods-kit/build/
+tools/buildings/build/
 tools/statue/build/
 tools/rbxm-writer/target/
 __pycache__/
@@ -24,6 +25,7 @@ __pycache__/
 !models/dark-woods/*.rbxm
 !models/forest-entrance/*.rbxm
 !models/dark-woods-kit/*.rbxm
+!models/hub-buildings/*.rbxm
 !tools/rbxm-writer/Cargo.lock
 
 # Viewer dependencies and copied scene data
