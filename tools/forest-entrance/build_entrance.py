@@ -90,7 +90,7 @@ def lantern(g, name, top, chain=0.8):
     for sx in (-1, 1):
         for sz in (-1, 1):
             g.box(f"{name}Bar", (0.1, 1.1, 0.1), add(c, (0.33 * sx, 0, 0.33 * sz)), IRON, collide=False)
-    g.box(f"{name}Base", (0.8, 0.15, 0.8), add(c, (0, -0.58, 0)), IRON, collide=False)
+    g.box(f"{name}Base", (0.8, 0.15, 0.8), add(c, (0, -0.54, 0)), IRON, collide=False)
 
 
 def barrel(g, name, pos, k=1.0):
@@ -98,7 +98,7 @@ def barrel(g, name, pos, k=1.0):
     g.octagon(name, r, h, add(pos, (0, h / 2, 0)), WOOD)
     for y in (0.3 * k, h - 0.3 * k):
         g.octagon(f"{name}Hoop", r + 0.04, 0.14 * k, add(pos, (0, y, 0)), IRON, collide=False)
-    g.octagon(f"{name}Lid", r - 0.1, 0.06, add(pos, (0, h + 0.03, 0)), WOOD_LIGHT, collide=False)
+    g.octagon(f"{name}Lid", r - 0.1, 0.06, add(pos, (0, h + 0.02, 0)), WOOD_LIGHT, collide=False)
 
 
 def crate(g, name, pos, size=1.2, yaw=0):
@@ -108,14 +108,14 @@ def crate(g, name, pos, size=1.2, yaw=0):
     for sgn in (-1, 1):
         for axis in range(2):
             off = [0, 0, 0]
-            off[0 if axis == 0 else 2] = sgn * (s / 2 + 0.02)
+            off[0 if axis == 0 else 2] = sgn * s / 2
             size_ = (0.06, s * 0.98, 0.18) if axis == 0 else (0.18, s * 0.98, 0.06)
             g.box(f"{name}Edge", size_, at(add(pos, (0, s / 2, 0)), R, (off[0] + (0 if axis == 0 else sgn * 0), 0,
                                                                           off[2])), WOOD_DARK, R=R, collide=False)
         # Diagonal slat on the front and back faces.
-        g.box(f"{name}Slat", (s * 1.3, 0.16, 0.05), at(add(pos, (0, s / 2, 0)), R, (0, 0, sgn * (s / 2 + 0.03))),
+        g.box(f"{name}Slat", (s * 1.3, 0.16, 0.05), at(add(pos, (0, s / 2, 0)), R, (0, 0, sgn * (s / 2 + 0.01))),
               WOOD_DARK, R=matmul(R, angles(0, 0, 45)), collide=False)
-    g.box(f"{name}Top", (s * 1.02, 0.1, s * 1.02), add(pos, (0, s + 0.04, 0)), WOOD_DARK, R=R, collide=False)
+    g.box(f"{name}Top", (s * 1.02, 0.1, s * 1.02), add(pos, (0, s + 0.02, 0)), WOOD_DARK, R=R, collide=False)
 
 
 def sack(g, name, pos, yaw=0):
@@ -153,7 +153,8 @@ def wagon(g, origin=(0, 0, 0), yaw=0.0):
         for sx in (-1, 1):
             wheel(g, "Wheel", P(2.75 * sx, y, z), r)
         g.box("Axle", (5.8, 0.4, 0.4), P(0, y, z), WOOD_DEEP, R=Rw)
-        g.box("Bolster", (4.6, 0.45, 0.6), P(0, y + 0.42, z), WOOD_DARK, R=Rw)
+        # The bolster fills the space between the axle and the floor, so the wagon bed rests on it.
+        g.box("Bolster", (4.6, 2.45 - (y + 0.15), 0.6), P(0, (y + 0.15 + 2.45) / 2, z), WOOD_DARK, R=Rw)
     g.box("Reach", (0.35, 0.35, 7.4), P(0, 2.05, 0), WOOD_DEEP, R=Rw)
     # Floor: planks with dark gaps between them.
     g.box("FloorBase", (4.2, 0.26, L), P(0, 2.5, 0), WOOD_DEEP, R=Rw)
@@ -162,8 +163,8 @@ def wagon(g, origin=(0, 0, 0), yaw=0.0):
         g.box("Plank", (0.55, 0.3, L), P(x, 2.66, 0), WOOD if i % 2 else WOOD_LIGHT, R=Rw)
     # Sideboards, stakes, rails and iron brackets.
     for sx in (-1, 1):
-        for j, y in enumerate((3.2, 3.9)):
-            g.box("Sideboard", (0.25, 0.66, L), P(2.1 * sx, y, 0), WOOD_LIGHT if j else WOOD, R=Rw)
+        for j, y in enumerate((2.9, 3.44, 3.98)):
+            g.box("Sideboard", (0.25, 0.56, L), P(2.1 * sx, y, 0), WOOD_LIGHT if j % 2 else WOOD, R=Rw)
         g.box("Rail", (0.42, 0.22, L + 0.2), P(2.12 * sx, 4.33, 0), WOOD_DARK, R=Rw)
         g.box("Skirt", (0.3, 0.3, L), P(2.12 * sx, 2.55, 0), WOOD_DARK, R=Rw)
         for z in (-4.4, -1.5, 1.5, 4.4):
@@ -173,8 +174,8 @@ def wagon(g, origin=(0, 0, 0), yaw=0.0):
         for z in (-4.65, 4.65):
             g.box("Corner", (0.1, 1.4, 0.3), P(2.24 * sx, 3.55, z), IRON, R=Rw)
     # Front board and a low back tailgate with chains.
-    for j, y in enumerate((3.2, 3.9)):
-        g.box("FrontBoard", (4.4, 0.66, 0.25), P(0, y, -4.75), WOOD_LIGHT if j else WOOD, R=Rw)
+    for j, y in enumerate((2.9, 3.44, 3.98)):
+        g.box("FrontBoard", (4.4, 0.56, 0.25), P(0, y, -4.75), WOOD_LIGHT if j % 2 else WOOD, R=Rw)
     g.box("Tailgate", (4.4, 0.8, 0.25), P(0, 3.15, 4.75), WOOD, R=Rw)
     g.box("TailgateTrim", (4.5, 0.18, 0.3), P(0, 3.6, 4.75), WOOD_DARK, R=Rw)
     for sx in (-1, 1):
@@ -204,53 +205,65 @@ def wagon(g, origin=(0, 0, 0), yaw=0.0):
             g.box("Bow", (width * 1.08, 0.14, 0.28), P((bx0 + bx1) / 2, (by0 + by1) / 2, z), WOOD_DARK, R=R,
                   collide=False)
         for sz in (-1, 1):
-            # Flared, slightly bigger ends of the bonnet.
+            # Flared, slightly bigger ends of the bonnet: each strip runs from the canvas edge out to a wider hem.
             (ex0, ey0), (ex1, ey1) = arc(t0, 1.1), arc(t1, 1.1)
-            Rf = matmul(R, angles(-16 * sz, 0, 0))
-            g.box("CanvasEnd", (width * 1.14, 0.12, 0.9), P((ex0 + ex1) / 2, (ey0 + ey1) / 2 - 0.05, sz * (L / 2 - 0.1)),
+            inner = (mx, my, sz * (L / 2 - 0.55))
+            outer = ((ex0 + ex1) / 2, (ey0 + ey1) / 2, sz * (L / 2 + 0.25))
+            X = (tx, ty, 0)
+            d = sub(outer, inner)
+            Z = unit(sub(d, scale(X, sum(a * b for a, b in zip(d, X)))))
+            Y = (Z[1] * X[2] - Z[2] * X[1], Z[2] * X[0] - Z[0] * X[2], Z[0] * X[1] - Z[1] * X[0])
+            Rf = matmul(Ry, tuple((X[k], Y[k], Z[k]) for k in range(3)))
+            length = math.dist(inner, outer)
+            g.box("CanvasEnd", (width * 1.12, 0.12, length + 0.2), P(*scale(add(inner, outer), 0.5)),
                   CANVAS2 if i % 2 else CANVAS, R=Rf)
-            g.box("CanvasHem", (width * 1.16, 0.16, 0.18), P((ex0 + ex1) / 2 * 1.02, (ey0 + ey1) / 2, sz * (L / 2 + 0.3)),
-                  WOOD_DARK, R=Rf, collide=False)
-    # Rope lashing where the canvas is tied to the rail.
-    for sx in (-1, 1):
-        for z in (-3.0, 0.0, 3.0):
-            for dz in (-0.12, 0.12):
-                g.box("Rope", (0.5, 0.36, 0.09), P(2.2 * sx, 4.4, z + dz), C("#c9a46a"), R=Rw, collide=False)
-    # A coiled lasso hanging on the side: the wrangler's own wagon.
-    hook = P(-2.42, 4.1, 2.9)
-    g.box("LassoHook", (0.4, 0.14, 0.14), hook, IRON, R=Rw, collide=False)
-    g.ring("Lasso", add(hook, (-0.12, -0.75, 0)), matmul(Rw, angles(0, 0, 90)), 0.7, 0.14,
+            g.box("CanvasHem", (width * 1.15, 0.18, 0.22), P(*add(outer, scale(Z, 0.02 * sz))), WOOD_DARK, R=Rf,
+                  collide=False)
+    # A coiled lasso hanging on the side, between the wheels: the wrangler's own wagon.
+    g.box("LassoHook", (0.4, 0.14, 0.14), P(-2.33, 4.1, 0.35), IRON, R=Rw, collide=False)
+    g.ring("Lasso", P(-2.28, 3.4, 0.35), matmul(Rw, angles(0, 0, 90)), 0.62, 0.14,
            [C("#d8a861"), C("#c48f4c")], n=16, collide=False)
-    g.ring("Lasso", add(hook, (-0.2, -0.8, 0.05)), matmul(Rw, angles(0, 0, 90)), 0.62, 0.13,
+    g.ring("Lasso", P(-2.43, 3.35, 0.4), matmul(Rw, angles(0, 0, 90)), 0.56, 0.13,
            [C("#c48f4c"), C("#d8a861")], n=16, collide=False)
-    g.box("LassoWrap", (0.3, 0.3, 0.3), add(hook, (-0.15, -0.12, 0)), C("#a8763c"), R=Rw, collide=False)
-    # Shovel strapped to the other side.
-    g.rod("ShovelHandle", P(2.45, 3.2, -3.6), P(2.45, 3.2, -1.0), 0.16, WOOD_LIGHT, collide=False)
-    g.box("ShovelBlade", (0.08, 0.7, 0.8), P(2.47, 3.2, -4.0), C("#8c8c96"), R=Rw, collide=False)
-    g.box("ShovelGrip", (0.14, 0.4, 0.14), P(2.45, 3.2, -0.9), WOOD_DARK, R=Rw, collide=False)
+    g.box("LassoWrap", (0.36, 0.34, 0.3), P(-2.36, 4.0, 0.35), C("#a8763c"), R=Rw, collide=False)
+    # Shovel strapped flat against the other side, with two iron straps.
+    g.rod("ShovelHandle", P(2.31, 3.2, -3.6), P(2.31, 3.2, -1.0), 0.16, WOOD_LIGHT, collide=False)
+    g.box("ShovelBlade", (0.1, 0.7, 0.8), P(2.28, 3.2, -4.0), C("#8c8c96"), R=Rw, collide=False)
+    g.box("ShovelGrip", (0.16, 0.4, 0.16), P(2.31, 3.2, -1.0), WOOD_DARK, R=Rw, collide=False)
+    for z in (-3.2, -2.0):
+        g.box("ShovelStrap", (0.26, 0.28, 0.1), P(2.3, 3.2, z), IRON, R=Rw, collide=False)
 
     # Driver's bench with a plaid blanket, and the tongue.
     g.box("Bench", (3.6, 0.25, 1.0), P(0, 4.75, -4.1), WOOD_LIGHT, R=Rw)
     for sx in (-1, 1):
-        g.box("BenchLeg", (0.25, 1.85, 0.25), P(1.5 * sx, 3.72, -4.1), WOOD_DARK, R=Rw)
+        g.box("BenchLeg", (0.25, 1.95, 0.25), P(1.5 * sx, 3.72, -4.1), WOOD_DARK, R=Rw)
     g.box("Blanket", (1.5, 0.12, 1.02), P(-0.8, 4.92, -4.1), C("#c0392b"), R=Rw, collide=False)
     for i in range(3):
         g.box("BlanketStripe", (0.12, 0.13, 1.03), P(-1.3 + 0.5 * i, 4.93, -4.1), C("#f2e6c8"), R=Rw, collide=False)
-    g.rod("Tongue", P(0, 1.75, -3.3), P(0, 0.5, -8.6), 0.34, WOOD_DARK)
-    g.box("Doubletree", (2.8, 0.25, 0.3), P(0, 0.62, -8.2), WOOD_DARK, R=Rw)
+    # The tongue starts on the front axle and rests on the ground at the far end.
+    g.rod("Tongue", P(0, 1.7, -2.7), P(0, 0.25, -8.6), 0.34, WOOD_DARK)
+    g.box("TongueClamp", (0.5, 0.5, 0.5), P(0, 1.7, -2.9), IRON, R=Rw)
+    g.box("Doubletree", (2.8, 0.25, 0.3), P(0, 0.32, -8.3), WOOD_DARK, R=Rw)
     for sx in (-1, 1):
-        g.box("SingleTree", (0.3, 0.2, 1.2), P(1.3 * sx, 0.55, -8.3), WOOD_DEEP, R=Rw)
+        g.box("SingleTree", (0.3, 0.2, 1.2), P(1.3 * sx, 0.3, -8.3), WOOD_DEEP, R=Rw)
 
     # Side details: water bucket, toolbox, spare wheel and a lantern at the back.
-    g.octagon("Bucket", 0.42, 0.8, P(-2.75, 3.2, -1.0), WOOD_LIGHT)
-    g.octagon("BucketHoop", 0.45, 0.12, P(-2.75, 3.4, -1.0), IRON, collide=False)
-    g.rod("BucketHandle", P(-2.75, 3.6, -1.4), P(-2.6, 4.2, -1.0), 0.07, IRON, collide=False)
-    g.box("Toolbox", (0.55, 0.6, 1.8), P(2.62, 2.95, 0.2), WOOD, R=Rw)
-    g.box("ToolboxLid", (0.62, 0.12, 1.86), P(2.62, 3.3, 0.2), WOOD_DARK, R=Rw, collide=False)
-    for z in (-0.5, 0.9):
-        g.box("ToolboxStrap", (0.64, 0.66, 0.12), P(2.62, 2.95, z), IRON, R=Rw, collide=False)
-    lantern(g, "WagonLantern", P(1.5, 7.2, 4.9), chain=0.5)
-    g.box("LanternHook", (0.12, 0.12, 0.8), P(1.5, 7.2, 4.6), IRON, R=Rw, collide=False)
+    # The bucket hangs against the sideboard from a hook on the rail.
+    g.octagon("Bucket", 0.42, 0.8, P(-2.62, 3.2, -1.0), WOOD_LIGHT)
+    g.octagon("BucketHoop", 0.45, 0.12, P(-2.62, 3.4, -1.0), IRON, collide=False)
+    for dz in (-0.38, 0.38):
+        g.rod("BucketHandle", P(-2.62, 3.55, -1.0 + dz), P(-2.4, 4.36, -1.0), 0.08, IRON, collide=False)
+    g.box("BucketHook", (0.34, 0.16, 0.16), P(-2.32, 4.36, -1.0), IRON, R=Rw, collide=False)
+    # Toolbox bolted to the side between the wheels.
+    g.box("Toolbox", (0.55, 0.6, 1.6), P(2.5, 2.95, -0.15), WOOD, R=Rw)
+    g.box("ToolboxLid", (0.62, 0.12, 1.66), P(2.53, 3.3, -0.15), WOOD_DARK, R=Rw, collide=False)
+    for z in (-0.65, 0.35):
+        g.box("ToolboxStrap", (0.6, 0.66, 0.12), P(2.52, 2.95, z), IRON, R=Rw, collide=False)
+    # Lantern on an iron arm that sticks out from the back corner stake.
+    g.rod("LanternPole", P(2.45, 4.3, 4.4), P(2.45, 6.05, 4.4), 0.14, IRON, collide=False)
+    g.rod("LanternArm", P(2.4, 5.98, 4.4), P(3.3, 5.98, 4.4), 0.14, IRON, collide=False)
+    g.box("LanternKnob", (0.22, 0.22, 0.22), P(3.3, 5.98, 4.4), IRON, R=Rw, collide=False)
+    lantern(g, "WagonLantern", P(3.12, 5.95, 4.4), chain=0.5)
 
     # Cargo you can see through the open back.
     barrel(g, "CargoBarrel", P(-1.05, 2.8, 3.4))
@@ -269,7 +282,7 @@ def arch(g, z=-9.0, half=7.5, rng=None):
     for sx in (-1, 1):
         x = half * sx
         g.octagon("Footing", 1.15, 1.1, (x, 0.55, z), STONE_DARK)
-        g.octagon("FootingCap", 1.0, 0.3, (x, 1.25, z), STONE)
+        g.octagon("FootingCap", 1.0, 0.3, (x, 1.2, z), STONE)
         g.box("Moss", (1.4, 0.2, 0.9), (x - 0.2 * sx, 1.45, z - 0.3), C("#4f9e4a"), rot=(0, 20, 0), collide=False)
         g.octagon("Post", 0.62, top - 1.2, (x, 1.3 + (top - 1.2) / 2, z), WOOD_DARK)
         for y in (3.0, 6.2, 9.4):
@@ -280,8 +293,8 @@ def arch(g, z=-9.0, half=7.5, rng=None):
     # Top log with cut ends, and a lower beam that holds the sign.
     log(g, "TopBeam", (-half - 1.6, top, z), (half + 1.6, top, z), 1.0, WOOD_DARK)
     for sx in (-1, 1):
-        g.box("BeamEnd", (0.1, 0.85, 0.85), ((half + 1.65) * sx, top, z), CUT, collide=False)
-        g.box("BeamEnd", (0.12, 0.82, 0.82), ((half + 1.66) * sx, top, z), CUT, rot=(45, 0, 0), collide=False)
+        g.box("BeamEnd", (0.1, 0.85, 0.85), ((half + 1.63) * sx, top, z), CUT, collide=False)
+        g.box("BeamEnd", (0.12, 0.82, 0.82), ((half + 1.63) * sx, top, z), CUT, rot=(45, 0, 0), collide=False)
     log(g, "SignBeam", (-half, 9.6, z), (half, 9.6, z), 0.55, WOOD)
     # Leaves and hanging vines on the top beam.
     for i, (x, w) in enumerate([(-8.2, 1.8), (-6.4, 1.4), (-2.5, 1.2), (1.2, 1.0), (5.6, 1.6), (7.8, 1.9)]):
@@ -308,7 +321,7 @@ def arch(g, z=-9.0, half=7.5, rng=None):
                             surface_text("To Wrangler Camp", "Front", stroke="#5a3418")])
     for sz in (-1, 1):
         for y in (-0.38, 0.38):
-            g.box("PlankLine", (sign_w * 0.96, 0.05, 0.02), (0, sign_y + y, z + sz * 0.16), WOOD_DARK, collide=False)
+            g.box("PlankLine", (sign_w * 0.96, 0.05, 0.02), (0, sign_y + y, z + sz * 0.155), WOOD_DARK, collide=False)
     for y in (-1, 1):
         g.box("SignFrame", (sign_w + 0.3, 0.25, 0.42), (0, sign_y + y * (sign_h / 2 + 0.05), z), WOOD_DEEP)
     for sx in (-1, 1):
@@ -316,11 +329,11 @@ def arch(g, z=-9.0, half=7.5, rng=None):
         # Little pine trees carved at both ends of the sign (on both faces).
         for sz in (-1, 1):
             for j, (h, w) in enumerate([(0.9, 1.1), (0.7, 0.85), (0.5, 0.6)]):
-                tri(g, "SignPine", (sx * (sign_w / 2 - 0.75), sign_y - 0.75 + 0.42 * j, z + sz * 0.18), w, h, 0.06,
+                tri(g, "SignPine", (sx * (sign_w / 2 - 0.75), sign_y - 0.75 + 0.42 * j, z + sz * 0.165), w, h, 0.06,
                     LEAF[j], collide=False)
     # Lanterns hanging from the top beam, outside the sign.
     for sx in (-1, 1):
-        lantern(g, "ArchLantern", (5.9 * sx, top - 0.5, z))
+        lantern(g, "ArchLantern", (5.9 * sx, 9.36, z), chain=0.5)
 
 
 # -------------------------------------------------------------- signpost ---
@@ -400,9 +413,12 @@ def cargo(g):
     g.box("HayTop", (2.6, 0.2, 1.6), (-8.1, 1.4, 1.5), C("#f2d57a"), rot=(0, 90, 0), collide=False)
     for dz in (-0.7, 0.7):
         g.box("HayStrap", (0.14, 1.36, 1.66), (-8.1, 0.66, 1.5 + dz), C("#a8761c"), collide=False)
-    g.rod("Pitchfork", (-7.4, 0, 0.4), (-7.9, 3.4, 0.9), 0.1, WOOD_DARK, collide=False)
+    # Pitchfork stuck in the hay bale, tines down.
+    g.rod("Pitchfork", (-8.0, 1.75, 1.8), (-8.25, 4.6, 2.0), 0.12, WOOD_DARK, collide=False)
+    g.box("ForkBar", (0.42, 0.12, 0.12), (-8.0, 1.75, 1.8), IRON, collide=False)
     for i in range(3):
-        g.rod("Tine", (-7.9 + 0.12 * (i - 1), 3.35, 0.9), (-8.0 + 0.12 * (i - 1), 4.0, 1.0), 0.05, IRON, collide=False)
+        g.rod("Tine", (-8.0 + 0.15 * (i - 1), 1.0, 1.8), (-8.0 + 0.15 * (i - 1), 1.78, 1.8), 0.06, IRON,
+              collide=False)
 
 
 # ----------------------------------------------------------------- build ---
