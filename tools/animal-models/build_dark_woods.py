@@ -29,7 +29,7 @@ def finish(a, fx_source):
         node["children"].append({"class": "Highlight", "name": "Aura", "props": {
             "FillColor": list(fill), "OutlineColor": list(outline), "FillTransparency": fill_t,
             "OutlineTransparency": outline_t, "DepthMode": "Occluded"}})
-    if getattr(a, "dw_script", False):
+    if fx_source:  # every animal gets its walk, idle and effects script
         node["children"].append({"class": "Script", "name": "AnimalFX",
                                  "props": {"Source": fx_source, "RunContext": "Client"}})
     return node

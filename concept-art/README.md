@@ -29,6 +29,27 @@ Roblox-place.
 | `6-speed-poort.png` | De poort naar Frostpeak: "40K speed recommended". Je bent te langzaam, dus eerst trainen. |
 | `7-dier-getemd.png` | Een dier is getemd in je dierentuin: "Golden Thunderhoof · Legendary · $5,000/s". |
 
+## Dark Woods
+
+Het donkere bos, met de 12 dieren uit `models/dark-woods/DarkWoodsAnimals.rbxm` en de bomen, varens, rotsen en
+gloeiende paddenstoelen uit `models/forest-kit/CritterWoodsKit.rbxm`. Het is avond: maanlicht, paarse lucht, mist en
+overal gloeiende dingen. Hoe verder je het bos in gaat, hoe zeldzamer de dieren.
+
+| Foto | Wat je ziet |
+|---|---|
+| `8-dark-woods-overzicht.png` | Het hele gebied van bovenaf: de boog "Dark Woods", een kronkelpad met gloeiende paddenstoelen door de **Deep Woods**, en helemaal achterin **The Heart**: een open plek met een maanstraal, een vijver en de Ancient Tree. |
+| `9-dark-woods-ingang.png` | De ingang vanaf het pad: de boog van donkere boomstammen met het bord "Dark Woods · Deep Woods & The Heart" en lantaarns. Achter de boog zie je de Mossback Toad en de Shroom Snail (Common). |
+| `10-dark-woods-lasso.png` | Diep in het bos gooit een speler zijn lasso om een Umbra Panther (Mythic), met de schaduwcirkel om hem heen. |
+| `11-dark-woods-het-hart.png` | The Heart: de Nightshade Drake (Secret) zweeft in de maanstraal boven de vijver, de Mossking Elk (Mythic) staat bij de heksenkring en de Ancient Tree staat erachter. "A SECRET ANIMAL APPEARED!" |
+
+Waar de dieren staan, van de ingang naar achteren: Mossback Toad en Shroom Snail (Common), Night Hedgehog en
+Duskbat (Uncommon), Hollow Badger en Glowmoth (Rare), Barkling (Epic), Wisp Lynx en Moonraven (Legendary),
+Umbra Panther (Mythic), en in The Heart de Mossking Elk (Mythic) en de Nightshade Drake (Secret).
+
+Opnieuw maken: `python3 tools/concept-art/dark_woods_scenes.py` schrijft `tools/concept-art/build/dark_woods_world.json`
+en `tools/animal-models/build/dark_woods.json`. Kopieer die twee naar `tools/viewer/` en render met
+`node sceneshot.js dark_woods_world.json overview uit.png` (of: path, lasso, heart).
+
 Opnieuw maken: `python3 tools/concept-art/scenes.py` schrijft de wereld naar `tools/concept-art/build/world.json`.
 Kopieer dat bestand, samen met `tools/animal-models/build/animals.json`, naar `tools/viewer/`, doe daar
 `npm install`, start een webserver (`python3 -m http.server 8123`) en render met
