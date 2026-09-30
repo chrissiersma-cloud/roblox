@@ -1,4 +1,4 @@
-# Hub-gebouwen: Lasso Shop, Animal Market, Stagecoach en Wrangler Camp
+# Hub-gebouwen: Lasso Shop, Animal Market, Worlds en Wrangler Camp
 
 `HubBuildings.rbxm` bevat nieuwe, veel gedetailleerdere versies van vier dingen uit je hub, in dezelfde warme
 blokstijl als je spel. Alles is gemaakt van gewone Parts, dus je hoeft niets te uploaden.
@@ -9,7 +9,7 @@ blokstijl als je spel. Alles is gemaakt van gewone Parts, dus je hoeft niets te 
 
 ![Animal Market](../../previews/hub_animal_market.png)
 
-![Stagecoach](../../previews/hub_stagecoach.png)
+![Worlds](../../previews/hub_worlds.png)
 
 ![Wrangler Camp](../../previews/hub_wrangler_camp.png)
 
@@ -37,7 +37,7 @@ Daarbovenop heeft elke winkel eigen spullen:
 |---|---|---|
 | **Lasso Shop** | rood | gouden lasso op het dak, lasso's aan haken op de muur, een rek met drie lasso-upgrades (touw, goud, regenboog) en het bord UPGRADES, een grote touwspoel, een oefenstier (zaagbok met hooi en een koeienschedel), een ton met touw |
 | **Animal Market** | groen | pootafdruk op het dak, een wei met hek, stro, hooibalen, een waterbak en een voeremmer, kisten met wortels en appels, voerzakken, een krijtbord **BUY & SELL**, twee kooitjes met konijntjes en pootafdrukken naar de deur |
-| **Stagecoach** | blauw | wagenwiel op het dak, een echte **postkoets** (rood met goud, deuren met ramen en gordijnen, bok voor de koetsier, lampen, bagage op het dak, grote spaakwielen), een dienstregeling (Forest, Hub, Dark Woods), een bankje, koffers, een wegwijzer (Forest, Hub, Dark Woods), een waterbak en een paal om paarden vast te binden |
+| **Worlds** | blauw | het station om naar **andere werelden** te reizen. Een **wereldbol** met een gouden ring op het dak, een groot bord **CHOOSE A WORLD** met een tegel voor elke wereld (Forest, Dark Woods en een op slot met een hangslot: ???), een gloeiend **BoardingPad** met het bord **BOARD HERE** naast een echte **postkoets** (rood met goud, deuren met WORLDS erop, bagage op het dak), een vertrekbord, een bankje, koffers, een wegwijzer, een waterbak en een paal om paarden vast te binden |
 
 **Wrangler Camp** (het ronde kamp):
 
@@ -56,7 +56,7 @@ Daarbovenop heeft elke winkel eigen spullen:
 |---|---|
 | LassoShop | ~1350 |
 | AnimalMarket | ~1240 |
-| Stagecoach | ~1480 |
+| Worlds | ~1600 |
 | WranglerCamp | ~1400 |
 
 Alleen muren, veranda's, meubels en grote spullen botsen. Kleine versieringen hebben CanCollide, CanTouch en
@@ -73,7 +73,7 @@ CanQuery uit. Er zijn weinig lampjes, en die hebben geen schaduw.
 local swap = require(workspace.HubBuildings.SwapIn)
 swap(workspace.LassoShop, workspace.HubBuildings.LassoShop)
 swap(workspace.AnimalMarket, workspace.HubBuildings.AnimalMarket)
-swap(workspace.Stagecoach, workspace.HubBuildings.Stagecoach)
+swap(workspace.Stagecoach, workspace.HubBuildings.Worlds)
 swap(workspace.WranglerCamp, workspace.HubBuildings.WranglerCamp)
 ```
 
@@ -89,6 +89,11 @@ oude (de grondvlakken passen op elkaar). Het oude gebouw wordt **niet** verwijde
 Liever met de hand? Elk gebouw heeft zijn draaipunt op de grond in het midden, en de voorkant wijst naar **-Z**
 (de Front-kant). Een winkel is ongeveer 45 × 25 studs met alles eromheen, het kamp is 48 studs breed (68 met de
 paden).
+
+**Reizen naar een wereld:** het gloeiende rondje naast de koets heet `BoardingPad` (in `Worlds`). Zet daar je
+teleport-script of ProximityPrompt op, of laat je bestaande reis-script naar dat onderdeel kijken. De tegels op het
+bord heten `WorldTile` en `WorldName`: verander de tekst in `WorldName > TextFront > Label` als je andere werelden
+hebt.
 
 **Let op:** hangen er scripts aan je oude gebouwen (bijvoorbeeld een ProximityPrompt voor de winkel)? Verplaats die
 dan naar het nieuwe gebouw, bijvoorbeeld naar de `CounterTop` of de `SignBoard`.

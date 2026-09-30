@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hub buildings: the Lasso Shop, the Animal Market, the Stagecoach station and the Wrangler Camp, built from
+"""Hub buildings: the Lasso Shop, the Animal Market, the Worlds station and the Wrangler Camp, built from
 Parts in the game's warm log-cabin style, with a lot more detail than the old ones.
 
 Every building is its own Model with its pivot on the ground in the middle, and its front facing -Z
@@ -433,16 +433,21 @@ def paw_emblem(g, pos, R):
     g.cyl("PawRim", 0.25, 3.0, add(pos, (0, -0.6, 0.12)), C("#2f7a3a"), R=angles(0, 90, 0), **DS)
 
 
-def coach_emblem(g, pos, R):
-    """A wagon wheel facing the front, with a gold horseshoe over it."""
-    Rf = angles(90, 0, 0)  # ring normal along Z
-    g.ring("EmblemTire", pos, Rf, 2.0, 0.3, [IRON], n=24, twist=False)
-    g.ring("EmblemRim", pos, Rf, 1.75, 0.35, [DARK, C("#a36a36")], n=24, twist=False)
-    for i in range(8):
-        t = 2 * math.pi * i / 8
-        g.rod("EmblemSpoke", pos, add(pos, (math.cos(t) * 1.6, math.sin(t) * 1.6, 0)), 0.2, C("#a36a36"))
-    g.cyl("EmblemHub", 0.6, 0.8, pos, DARK, R=angles(0, 90, 0))
-    g.cyl("EmblemCap", 0.7, 0.45, pos, GOLD, R=angles(0, 90, 0), **DS)
+def globe_emblem(g, pos, R):
+    """A globe with green lands and a gold ring around it: the way to other worlds."""
+    g.part("ball", "GlobeSea", (3.6, 3.6, 3.6), pos, C("#3f8fe0"))
+    rng = random.Random(12)
+    for i in range(7):
+        yaw, pitch = rng.uniform(-70, 70), rng.uniform(-50, 50)
+        d = apply(matmul(angles(0, yaw, 0), angles(pitch, 0, 0)), (0, 0, -1))
+        g.box("GlobeLand", (rng.uniform(0.8, 1.4), rng.uniform(0.6, 1.1), 0.3), add(pos, scale(d, 1.7)),
+              C("#58c24a") if i % 3 else C("#f2d49a"), R=aim(d, roll_up=(0, 1, 0)), **D)
+    g.ring("GlobeRing", pos, angles(90, 0, 25), 2.5, 0.28, [GOLD, C("#ffe38a")], n=24, twist=False, **D)
+    g.cyl("GlobeStand", 1.2, 0.35, add(pos, (0, -2.2, 0.4)), DARK, R=angles(0, 0, 90))
+    for i in range(4):
+        t = 2 * math.pi * i / 4 + 0.4
+        g.box("GlobeSpark", (0.35, 0.35, 0.35), add(pos, (math.cos(t) * 3.0, math.sin(t) * 3.0, -0.3)), C("#fff27a"),
+              rot=(45, 45, 0), material="Neon", **DS)
 
 
 # ------------------------------------------------------------ shop extras ---
@@ -566,7 +571,7 @@ def coach(g, origin, yaw):
         for y in (2.45, 4.45, 6.55):
             g.box("Pinstripe", (0.14, 0.15, 4.4), P(sx * 2.03, y, 0), TRIM, R=R, **DS)
         g.box("DoorPlate", (0.14, 0.6, 1.6), P(sx * 2.06, 3.3, 0), C("#2e2a36"), R=R,
-              children=[surface_text("STAGE", "Right" if sx > 0 else "Left", color="#f2c14e", ppu=60)], **DS)
+              children=[surface_text("WORLDS", "Right" if sx > 0 else "Left", color="#f2c14e", ppu=60)], **DS)
     # Driver's box, footboard and lamps at the front; the boot at the back.
     g.box("DriverSeat", (3.6, 0.35, 1.2), P(0, 6.2, -2.9), C("#5a3418"), R=R)
     g.box("SeatBack", (3.6, 1.0, 0.2), P(0, 6.8, -2.4), C("#5a3418"), R=R, **D)
@@ -587,13 +592,69 @@ def coach(g, origin, yaw):
     g.box("Doubletree", (2.8, 0.25, 0.3), P(0, 0.65, -8.0), DARK, R=R)
 
 
-def stagecoach_extras(g, rng):
-    coach(g, (-18.5, 0, -7.5), 0)
-    # Timetable board, a bench and a pile of luggage on the porch.
-    g.box("Timetable", (3.6, 2.6, 0.2), (-8.2, 3.0, ZF - 1.1), C("#2e3a33"),
-          children=[surface_text("Forest\nHub\nDark Woods", "Front", color="#ffffff", ppu=60)], **D)
+WORLDS = [("Forest", "#58bb43"), ("Dark Woods", "#8a5cc8"), ("???", "#8c8c96")]
+
+
+def world_board(g, pos):
+    """A big board with a roof: CHOOSE A WORLD, and a tile for every world (the last one still locked)."""
+    x, _, z = pos
     for sx in (-1, 1):
-        g.box("TimetableFrame", (0.25, 2.9, 0.3), (-8.2 + sx * 1.9, 3.0, ZF - 1.15), DARK, **D)
+        g.octagon("BoardPost", 0.3, 7.6, (x + sx * 4.2, 3.8, z), DARK)
+        g.octagon("BoardFoot", 0.45, 0.4, (x + sx * 4.2, 0.2, z), STONE[2])
+    g.box("WorldBoard", (8.0, 5.6, 0.3), (x, 4.6, z), C("#2e3a4a"))
+    g.box("WorldBoardFrame", (8.5, 0.35, 0.5), (x, 7.55, z), DEEP, **D)
+    g.box("WorldBoardFrame", (8.5, 0.35, 0.5), (x, 1.65, z), DEEP, **D)
+    g.box("WorldBoardTitle", (7.4, 1.2, 0.2), (x, 6.7, z - 0.2), C("#f0a35a"),
+          children=[surface_text("CHOOSE A WORLD", "Front", ppu=70, stroke="#6b3a14")], **D)
+    for i, (name, color) in enumerate(WORLDS):
+        tx = x + 2.5 - 2.5 * i  # first world on the left, seen from the front
+        g.box("WorldTile", (2.2, 3.4, 0.2), (tx, 4.0, z - 0.2), C(color), **D)
+        g.box("WorldName", (2.1, 0.8, 0.22), (tx, 2.7, z - 0.25), C("#1b1530"),
+              children=[surface_text(name, "Front", ppu=80)], **D)
+        if name == "???":
+            # A padlock: still locked.
+            g.box("Lock", (1.0, 0.8, 0.25), (tx, 4.2, z - 0.35), GOLD, **DS)
+            g.ring("LockShackle", (tx, 4.75, z - 0.35), angles(90, 0, 0), 0.35, 0.12, [GOLD], n=10, twist=False, **DS)
+        elif name == "Forest":
+            for j in range(3):
+                tri(g, "TilePine", (tx - 0.6 + 0.6 * j, 3.2, z - 0.32), 0.8, 1.4, 0.05, C("#2f8f3a"), **DS)
+        else:
+            for j in range(4):
+                g.box("TileCrystal", (0.3, 0.9, 0.05), (tx - 0.6 + 0.4 * j, 3.6 + 0.2 * (j % 2), z - 0.32),
+                      C("#d9b8ff"), rot=(0, 0, 10 * (j - 1.5)), material="Neon", **DS)
+    g.box("BoardRoof", (9.2, 0.35, 1.6), (x, 8.0, z + 0.1), C("#4a7cc4"), rot=(-12, 0, 0))
+    for sx in (-1, 1):
+        lantern(g, "BoardLantern", (x + sx * 4.6, 7.8, z - 0.5), chain=0.3)
+
+
+def boarding_pad(g, pos):
+    """A glowing pad next to the coach: put your teleport script on BoardingPad."""
+    x, _, z = pos
+    g.cyl("BoardingPad", 0.3, 6.0, (x, 0.15, z), C("#6aa0e6"), R=angles(0, 0, 90))
+    g.ring("PadGlow", (x, 0.32, z), IDENTITY, 2.7, 0.25, [C("#9fe8ff"), C("#ffffff")], n=24, twist=False,
+           material="Neon", **DS)
+    g.ring("PadGlow", (x, 0.32, z), IDENTITY, 1.6, 0.2, [C("#9fe8ff")], n=16, twist=False, material="Neon", **DS)
+    beam = {"class": "ParticleEmitter", "name": "Sparkles", "props": {
+        "Texture": "rbxasset://textures/particles/sparkles_main.dds", "Rate": 8, "Lifetime": [1.2, 2],
+        "Speed": [1.5, 3], "SpreadAngle": [15, 15], "Size": [[0, 0.35], [1, 0]], "Transparency": [[0, 0], [1, 1]],
+        "Color": [[0, *C("#ffffff")], [1, *C("#9fe8ff")]], "LightEmission": 1, "LightInfluence": 0}}
+    g.box("PadSparkles", (4.0, 0.1, 4.0), (x, 0.35, z), C("#ffffff"), transparency=1, children=[beam], **DS)
+    for sx in (-1, 1):
+        g.octagon("PadPost", 0.25, 3.6, (x + sx * 3.4, 1.8, z + 2.2), DARK)
+    g.box("PadSign", (5.4, 1.1, 0.25), (x, 3.4, z + 2.2), C("#f0a35a"),
+          children=[surface_text("BOARD HERE", "Front", ppu=70, stroke="#6b3a14"),
+                    surface_text("BOARD HERE", "Back", ppu=70, stroke="#6b3a14")])
+
+
+def worlds_extras(g, rng):
+    coach(g, (-18.5, 0, -7.5), 0)
+    boarding_pad(g, (-13.0, 0, -16.5))
+    world_board(g, (21.0, 0, -8.5))
+    # Departures board on the wall, a bench and a pile of luggage on the porch.
+    g.box("Departures", (3.6, 2.6, 0.2), (-8.2, 3.0, ZF - 1.1), C("#2e3a33"),
+          children=[surface_text("Forest\nDark Woods\n???", "Front", color="#ffffff", ppu=60)], **D)
+    for sx in (-1, 1):
+        g.box("DeparturesFrame", (0.25, 2.9, 0.3), (-8.2 + sx * 1.9, 3.0, ZF - 1.15), DARK, **D)
     for x in (-10.0, -7.4):
         g.box("BenchLeg", (0.3, 1.2, 1.0), (x, Y0 + 0.6, PORCH_Z + 1.6), DARK)
     g.box("BenchSeat", (3.4, 0.25, 1.2), (-8.7, Y0 + 1.3, PORCH_Z + 1.6), DECK)
@@ -605,7 +666,7 @@ def stagecoach_extras(g, rng):
         g.box("SuitcaseStrap", (w + 0.05, h + 0.05, 0.15), (x, y + h / 2, z), C("#3a2416"), **DS)
         g.box("SuitcaseHandle", (0.5, 0.15, 0.15), (x, y + h + 0.08, z), C("#3a2416"), **DS)
     # Signpost with three arrows, a hitching post and a water trough for the horses.
-    x, z = 13.5, -12.0
+    x, z = 10.5, -15.0
     g.octagon("PostBase", 0.55, 0.4, (x, 0.2, z), STONE[2])
     g.box("SignPost", (0.45, 7.0, 0.45), (x, 3.7, z), DARK)
     g.box("SignPostTop", (0.6, 0.3, 0.6), (x, 7.3, z), DEEP, **D)
@@ -625,7 +686,7 @@ def stagecoach_extras(g, rng):
     for sx in (-1, 1):
         g.box("HitchPost", (0.4, 2.8, 0.4), (-22.5 + sx * 2.4, 1.4, -8.8), DARK)
     g.box("HitchRail", (5.2, 0.3, 0.3), (-22.5, 2.6, -8.8), LOG)
-    hay_bale(g, (16.5, 0, -8.5), yaw=20)
+    hay_bale(g, (22.0, 0, -3.5), yaw=20)
 
 
 # ------------------------------------------------------------------ camp ---
@@ -809,12 +870,12 @@ def build():
                  lasso_emblem, lasso_extras, [C("#e0482c"), C("#f06a4a")])
     market = shop("AnimalMarket", [C("#6fbf4a"), C("#5aa83c"), C("#7ccc55")], C("#4fa83c"), "Animal Market", rng,
                   paw_emblem, market_extras, [C("#5aa83c"), C("#7ccc55")])
-    stage = shop("Stagecoach", [C("#5a8fd9"), C("#4a7cc4"), C("#6aa0e6")], C("#4a7cc4"), "Stagecoach", rng,
-                 coach_emblem, stagecoach_extras, [C("#4a7cc4"), C("#6aa0e6")])
+    worlds = shop("Worlds", [C("#5a8fd9"), C("#4a7cc4"), C("#6aa0e6")], C("#4a7cc4"), "Worlds", rng,
+                  globe_emblem, worlds_extras, [C("#4a7cc4"), C("#6aa0e6")])
     camp_g, ground = camp(rng)
-    buildings = [("LassoShop", [lasso]), ("AnimalMarket", [market]), ("Stagecoach", [stage]),
+    buildings = [("LassoShop", [lasso]), ("AnimalMarket", [market]), ("Worlds", [worlds]),
                  ("WranglerCamp", [camp_g, ground])]
-    offsets = {"LassoShop": (-60, 0, 0), "AnimalMarket": (0, 0, 0), "Stagecoach": (60, 0, 0),
+    offsets = {"LassoShop": (-60, 0, 0), "AnimalMarket": (0, 0, 0), "Worlds": (60, 0, 0),
                "WranglerCamp": (0, 0, 80)}
     tree_models = []
     for name, groups in buildings:
