@@ -1,7 +1,7 @@
 # Forest Entrance – de ingang naar het bos
 
 `ForestEntrance.rbxm` vervangt de oude kar met het bordje "To the Forest". Het is een hele ingang in dezelfde stijl
-als je spel, gemaakt van gewone Parts (872 stuks), dus het bestand werkt meteen.
+als je spel, gemaakt van gewone Parts (871 stuks), dus het bestand werkt meteen.
 
 ![Zo ziet het eruit vanaf de camera van de speler](../../previews/forest_entrance_game.png)
 
@@ -17,7 +17,7 @@ Het model **ForestEntrance** heeft 5 losse modellen. Je kunt elk stuk apart verp
 
 | Onderdeel | Wat je ziet |
 |---|---|
-| **Wagon** | een huifkar met spaakwielen (ijzeren banden, 12 spaken, naven), assen, een vloer van losse planken, zijborden met ijzeren beslag, een huif van linnen met houten bogen en uitlopende randen, een bok met een geruite deken, een dissel, een emmer, een gereedschapskist, een schep, een **opgerolde lasso** aan de zijkant, een lantaarn die echt licht geeft, en lading achterin (ton, kist, zakken, slaaprol) |
+| **Wagon** | een huifkar met spaakwielen (ijzeren banden, 12 spaken, naven), assen, een vloer van losse planken, zijborden met ijzeren beslag, een huif van linnen met houten bogen en uitlopende randen, een bok met een geruite deken, een dissel, een emmer aan een haak, een vastgeschroefde gereedschapskist, een vastgebonden schep, een **opgerolde lasso** aan de zijkant, een lantaarn die echt licht geeft, en lading achterin (ton, kist, zakken, slaaprol) |
 | **Archway** | een poort van boomstammen op stenen voeten met mos, schuine steunbalken, bladeren en slingerplanten op de bovenste balk, twee lantaarns met licht, en een bord aan kettingen. Aan de kant van het kamp staat **"To the Forest"**, aan de kant van het bos **"To Wrangler Camp"** |
 | **Signpost** | een wegwijzer met drie pijlen: **Critter Woods**, **Deep Woods** en **Wrangler Camp** (tekst op beide kanten) |
 | **Campfire** | een kring van stenen, houtblokken, een echt **vuur** (Fire) met rook, opvliegende vonkjes en oranje licht, een driepoot met een pan soep, en twee boomstammen om op te zitten |
@@ -46,8 +46,9 @@ zodat spelers er niet achter blijven haken. De kar, de palen, de kisten en de to
 
 ## Let op
 
-Ik heb het bestand gemaakt met de rbxm-writer uit deze repo, het in 3D gerenderd en gecontroleerd dat er geen losse,
-zwevende onderdelen zijn. Roblox Studio zelf kan ik niet openen. Gaat er iets mis? Kopieer de tekst uit het
+Ik heb het bestand gemaakt met de rbxm-writer uit deze repo, het van alle kanten in 3D gerenderd en met een
+controleprogramma nagekeken dat elk onderdeel echt vastzit aan een ander onderdeel (of op de grond staat): er zijn
+geen zwevende stukjes of kiertjes. Roblox Studio zelf kan ik niet openen. Gaat er iets mis? Kopieer de tekst uit het
 Output-venster en stuur die op, dan los ik het op.
 
 ## Opnieuw maken
