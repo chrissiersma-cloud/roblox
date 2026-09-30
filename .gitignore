@@ -20,6 +20,7 @@ __pycache__/
 !models/*.rbxm
 !models/forest-kit/*.rbxm
 !models/wrangler-camp/*.rbxm
+!models/dark-woods/*.rbxm
 !tools/rbxm-writer/Cargo.lock
 
 # Viewer dependencies and copied scene data
