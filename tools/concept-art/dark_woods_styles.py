@@ -345,6 +345,16 @@ STYLES = {
                     ("NightshadeDrake", (10, 0, -22), -20)],
         "fog": "#231f45",
     },
+    "combo": {
+        "title": "MOONLIT PURPLE + CRYSTALS",
+        "trees": [(shadow_oak, 0.55), (shadow_oak, 0.25, dict(pal=INDIGO)), (gnarled_tree, 0.2)],
+        "decor": [(crystal_cluster, 2), (crystal_cluster, 1, dict(colors=("#ff7be5", "#b58cff"))), (thorn_bramble, 2),
+                  (purple_leaves, 3), (glow_moss, 2, dict(colors=("#c77dff", "#5ef0ff"))), (wisp_lantern, 0),
+                  (rune_stone, 0)],
+        "ground": "#231d38", "path": "#4a3a5e",
+        "animals": [("UmbraPanther", (-8, 0, -4), 40), ("Moonraven", (10, 0, -14), -40), ("WispLynx", (6, 0, 4), -150)],
+        "fog": "#2a2352",
+    },
 }
 
 
@@ -412,7 +422,7 @@ def build():
         # Special single pieces near the clearing.
         for d, n in decor:
             if n == 0:
-                spot = (ox - 14, 0.0, -2) if d.name != "DarkPool" else (ox + 14, 0.0, -12)
+                spot = {"DarkPool": (ox + 14, 0.0, -12), "RuneStone": (ox + 13, 0.0, -24)}.get(d.name, (ox - 14, 0.0, -2))
                 placements.append((d, spot, 20.0, 1.0))
         for aid, pos, yaw in st["animals"]:
             s.animal(aid, add(pos, (ox, 0, 0)), yaw=yaw)
@@ -422,6 +432,9 @@ def build():
                hud=f'<div class="game" style="position:absolute;left:32px;top:24px;font-size:44px;color:#e9dcff">'
                    f'{st["title"]}</div>')
 
+    ox = 4 * 400.0
+    s.shot("combo_top", (ox - 26, 30, 44), (ox + 2, 2, -12), fov=58, shadow={"center": [ox, 0, -10], "radius": 90},
+           env={"fog": ["#2a2352", 70, 200]})
     world = s.export()
     world["parts"] += viewer_parts(assets, placements)
     world["modelsFile"] = "dark_woods.json"
