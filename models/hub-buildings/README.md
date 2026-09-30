@@ -1,6 +1,6 @@
-# Hub-gebouwen: Lasso Shop, Animal Market, Worlds en Wrangler Camp
+# Hub-gebouwen: Lasso Shop, Animal Market, Worlds, Wrangler Camp en Upgrade Camp
 
-`HubBuildings.rbxm` bevat nieuwe, veel gedetailleerdere versies van vier dingen uit je hub, in dezelfde warme
+`HubBuildings.rbxm` bevat nieuwe, veel gedetailleerdere versies van vijf dingen uit je hub, in dezelfde warme
 blokstijl als je spel. Alles is gemaakt van gewone Parts, dus je hoeft niets te uploaden.
 
 ![Lasso Shop van dichtbij](../../previews/hub_lasso_shop_front.png)
@@ -14,6 +14,12 @@ blokstijl als je spel. Alles is gemaakt van gewone Parts, dus je hoeft niets te 
 ![Wrangler Camp](../../previews/hub_wrangler_camp.png)
 
 ![In het kamp](../../previews/hub_wrangler_camp_close.png)
+
+![Upgrade Camp](../../previews/hub_upgrade_camp.png)
+
+![De stand van Old Pete](../../previews/hub_upgrade_camp_booth.png)
+
+![Het kampvuur onder de grote eik](../../previews/hub_upgrade_camp_fire.png)
 
 ## Wat er nieuw is
 
@@ -52,12 +58,33 @@ Daarbovenop heeft elke winkel eigen spullen:
 - een **zadelrek** met zadel, een **oefenstier** met een opgerolde lasso, hooibalen, tonnen, kisten, een waterbak
   en **vlaggetjes** tussen de tenten en de kar.
 
+**Upgrade Camp** (de plek van Old Pete, de trainer):
+
+- een **toegangsboog** van boomstammen met het bord **Old Pete's Camp** (aan twee kanten), lantaarns, dennetjes
+  bovenop en twee lantaarnpalen;
+- de **upgrade-stand** van Old Pete: een plankenkraam op een vlonder met een trapje, een rood-wit **luifel**
+  met een geschulpte rand, een toonbank met **gloeiende groene pijlen omhoog**, een belletje, planken vol
+  upgrades (laarzen met sporen, gouden hoefijzers, gloeiende drankjes), lasso's aan de muur, een groot bord
+  **UPGRADES** met pijlen, lantaarns en een krijtbord met **SPEED / POWER / LASSO**;
+- een **kampvuur** met echt vuur, een driepoot met een pan en drie bankjes van boomstammen;
+- een **grote eik** in het midden, twee **tenten** met scheerlijnen, slaaprollen en lantaarns, en **vlaggetjes**
+  van de tenten naar de boom;
+- een **trainingshoek**: drie lasso-doelen (palen met een hooi-kop met hoorns en een ring op de grond), een
+  oefenstier met een opgerolde lasso en een grote **houtstapel**;
+- een **hakblok met een bijl** en houtsnippers, bloemen, struiken, een mossige stronk, paddenstoelen, een ton,
+  een kist en een hooibaal;
+- een zanderige open plek met een rand van stenen en een pad naar de boog (in een apart model **Ground**).
+
+Old Pete (je NPC) staat het mooist achter de toonbank: daar ligt een onzichtbaar onderdeel `TrainerSpot`.
+Zet je NPC op die plek, of verplaats de stand als je hem liever ergens anders hebt.
+
 | Model | Parts |
 |---|---|
 | LassoShop | ~1350 |
 | AnimalMarket | ~1240 |
 | Worlds | ~1600 |
 | WranglerCamp | ~1400 |
+| UpgradeCamp | ~1410 |
 
 Alleen muren, veranda's, meubels en grote spullen botsen. Kleine versieringen hebben CanCollide, CanTouch en
 CanQuery uit. Er zijn weinig lampjes, en die hebben geen schaduw.
@@ -75,6 +102,7 @@ swap(workspace.LassoShop, workspace.HubBuildings.LassoShop)
 swap(workspace.AnimalMarket, workspace.HubBuildings.AnimalMarket)
 swap(workspace.Stagecoach, workspace.HubBuildings.Worlds)
 swap(workspace.WranglerCamp, workspace.HubBuildings.WranglerCamp)
+swap(workspace.UpgradeShop, workspace.HubBuildings.UpgradeCamp)
 ```
 
 SwapIn zet het nieuwe gebouw op precies dezelfde plek, met dezelfde draaiing, en maakt het net zo groot als het

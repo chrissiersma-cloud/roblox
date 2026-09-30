@@ -842,6 +842,210 @@ def hanging_sign_stand(g, pos, text):
                     surface_text(text, "Back", ppu=70, stroke="#6b3a14")])
 
 
+# ----------------------------------------------------------- upgrade camp ---
+
+def add_asset(g, asset, pos, yaw=0.0, k=1.0):
+    """Copies a forest-kit model (trees, bushes, flowers) into a Group, turned by yaw and scaled by k."""
+    Ry = angles(0, yaw, 0)
+    for p in asset.parts:
+        if p["transparency"] >= 1:
+            continue
+        g.parts.append({"shape": p["shape"], "name": p["name"], "size": tuple(v * k for v in p["size"]),
+                        "R": matmul(Ry, p["R"]), "p": add(pos, apply(Ry, scale(p["p"], k))), "color": p["color"],
+                        "material": p["material"], "collide": p["collide"], "shadow": p["shadow"],
+                        "transparency": p["transparency"], "reflectance": 0.0, "paint": None, "children": [],
+                        "id": None})
+
+
+def arrow_up(g, center, size, color, R=IDENTITY):
+    """A chunky up arrow (the upgrade symbol) facing local -Z."""
+    w = size
+    g.box("ArrowStem", (w * 0.42, w * 0.6, 0.15), at(center, R, (0, -w * 0.25, 0)), color, R=R, material="Neon", **DS)
+    for sgn in (-1, 1):
+        g.wedge("ArrowHead", (0.15, w * 0.5, w * 0.5), at(center, R, (sgn * w * 0.25, w * 0.3, 0)), color,
+                R=matmul(R, angles(0, 90 if sgn < 0 else -90, 0)), material="Neon", **DS)
+
+
+def trainer_booth(g, pos, yaw, rng):
+    """Old Pete's upgrade stand: a plank booth with a striped awning, a counter, shelves of upgrades and a big sign."""
+    R = angles(0, yaw, 0)
+    P = lambda x, y, z: at(pos, R, (x, y, z))
+    W, Dp = 9.0, 6.0
+    stripe = [C("#e0482c"), C("#fff4dc")]
+    # Platform with planks and a step.
+    g.box("BoothDeck", (W + 1, 0.6, Dp + 1), P(0, 0.3, 0), DEEP, R=R)
+    for i in range(7):
+        g.box("BoothPlank", (W + 1, 0.2, (Dp + 1) / 7 - 0.06), P(0, 0.68, -Dp / 2 - 0.5 + (i + 0.5) * (Dp + 1) / 7),
+              DECK if i % 2 else DECK2, R=R)
+    g.box("BoothStep", (3.0, 0.35, 0.9), P(0, 0.18, -Dp / 2 - 1.0), DECK2, R=R)
+    # Back wall of vertical planks, low side walls.
+    for i in range(10):
+        x = -W / 2 + 0.45 + i * (W - 0.9) / 9
+        g.box("BackPlank", (0.9, 6.4, 0.3), P(x, 3.9, Dp / 2), DECK if i % 2 else DECK2, R=R)
+    g.box("BackBeam", (W + 0.4, 0.4, 0.4), P(0, 7.2, Dp / 2), DARK, R=R, **D)
+    for sx in (-1, 1):
+        for j in range(4):
+            g.box("SidePlank", (0.3, 3.0, (Dp - 0.4) / 4 - 0.05), P(sx * W / 2, 2.3, -Dp / 2 + 0.3 + (j + 0.5) * (Dp - 0.4) / 4),
+                  DECK if j % 2 else DECK2, R=R)
+        g.box("SideRail", (0.4, 0.3, Dp), P(sx * W / 2, 3.9, 0), DARK, R=R, **D)
+    # Four log posts and a sloped, striped awning with a scalloped edge.
+    for sx in (-1, 1):
+        for z, h in ((-Dp / 2 + 0.3, 6.6), (Dp / 2 - 0.2, 7.6)):
+            g.octagon("BoothPost", 0.3, h, P(sx * (W / 2 + 0.1), 0.8 + h / 2, z), LOG)
+    n = 9
+    for i in range(n):
+        x = -W / 2 - 0.4 + (i + 0.5) * (W + 0.8) / n
+        g.box("Awning", ((W + 0.8) / n + 0.02, 0.2, Dp + 1.6), P(x, 7.9, -0.4), stripe[i % 2], R=matmul(R, angles(-9, 0, 0)))
+        g.cyl("AwningScallop", 0.2, (W + 0.8) / n, P(x, 7.25, -Dp / 2 - 1.15), stripe[i % 2], R=matmul(R, angles(0, 90, 0)),
+              **DS)
+    # Counter with panels and a bell, and a register with a big up arrow.
+    g.box("Counter", (W - 0.8, 3.0, 1.2), P(0, 2.3, -Dp / 2 + 1.2), DECK2, R=R)
+    g.box("CounterTop", (W - 0.4, 0.35, 1.8), P(0, 3.95, -Dp / 2 + 1.1), DECK, R=R)
+    for x in (-3, 0, 3):
+        g.box("CounterPanel", (2.4, 2.2, 0.12), P(x, 2.2, -Dp / 2 + 0.58), DECK, R=R, **D)
+        arrow_up(g, P(x, 2.2, -Dp / 2 + 0.5), 1.1, C("#5dff7a"), R=R)
+    g.octagon("Bell", 0.25, 0.3, P(3.4, 4.3, -Dp / 2 + 1.0), GOLD, collide=False)
+    # Shelves on the back wall with upgrades: boots, horseshoes, lassos and glowing potions.
+    for y in (4.4, 6.0):
+        g.box("Shelf", (W - 1.0, 0.25, 1.0), P(0, y, Dp / 2 - 0.65), DECK, R=R, **D)
+    for i, x in enumerate((-3.2, -1.6, 0, 1.6, 3.2)):
+        if i % 2 == 0:
+            g.box("Boot", (0.6, 0.9, 0.4), P(x - 0.25, 5.0, Dp / 2 - 0.7), C("#7a4a2a"), R=R, **D)
+            g.box("BootToe", (0.6, 0.4, 0.8), P(x - 0.25, 4.75, Dp / 2 - 0.95), C("#7a4a2a"), R=R, **DS)
+            g.box("BootSpur", (0.2, 0.2, 0.2), P(x - 0.25, 4.7, Dp / 2 - 0.4), GOLD, R=R, **DS)
+        else:
+            g.ring("ShelfHorseshoe", P(x, 5.05, Dp / 2 - 0.7), matmul(R, angles(90, 0, 0)), 0.45, 0.14, [GOLD], n=10,
+                   twist=False, **DS)
+        col = ["#5dff7a", "#5ad0ff", "#ffd23f", "#ff7be5", "#b58cff"][i]
+        g.octagon("Potion", 0.28, 0.7, P(x, 6.5, Dp / 2 - 0.7), C(col), material="Neon", collide=False)
+        g.octagon("PotionCork", 0.14, 0.25, P(x, 6.97, Dp / 2 - 0.7), DECK, collide=False)
+    for x in (-3.8, 3.8):
+        g.ring("WallLasso", P(x, 3.0, Dp / 2 - 0.3), matmul(R, angles(90, 0, 0)), 0.8, 0.18, [ROPE, ROPE2], n=14, **D)
+    # The big UPGRADES sign on top of the awning.
+    hanging_sign(g, "UPGRADES", P(0, 9.6, -Dp / 2 + 0.2), 8.0, 1.9, C("#f0a35a"), R=matmul(R, angles(-6, 0, 0)),
+                 stroke="#6b3a14")
+    for sx in (-1, 1):
+        arrow_up(g, P(sx * 5.0, 9.6, -Dp / 2 + 0.1), 1.4, C("#5dff7a"), R=R)
+        lantern(g, "BoothLantern", P(sx * (W / 2 - 0.4), 7.1, -Dp / 2 - 0.4), chain=0.4)
+    # Chalkboard with the three upgrades, and a round mat where the trainer can stand.
+    g.box("Chalkboard", (2.6, 3.0, 0.15), P(W / 2 + 1.4, 2.4, -Dp / 2 - 0.6), C("#2e3a33"), R=matmul(R, angles(10, -20, 0)),
+          children=[surface_text("SPEED\nPOWER\nLASSO", "Front", color="#ffffff", ppu=60)], **D)
+    g.rod("ChalkboardLeg", P(W / 2 + 0.3, 0, -Dp / 2 - 0.2), P(W / 2 + 0.6, 3.6, -Dp / 2 - 0.6), 0.18, DARK, **D)
+    g.rod("ChalkboardLeg", P(W / 2 + 2.5, 0, -Dp / 2 - 1.0), P(W / 2 + 2.2, 3.6, -Dp / 2 - 0.6), 0.18, DARK, **D)
+    g.box("TrainerSpot", (3.0, 0.1, 2.0), P(0, 0.83, Dp / 2 - 1.9), C("#c9803f"), transparency=1, collide=False,
+          shadow=False, pid="UpgradeCamp.TrainerSpot")
+
+
+def chopping_block(g, pos, rng):
+    x, _, z = pos
+    g.octagon("ChopBlock", 1.0, 1.6, (x, 0.8, z), LOG2)
+    g.octagon("ChopTop", 0.9, 0.1, (x, 1.62, z), LOG_END, collide=False)
+    g.octagon("ChopRing", 0.5, 0.12, (x, 1.63, z), LOG_RING, collide=False)
+    g.rod("AxeHandle", (x + 0.2, 1.65, z), (x + 1.2, 3.6, z + 0.3), 0.2, DECK, **D)
+    g.box("AxeHead", (0.12, 0.8, 1.0), (x + 0.15, 1.9, z - 0.1), C("#8c8c96"), rot=(0, 15, 25), reflectance=0.2, **D)
+    g.box("AxeEdge", (0.14, 0.8, 0.2), (x + 0.1, 1.85, z - 0.55), C("#d6d6de"), rot=(0, 15, 25), **DS)
+    for _ in range(8):
+        g.box("WoodChip", (0.35, 0.08, 0.2), (x + rng.uniform(-1.8, 1.8), 0.04, z + rng.uniform(-1.8, 1.8)), LOG_END,
+              rot=(0, rng.uniform(0, 180), 0), **DS)
+    for i in range(2):
+        log(g, "SplitLog", (x - 1.9, 0.35, z + 0.8 + 0.7 * i), (x - 0.9, 0.35, z + 0.9 + 0.7 * i), 0.6, LOG, collide=False)
+
+
+def woodpile(g, pos):
+    x, _, z = pos
+    for i, (dx, y) in enumerate(((0, 0.4), (0.8, 0.4), (1.6, 0.4), (2.4, 0.4), (0.4, 1.1), (1.2, 1.1), (2.0, 1.1),
+                                 (0.8, 1.8), (1.6, 1.8), (1.2, 2.5))):
+        log(g, "Firewood", (x + dx, y, z - 1.4), (x + dx, y, z + 1.4), 0.75, LOG2 if i % 2 else LOG)
+        cut_end(g, (x + dx, y, z - 1.42), 0.75, angles(0, 90, 0))
+    for sx in (-0.5, 2.9):
+        g.box("PileStake", (0.25, 3.2, 0.25), (x + sx, 1.6, z), DARK)
+
+
+def lasso_target(g, pos, rng):
+    """A post with a hay-stuffed target head and rope rings: practice lassoing."""
+    x, _, z = pos
+    g.octagon("TargetPost", 0.3, 4.2, (x, 2.1, z), DARK)
+    g.box("TargetHead", (1.6, 1.4, 1.4), (x, 4.6, z), C("#e8c35a"))
+    for dx in (-0.4, 0.4):
+        g.box("TargetStrap", (0.14, 1.44, 1.44), (x + dx, 4.6, z), C("#a8761c"), **D)
+    for sx in (-1, 1):
+        g.rod("TargetHorn", (x + sx * 0.6, 5.2, z), (x + sx * 1.4, 5.8, z - 0.2), 0.22, C("#f2ead8"), **D)
+    g.ring("TargetRing", (x, 0.1, z), IDENTITY, 1.8, 0.2, [C("#ffffff"), C("#e0482c")], n=18, twist=False, **DS)
+
+
+def upgrade_camp(rng):
+    import build_kit  # forest kit (on the path through build_entrance)
+    kit = {a.name: a for a in build_kit.make_kit()}
+    g = Group("UpgradeCamp")
+    ground = Group("Ground")
+    # A dirt clearing with a ring of stones (its own model: delete it to keep your own ground).
+    ground.cyl("Clearing", 0.2, 44, (0, 0.1, 0), C("#e6c088"), R=angles(0, 0, 90))
+    ground.cyl("ClearingInner", 0.22, 30, (0, 0.11, 0), C("#ecca95"), R=angles(0, 0, 90))
+    ground.box("EntrancePath", (8, 0.2, 10), (0, 0.1, -24), C("#e2b77f"))
+    for i in range(24):
+        t = 2 * math.pi * i / 24
+        if abs(math.sin(t)) < 0.97 or math.sin(t) > 0:  # leave a gap for the entrance at the front
+            ground.box("ClearingStone", (1.5, 0.3, 0.9), (math.cos(t) * 22.2, 0.15, math.sin(t) * 22.2), STONE[i % 3],
+                       rot=(0, -math.degrees(t) + 90, 0), collide=False)
+
+    # The big shade tree at the back, and two tents.
+    add_asset(g, kit["OakLarge"], (0, 0, 13), 30, 1.45)
+    for i, (dx, dz) in enumerate(((-2.5, -2.5), (2.8, -1.5), (-1.5, 2.8))):
+        g.octagon("Root", 0.55, 0.5, (dx, 0.25, 13 + dz), DARK, collide=False)
+    tent(g, (-12.5, 0, 8.5), 25, C("#f3ecd9"), C("#e0d3b0"), rng)
+    tent(g, (12.5, 0, 9.5), -25, C("#f3ecd9"), C("#e0d3b0"), rng)
+    # Campfire with three log benches.
+    campfire(g, (0, 0, -1.5))
+    for k, yaw in enumerate((0, 90, -90)):
+        Rb = angles(0, yaw, 0)
+        c = add((0, 0, -1.5), apply(Rb, (0, 0, 5.0)))
+        a, b = add(c, apply(Rb, (-2.3, 0.75, 0))), add(c, apply(Rb, (2.3, 0.75, 0)))
+        log(g, "BenchLog", a, b, 0.9, LOG)
+        for sgn in (-1, 1):
+            cut_end(g, add(c, apply(Rb, (sgn * 2.35, 0.75, 0))), 0.9, Rb)
+            g.octagon("BenchStump", 0.4, 0.4, add(c, apply(Rb, (sgn * 1.5, 0.2, 0))), DARK)
+    # Old Pete's upgrade booth on the right, with his chopping block.
+    trainer_booth(g, (13.5, 0, -6.0), -20, rng)
+    chopping_block(g, (19.5, 0, 1.5), rng)
+    # Training on the left: lasso targets, a practice steer, a woodpile.
+    for i, z in enumerate((-4.0, 2.0, 8.0)):
+        lasso_target(g, (-21.0 + (i % 2) * 1.5, 0, z), rng)
+    steer(g, (-13.0, 0, -10.0), 40)
+    rope_coil(g, (-10.0, 0.1, -13.0), IDENTITY, r=1.0, loops=3)
+    woodpile(g, (-19.0, 0, -12.5))
+    # The entrance arch with the camp's name, and lamp posts.
+    for sx in (-1, 1):
+        g.octagon("ArchPost", 0.5, 9.5, (sx * 5.5, 4.75, -20.0), LOG)
+        g.octagon("ArchFoot", 0.8, 0.6, (sx * 5.5, 0.3, -20.0), STONE[2])
+        g.octagon("ArchTop", 0.45, 0.3, (sx * 5.5, 9.65, -20.0), LOG_END, collide=False)
+        g.rod("ArchBrace", (sx * 5.5, 7.0, -20.0), (sx * 3.8, 8.8, -20.0), 0.35, LOG, **D)
+        lantern(g, "ArchLantern", (sx * 4.2, 8.6, -20.4), chain=0.3)
+        lamp_post(g, (sx * 9.0, 0, -18.0), yaw=0)
+    log(g, "ArchBeam", (-6.8, 9.0, -20.0), (6.8, 9.0, -20.0), 0.9, LOG2)
+    for sx in (-1, 1):
+        cut_end(g, (sx * 6.85, 9.0, -20.0), 0.9)
+    hanging_sign(g, "Old Pete's Camp", (0, 7.2, -20.0), 8.6, 1.9, C("#f0a35a"), stroke="#6b3a14",
+                 back_text="Old Pete's Camp")
+    for sx in (-1, 1):
+        g.box("SignChain", (0.12, 0.8, 0.12), (sx * 3.4, 8.5, -20.0), IRON, **DS)
+    for i, x in enumerate((-3.0, 0.0, 3.0)):
+        tri(g, "ArchPine", (x, 9.45, -20.0), 1.2, 1.6, 0.12, C(("#3f9e3a", "#58bb43", "#3f9e3a")[i]), **D)
+    # Bunting from the tents to the tree, flowers, bushes, a stump and mushrooms.
+    bunting(g, (-12.5, 5.9, 8.5), (0, 8.5, 11.0), ["#ff5a5a", "#ffd23f", "#45a6ff", "#52d273"])
+    bunting(g, (0, 8.5, 11.0), (12.5, 5.9, 9.5), ["#ffd23f", "#ff8fb8", "#45a6ff", "#ff9a3c"])
+    for name, x, z in (("FlowerPatch", -7.5, -15), ("FlowerPatch", 7.5, -15), ("FlowerPatch", -18, 14),
+                       ("FlowerPatch", 19, 12), ("BushSmall", -20.5, 13.5), ("BushLarge", 21, 7), ("BerryBush", -6, 18),
+                       ("MushroomCluster", 5.5, 17), ("StumpMossy", 17.5, 15.5), ("GrassTuft", -15, -17),
+                       ("GrassTuft", 15, -16), ("FlowerPatch", 3, -9.5), ("MushroomCluster", -24, -8)):
+        add_asset(g, kit[name], (x, 0, z), rng.uniform(0, 360), 1.0)
+    for sx in (-1, 1):
+        flower_box(g, (sx * 7.8, 0.4, -21.0), 3.2, rng)
+    barrel(g, "Barrel", (8.0, 0, 3.5))
+    crate(g, "Crate", (9.2, 0, 2.0), 1.2, yaw=20)
+    hay_bale(g, (-7.0, 0, 13.5), yaw=15)
+    return g, ground
+
+
 # ----------------------------------------------------------------- build ---
 
 SWAP_SOURCE = (HERE / "SwapIn.lua").read_text() if (HERE / "SwapIn.lua").exists() else ""
@@ -873,10 +1077,11 @@ def build():
     worlds = shop("Worlds", [C("#5a8fd9"), C("#4a7cc4"), C("#6aa0e6")], C("#4a7cc4"), "Worlds", rng,
                   globe_emblem, worlds_extras, [C("#4a7cc4"), C("#6aa0e6")])
     camp_g, ground = camp(rng)
+    upg, upg_ground = upgrade_camp(rng)
     buildings = [("LassoShop", [lasso]), ("AnimalMarket", [market]), ("Worlds", [worlds]),
-                 ("WranglerCamp", [camp_g, ground])]
+                 ("WranglerCamp", [camp_g, ground]), ("UpgradeCamp", [upg, upg_ground])]
     offsets = {"LassoShop": (-60, 0, 0), "AnimalMarket": (0, 0, 0), "Worlds": (60, 0, 0),
-               "WranglerCamp": (0, 0, 80)}
+               "WranglerCamp": (0, 0, 80), "UpgradeCamp": (80, 0, 80)}
     tree_models = []
     for name, groups in buildings:
         m = model(name, groups, ["HubBuilding"])
