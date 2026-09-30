@@ -656,9 +656,11 @@ def height_of(a):
     return round(top, 1)
 
 
-def build_instances(assets, spots, scatter_source):
+def build_instances(assets, spots, scatter_source, kit_name="CritterWoodsKit", scatter_name="ForestScatter",
+                    categories=CATEGORIES, model_props=None):
+    """model_props(asset) may return extra Model properties (for example LevelOfDetail)."""
     folders = {}
-    for cat, _ in CATEGORIES:
+    for cat, _ in categories:
         folders[cat] = {"class": "Folder", "name": cat, "children": []}
     for a in assets:
         origin = spots[a.name]
@@ -687,13 +689,13 @@ def build_instances(assets, spots, scatter_source):
         folders[a.category]["children"].append({
             "class": "Model", "name": a.name,
             "attrs": {"Category": a.category, "Zone": a.zone, "Height": height_of(a), "Description": a.note},
-            "tags": ["CritterWoodsKit"],
-            "props": {"PrimaryPart": {"ref": prim}},
+            "tags": [kit_name],
+            "props": {"PrimaryPart": {"ref": prim}, **(model_props(a) if model_props else {})},
             "children": kids,
         })
-    module = {"class": "ModuleScript", "name": "ForestScatter", "props": {"Source": scatter_source}}
-    return [{"class": "Folder", "name": "CritterWoodsKit", "attrs": {"Version": 1},
-             "children": [module] + [folders[c] for c, _ in CATEGORIES]}]
+    module = {"class": "ModuleScript", "name": scatter_name, "props": {"Source": scatter_source}}
+    return [{"class": "Folder", "name": kit_name, "attrs": {"Version": 1},
+             "children": [module] + [folders[c] for c, _ in categories]}]
 
 
 # --------------------------------------------------------------- preview --

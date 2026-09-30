@@ -38,7 +38,8 @@ await document.fonts.load('600 40px "Fredoka"');
 const params = new URLSearchParams(location.search);
 const W = +(params.get("w") || 1600), H = +(params.get("h") || 900);
 const sceneData = await (await fetch(params.get("scene"))).json();
-const animals = await (await fetch(sceneData.modelsFile || "animals.json")).json();
+const animals = sceneData.models.length ? await (await fetch(sceneData.modelsFile || "animals.json")).json()
+  : [{ children: [] }];
 const templates = Object.fromEntries(animals[0].children.map(m => [m.name, m]));
 const shot = sceneData.shots[params.get("shot")];
 const env = { ...sceneData.env, ...(shot.env || {}) };
