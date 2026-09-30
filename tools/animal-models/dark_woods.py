@@ -149,6 +149,39 @@ def chain(a, name, pts, thickness, color, **kw):
                     color, **kw)
 
 
+_PIECES = ("", "Top", "Bottom", "BevelL", "BevelR", "BevelLowL", "BevelLowR")
+
+
+def unfight(a, *names, d=0.03):
+    """Grows overlay pieces (a belly, saddle or mask over the body) by `d` on every side. Otherwise their faces lie
+    exactly on the body's faces, and Roblox shows flickering stripes there (z-fighting)."""
+    for name in names:
+        group = [p for p in a.parts if p["name"] in {name + s for s in _PIECES}]
+        R = find(a, name)["R"]
+        cols = [tuple(R[i][j] for i in range(3)) for j in range(3)]
+        lo, hi = [1e9] * 3, [-1e9] * 3
+        for p in group:
+            half = scale(p["size"], 0.5)
+            for corner in ((x, y, z) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)):
+                q = add(p["p"], apply(p["R"], tuple(c * h for c, h in zip(corner, half))))
+                for j in range(3):
+                    v = sum(q[i] * cols[j][i] for i in range(3))
+                    lo[j], hi[j] = min(lo[j], v), max(hi[j], v)
+        center = [(l + h) / 2 for l, h in zip(lo, hi)]
+        k = [(h - l + 2 * d) / (h - l) for l, h in zip(lo, hi)]
+        for p in group:
+            local = [sum(p["p"][i] * cols[j][i] for i in range(3)) - center[j] for j in range(3)]
+            new = [center[j] + local[j] * k[j] for j in range(3)]
+            p["p"] = tuple(sum(cols[j][i] * new[j] for j in range(3)) for i in range(3))
+            # Scale each of the part's own axes by the factor of the group axis it lines up with.
+            size = []
+            for m in range(3):
+                axis = tuple(p["R"][i][m] for i in range(3))
+                j = max(range(3), key=lambda j: abs(sum(axis[i] * cols[j][i] for i in range(3))))
+                size.append(p["size"][m] * k[j])
+            p["size"] = tuple(size)
+
+
 def extras(a, attrs=None, highlight=None, script=True):
     a.dw_attrs = attrs or {}
     a.dw_highlight = highlight
@@ -195,6 +228,7 @@ def mossback_toad():
             a.paw(f"FootB{S}", (3.0 * s, 0, 0.9), 1.7, 2.4, dark, h=0.45, toes=3)
 
     a.ride_height, a.ride_z = 4.3, 0.4
+    unfight(a, "Belly", "Chin", "Moss")
     extras(a, script=False)
     return a
 
@@ -204,7 +238,7 @@ def shroom_snail():
     skin, sole, gill, red = C("#d8c3a5"), C("#efe0c8"), C("#f2e2c8"), C("#e04a3c")
 
     a.bevel("Body", (3.0, 1.4, 7.4), (0, 0.7, 0.9), skin, b=0.5)
-    a.box("Sole", (3.1, 0.3, 7.0), (0, 0.15, 0.9), sole, role="Secondary")
+    a.box("Sole", (3.1, 0.34, 7.0), (0, 0.15, 0.9), sole, role="Secondary")
     a.wedge("TailTip", (2.6, 1.0, 1.8), (0, 0.5, 5.4), skin, rot=(0, 180, 0))
     a.oct("Neck", (2.4, 3.0, 2.2), (0, 2.0, -2.3), skin, b=0.6)
     # The shell is a big spotted toadstool.
@@ -306,9 +340,9 @@ def night_hedgehog():
         a.taper("Snout", (1.4, 1.0), (0.9, 0.7), 1.2, (0, 1.75, -3.9), cream, r=0.3)
         a.bevel("Nose", (0.6, 0.45, 0.35), (0, 1.9, -4.55), EYE, b=0.12, **DETAIL)
         a.box("NoseShine", (0.18, 0.1, 0.06), (-0.12, 2.02, -4.74), WHITE, **DETAIL)
-        a.box("Smile", (0.5, 0.1, 0.08), (0, 1.35, -4.45), C("#5a2a3a"), **DETAIL)
+        a.box("Smile", (0.5, 0.1, 0.08), (0, 1.45, -4.53), C("#5a2a3a"), **DETAIL)
         for s, S in SIDES:
-            a.eye2(f"Eye{S}", (0.72 * s, 2.55, -3.52), w=0.72, h=0.9)
+            a.eye2(f"Eye{S}", (0.72 * s, 2.45, -3.52), w=0.72, h=0.9)
             a.box(f"Cheek{S}", (0.45, 0.25, 0.1), (1.05 * s, 1.95, -3.52), PINK, **DETAIL)
             a.oct(f"Ear{S}", (0.75, 0.75, 0.4), (1.15 * s, 3.25, -2.0), brown, b=0.2)
 
@@ -373,6 +407,7 @@ def glowmoth():
                   cyan, name=f"WingTrail{S}", lifetime=0.45, color2=C("#8a5cff"))
 
     a.ride_height, a.ride_z = y + 1.4, 0.5
+    unfight(a, "WingBandL", "WingBandR", "EyeSpotCoreL", "EyeSpotCoreR", d=0.02)
     extras(a, attrs={"FlapSpeed": 8, "FlapAngle": 32, "Hover": 0.8, "HoverSpeed": 1.8})
     return a
 
@@ -420,6 +455,7 @@ def hollow_badger():
         a.oct("Tail", (1.2, 1.0, 1.4), (0, 3.7, 4.6), C("#b9b9c4"), b=0.35, role="Secondary")
 
     a.ride_height, a.ride_z = 5.0, 0.7
+    unfight(a, "Belly")
     extras(a, script=False)
     return a
 
@@ -553,6 +589,8 @@ def wisp_lynx():
                                    accel=(0, 2, 0))])
             trail(a, f"Wisp{i}", add(pos, (0, 0.25, 0)), add(pos, (0, -0.25, 0)), wisp, name=f"WispTrail{i}",
                   lifetime=0.7, color2=C("#5ea8ff"))
+    unfight(a, "Belly", "FaceMask", "Chest")
+    unfight(a, "Saddle", d=0.04)  # the fur is see-through, so even its inner faces must not line up with the body
     extras(a, attrs={"OrbitSpeed": 1.1, "TailSway": 18},
            highlight=(wisp, wisp, 0.82, 0.35))
     return a
@@ -619,6 +657,7 @@ def moonraven():
                   lifetime=0.8, color2=C("#8a7dff"))
 
     a.ride_height, a.ride_z = 7.0, 0.4
+    unfight(a, "WingSheenL", "WingSheenR", d=0.02)
     extras(a, attrs={"OrbitSpeed": 0.9}, highlight=(pale, C("#cdd6ff"), 1.0, 0.25))
     return a
 
@@ -682,6 +721,7 @@ def umbra_panther():
         fx(a, f"PawF{S}", emitter("ShadowStep", C("#2a1640"), rate=3, lifetime=(0.5, 0.9), speed=(0.2, 0.6),
                                   sizes=((0, 1.0), (1, 2.0)), transparency=((0, 0.5), (1, 1)), light=0, emit="Bottom"))
     trail(a, "TailTip", *near(a, "TailTip", 0.4), void, name="TailTrail", lifetime=0.6, color2=C("#3a1466"))
+    unfight(a, "Belly", "Saddle", "FaceMask", "Chest")
     extras(a, attrs={"OrbitSpeed": 0.8, "TailSway": 20}, highlight=(void, void, 1.0, 0.15))
     return a
 
@@ -713,7 +753,7 @@ def mossking_elk():
 
     def head_extra(a):
         a.box("Beard", (1.4, 1.4, 0.8), (0, 8.2, -4.2), moss, role="Secondary")
-        a.box("BeardTip", (0.9, 0.8, 0.6), (0, 7.3, -4.1), moss2, role="Secondary")
+        a.box("BeardTip", (0.9, 0.8, 0.6), (0, 7.3, -4.13), moss2, role="Secondary")
 
     _deer(a, fur, light_c, hoof, antlers=antlers, head_extra=head_extra, iris=C("#2a6f7a"), tail=light_c)
     for part in a.parts:
@@ -756,6 +796,10 @@ def mossking_elk():
     beam(a, "Shroom0R", add(t0, (0, 0.8, 0)), "Shroom0L", add(t1, (0, 0.8, 0)), glow, name="LifeArc",
          width=(0.5, 0.5), curve=(4, -4), transparency=((0, 0.2), (0.5, 0.05), (1, 0.2)), segments=24,
          R0=angles(0, 0, 90), R1=angles(0, 0, 90), color2=C("#b8ff6a"), texture=SPARKLE_TEXTURE, texture_speed=1.5)
+    unfight(a, "Belly", "Chest", "Jaw")
+    # The smile from _deer sits flush with the front of the jaw; move it out a little so it doesn't flicker.
+    smile = find(a, "Smile")
+    smile["p"] = add(smile["p"], (0, 0, -0.05))
     extras(a, attrs={"OrbitSpeed": 0.35}, highlight=(glow, glow, 1.0, 0.55))
     return a
 
@@ -794,6 +838,8 @@ def nightshade_drake():
         for row, yy in enumerate((y - 0.35, y + 0.35)):
             for i, z in enumerate((-1.6, -0.7, 0.2, 1.1, 2.0, 2.9)):
                 zz = z + 0.45 * row
+                if row == 1 and i == 0:
+                    continue  # this one would sit inside the shoulder
                 col = plate_c if (i + row) % 2 else dark
                 a.box(f"Scale{row}{i}{S}", (0.12, 0.5, 0.7), (1.92 * s, yy, zz), col, **DETAIL)
     a.bevel("Belly", (2.4, 0.4, 6.8), (0, y - 1.5, 0.3), glow, b=0.12, bottom=0.12, **GLOW)
@@ -818,8 +864,9 @@ def nightshade_drake():
             if i > 0:
                 knuckle(a, f"NeckJoint{i}", neck[i], neck[i - 1], neck[i + 1], 1.95 - 0.2 * i, body)
             mid = _lerp(neck[i], neck[i + 1], 0.5)
-            seg(a, f"Throat{i}", add(neck[i], (0, -0.75 + 0.1 * i, -0.2)), add(neck[i + 1], (0, -0.65 + 0.1 * i, -0.2)),
-                0.5, glow, **GLOW)
+            d = unit(sub(neck[i + 1], neck[i]))
+            under = scale((0, d[2], -d[1]), (1.9 - 0.2 * i) / 2 - 0.12)
+            seg(a, f"Throat{i}", add(neck[i], under), add(neck[i + 1], under), 0.5, glow, **GLOW)
             a.wedge(f"NeckSpike{i}", (0.35, 0.9, 0.8), add(mid, (0, 1.05 - 0.1 * i, 0.3)), dark, rot=(-35, 180, 0),
                     role="Accent")
         a.oct("Skull", (2.6, 1.9, 2.6), (0, y + 3.7, -5.9), body, b=0.6, bottom=0.4)
