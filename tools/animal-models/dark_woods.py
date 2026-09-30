@@ -127,6 +127,28 @@ def near(a, part_name, dy=0.25):
     return add(p, (0, dy, 0)), add(p, (0, -dy, 0))
 
 
+def seg(a, name, p, q, t, color, ext=0.5, **kw):
+    """Square beam from p to q that runs a little past both ends, so chains of beams have no gaps at the bends."""
+    d = unit(sub(q, p))
+    e = t * ext
+    return a.beam(name, sub(p, scale(d, e)), add(q, scale(d, e)), t, color, **kw)
+
+
+def knuckle(a, name, p, before, after, t, color, **kw):
+    """Joint block where two beams meet, turned halfway between both directions."""
+    d = unit(add(unit(sub(p, before)), unit(sub(after, p))))
+    return a.box(name, (t, t, t), p, color, R=aim(d), **kw)
+
+
+def chain(a, name, pts, thickness, color, **kw):
+    """Beams through a list of points, with joint blocks at every bend."""
+    for i in range(len(pts) - 1):
+        seg(a, f"{name}{i}", pts[i], pts[i + 1], thickness[i], color, **kw)
+        if i > 0:
+            knuckle(a, f"{name}Joint{i}", pts[i], pts[i - 1], pts[i + 1], (thickness[i - 1] + thickness[i]) / 2 * 1.02,
+                    color, **kw)
+
+
 def extras(a, attrs=None, highlight=None, script=True):
     a.dw_attrs = attrs or {}
     a.dw_highlight = highlight
@@ -186,12 +208,12 @@ def shroom_snail():
     a.wedge("TailTip", (2.6, 1.0, 1.8), (0, 0.5, 5.4), skin, rot=(0, 180, 0))
     a.oct("Neck", (2.4, 3.0, 2.2), (0, 2.0, -2.3), skin, b=0.6)
     # The shell is a big spotted toadstool.
-    a.oct("Gills", (5.0, 0.5, 5.0), (0, 1.75, 1.6), gill, b=1.0, role="Secondary")
+    a.oct("Gills", (5.0, 0.6, 5.0), (0, 1.7, 1.6), gill, b=0.2, role="Secondary")
     for i, x in enumerate((-1.5, -0.5, 0.5, 1.5)):
         a.box(f"Gill{i}", (0.12, 0.3, 4.4), (x, 1.62, 1.6), C("#d9c3a2"), **DETAIL)
     a.oct("Cap", (6.2, 1.6, 6.2), (0, 2.75, 1.6), red, b=0.6, bottom=0.4)
     a.oct("CapUpper", (4.6, 1.2, 4.6), (0, 4.15, 1.6), red, b=0.5)
-    a.oct("CapPeak", (2.8, 0.7, 2.8), (0, 5.05, 1.6), red, b=0.4)
+    a.oct("CapPeak", (2.8, 0.7, 2.8), (0, 5.05, 1.6), red, b=0.3)
     a.box("CapShine", (1.8, 0.14, 0.5), (-0.6, 4.78, 0.5), C("#ff7a66"), rot=(0, -20, 0), **DETAIL)
     for i, (x, z) in enumerate([(3.12, 0.9), (3.12, 2.6), (-3.12, 0.5), (-3.12, 2.3)]):
         a.box(f"SideSpot{i}", (0.12, 0.7, 0.8), (x, 2.75, z), WHITE, **DETAIL)
@@ -247,7 +269,7 @@ def duskbat():
             a.beam(f"Finger0{S}", add(pivot, (0.1 * s, 0.1, -0.7)), add(pivot, (5.4 * s, 0.1, -0.8)), 0.22, bone_c)
             a.beam(f"Finger1{S}", add(pivot, (3.0 * s, 0.1, -0.6)), add(pivot, (4.2 * s, 0.1, 0.9)), 0.16, bone_c)
             for i, x in enumerate((1.0, 2.4, 3.6, 4.8)):
-                a.tri(f"Scallop{i}{S}", add(pivot, (x * s, 0, 1.4 - 0.25 * (x > 3))), 1.0, 0.6, 0.16, wing,
+                a.tri(f"Scallop{i}{S}", add(pivot, (x * s, 0, 1.4 if x < 3 else 0.85)), 1.0, 0.6, 0.16, wing,
                       R=angles(90, 0, 0), studs=False)
             # Short dusky streaks behind the wing tips while it flies.
             trail(a, f"WingTip{S}", add(pivot, (5.45 * s, 0.1, -0.6)), add(pivot, (5.45 * s, 0.1, -1.0)),
@@ -416,11 +438,11 @@ def barkling():
                                    (0.9, 2.22, 3.2), (-0.8, 2.22, 2.6)]):
         size = (0.14, h, 0.35) if abs(x) > 2 else (0.35, h, 0.14)
         a.box(f"Groove{i}", size, (x, 4.2, z), groove, **DETAIL)
-    a.oct("CutTop", (3.8, 0.3, 3.8), (0, 6.85, 0), cut, b=0.9, role="Secondary")
-    a.oct("CutRing", (2.2, 0.34, 2.2), (0, 6.87, 0), ring, b=0.5, **DETAIL)
+    a.oct("CutTop", (3.8, 0.3, 3.8), (0, 6.82, 0), cut, b=0.12, role="Secondary")
+    a.oct("CutRing", (2.2, 0.34, 2.2), (0, 6.86, 0), ring, b=0.12, **DETAIL)
     a.box("MossFront", (2.6, 0.6, 0.3), (-0.5, 2.3, -2.25), moss, role="Secondary")
     a.post("ShroomStem", (0.4, 0.8, 0.4), (2.3, 3.5, 0.6), C("#f7f1e3"), b=0.1, role="Accent")
-    a.oct("ShroomCap", (1.4, 0.5, 1.4), (2.3, 4.0, 0.6), C("#e04a3c"), b=0.25, role="Accent")
+    a.oct("ShroomCap", (1.4, 0.5, 1.4), (2.3, 4.0, 0.6), C("#e04a3c"), b=0.2, role="Accent")
 
     # Face: glowing eyes under bark brows and a wooden grin.
     for s, S in SIDES:
@@ -573,7 +595,7 @@ def moonraven():
             for i, (y, length) in enumerate([(3.7, 2.6), (4.15, 2.2), (4.6, 1.8)]):
                 a.box(f"Primary{i}{S}", (0.45, 0.45, length), (1.75 * s, y, 3.0 + length / 2), black, rot=(10, 0, 0))
         with a.bone(f"Leg{S}", "Body", (0.7 * s, 2.6, 0.6)):
-            a.post(f"Leg{S}", (0.4, 2.2, 0.4), (0.7 * s, 1.5, 0.6), beak, b=0.1, role="Accent")
+            a.post(f"Leg{S}", (0.4, 3.0, 0.4), (0.7 * s, 1.6, 0.6), beak, b=0.1, role="Accent")
             for j, yaw in enumerate((-25, 0, 25)):
                 R = angles(0, yaw, 0)
                 a.box(f"Toe{j}{S}", (0.25, 0.25, 1.1), add((0.7 * s, 0.13, 0.6), apply(R, (0, 0, -0.5))), beak, R=R,
@@ -611,8 +633,7 @@ def umbra_panther():
     def tail(a):
         with a.bone("Tail", "Body", (0, 5.4, 4.1)):
             pts = [(0, 5.4, 4.1), (0, 5.0, 6.2), (0, 5.6, 8.0), (0, 7.2, 9.0), (0, 8.6, 8.6)]
-            for i in range(4):
-                a.beam(f"Tail{i}", pts[i], pts[i + 1], 1.0 - 0.12 * i, fur)
+            chain(a, "Tail", pts, [1.0 - 0.12 * i for i in range(4)], fur)
             a.box("TailTip", (0.8, 0.8, 0.8), (0, 8.9, 8.4), void, rot=(45, 0, 45), **GLOW)
 
     def head_extra(a):
@@ -683,8 +704,8 @@ def mossking_elk():
             for i, (u, v) in enumerate([(base, p1), (p1, p2), (p2, p3), (p1, p4), (p2, p5)]):
                 a.rod(f"Antler{i}{S}", u, v, 0.45 - 0.05 * i, wood, role="Accent")
             for i, tip in enumerate((p3, p4, p5)):
-                a.box(f"Shroom{i}{S}", (0.9, 0.35, 0.9), add(tip, (0, 0.3, 0)), glow, **GLOW)
-                a.box(f"ShroomTop{i}{S}", (0.5, 0.25, 0.5), add(tip, (0, 0.55, 0)), glow2, **GLOW)
+                a.box(f"Shroom{i}{S}", (0.9, 0.35, 0.9), add(tip, (0, 0.1, 0)), glow, **GLOW)
+                a.box(f"ShroomTop{i}{S}", (0.5, 0.25, 0.5), add(tip, (0, 0.36, 0)), glow2, **GLOW)
                 find(a, f"Shroom{i}{S}")["pulse"] = 1.6 + 0.3 * i
             tips.append(p3)
             for i, (pt, rot) in enumerate([(p1, 20), (p2, -30)]):
@@ -793,10 +814,12 @@ def nightshade_drake():
     with a.bone("Head", "Body", (0, y + 1.0, -2.8)):
         neck = [(0, y + 0.7, -2.9), (0, y + 1.8, -3.9), (0, y + 2.8, -4.7), (0, y + 3.5, -5.4)]
         for i in range(3):
-            a.beam(f"Neck{i}", neck[i], neck[i + 1], 1.9 - 0.2 * i, body)
+            seg(a, f"Neck{i}", neck[i], neck[i + 1], 1.9 - 0.2 * i, body)
+            if i > 0:
+                knuckle(a, f"NeckJoint{i}", neck[i], neck[i - 1], neck[i + 1], 1.95 - 0.2 * i, body)
             mid = _lerp(neck[i], neck[i + 1], 0.5)
-            a.beam(f"Throat{i}", add(neck[i], (0, -0.75 + 0.1 * i, -0.2)), add(neck[i + 1], (0, -0.65 + 0.1 * i, -0.2)),
-                   0.5, glow, **GLOW)
+            seg(a, f"Throat{i}", add(neck[i], (0, -0.75 + 0.1 * i, -0.2)), add(neck[i + 1], (0, -0.65 + 0.1 * i, -0.2)),
+                0.5, glow, **GLOW)
             a.wedge(f"NeckSpike{i}", (0.35, 0.9, 0.8), add(mid, (0, 1.05 - 0.1 * i, 0.3)), dark, rot=(-35, 180, 0),
                     role="Accent")
         a.oct("Skull", (2.6, 1.9, 2.6), (0, y + 3.7, -5.9), body, b=0.6, bottom=0.4)
@@ -820,11 +843,10 @@ def nightshade_drake():
             # Big horns swept back, cheek horns, and fins behind the jaw.
             h0, h1, h2, h3 = (0.8 * s, y + 4.4, -5.9), (1.25 * s, y + 5.2, -4.6), (1.5 * s, y + 5.6, -3.2), \
                 (1.45 * s, y + 6.3, -2.1)
-            for i, (p, q, t) in enumerate([(h0, h1, 0.55), (h1, h2, 0.4), (h2, h3, 0.26)]):
-                a.beam(f"Horn{i}{S}", p, q, t, horn, role="Accent")
+            chain(a, f"Horn{S}_", [h0, h1, h2, h3], [0.55, 0.4, 0.26], horn, role="Accent")
             a.box(f"HornTip{S}", (0.32, 0.32, 0.32), h3, glow, rot=(45, 0, 45), **GLOW)
-            a.beam(f"CheekHorn{S}", (1.25 * s, y + 3.4, -6.0), (2.1 * s, y + 3.85, -4.7), 0.3, horn, role="Accent")
-            a.beam(f"BrowHorn{S}", (0.9 * s, y + 4.6, -6.9), (1.4 * s, y + 5.1, -6.5), 0.22, horn, role="Accent")
+            seg(a, f"CheekHorn{S}", (1.25 * s, y + 3.4, -6.0), (2.1 * s, y + 3.85, -4.7), 0.3, horn, role="Accent")
+            seg(a, f"BrowHorn{S}", (0.9 * s, y + 4.6, -6.9), (1.4 * s, y + 5.1, -6.5), 0.22, horn, role="Accent")
             for i, (yy, rz) in enumerate([(y + 3.4, -25), (y + 2.8, -45)]):
                 a.wedge(f"Fin{i}{S}", (0.18, 1.2, 1.5), (1.45 * s, yy, -5.2), dark, rot=(0, 180, rz * s), role="Accent")
                 a.box(f"FinGlow{i}{S}", (0.2, 0.12, 1.2), (1.6 * s, yy + 0.55, -5.0), glow, rot=(0, 0, rz * s), **GLOW)
@@ -845,14 +867,15 @@ def nightshade_drake():
             lift = lambda v: add(pivot, apply(Rw, sub(v, pivot)))
             elbow, wrist, root = lift(elbow), lift(wrist), lift(root)
             fingers = [lift(f) for f in fingers]
-            a.beam(f"UpperArm{S}", pivot, elbow, 0.85, body)
-            a.beam(f"Forearm{S}", elbow, wrist, 0.65, body)
+            seg(a, f"UpperArm{S}", pivot, elbow, 0.85, body)
+            seg(a, f"Forearm{S}", elbow, wrist, 0.65, body)
+            knuckle(a, f"Elbow{S}", elbow, pivot, wrist, 0.8, body)
             a.box(f"Knuckle{S}", (0.7, 0.7, 0.7), wrist, dark, rot=(45, 0, 45), role="Accent")
             a.wedge(f"Thumb{S}", (0.3, 0.8, 0.6), add(wrist, (0.1 * s, 0.6, -0.5)), horn, rot=(-30, 0, 0), role="Accent")
             a.wedge(f"ElbowSpike{S}", (0.3, 0.8, 0.7), add(elbow, (0, 0.6, 0.2)), dark, rot=(0, 180, 0), role="Accent")
             for i, f in enumerate(fingers):
-                a.beam(f"Finger{i}{S}", wrist, f, 0.36 - 0.04 * i, body)
-                a.beam(f"Vein{i}{S}", add(wrist, (0, -0.2, 0)), add(f, (0, -0.2, 0)), 0.1, glow, **GLOW)
+                seg(a, f"Finger{i}{S}", wrist, f, 0.36 - 0.04 * i, body, ext=0.8)
+                seg(a, f"Vein{i}{S}", add(wrist, (0, -0.2, 0)), add(f, (0, -0.2, 0)), 0.1, glow, **GLOW)
             a.box(f"WingTip{S}", (0.5, 0.5, 0.5), fingers[0], glow, rot=(45, 0, 45), **GLOW)
             find(a, f"WingTip{S}")["pulse"] = 1.2
             # Membranes: the fan between the fingers, then the part between the last finger and the body.
@@ -863,7 +886,7 @@ def nightshade_drake():
             membrane(a, f"MembraneBase{S}", pivot, elbow, root, inner, strips=2, **DETAIL)
             # Glowing trailing edge.
             for i in range(4):
-                a.beam(f"Edge{i}{S}", pts[i], pts[i + 1], 0.12, glow, **GLOW)
+                seg(a, f"Edge{i}{S}", pts[i], pts[i + 1], 0.12, glow, ext=1.0, **GLOW)
 
     # ---- tail: six segments with spikes, a glowing underside and a spade blade ----
     with a.bone("Tail", "Body", (0, y, 3.6)):
@@ -871,9 +894,11 @@ def nightshade_drake():
                (1.4, y - 3.8, 12.3), (1.9, y - 4.4, 13.2)]
         for i in range(6):
             t = 1.6 - 0.22 * i
-            a.beam(f"Tail{i}", pts[i], pts[i + 1], t, body)
+            seg(a, f"Tail{i}", pts[i], pts[i + 1], t, body)
+            if i > 0:
+                knuckle(a, f"TailJoint{i}", pts[i], pts[i - 1], pts[i + 1], t + 0.12, body)
             mid = _lerp(pts[i], pts[i + 1], 0.5)
-            a.beam(f"TailGlow{i}", add(pts[i], (0, -t / 2, 0)), add(pts[i + 1], (0, -t / 2 + 0.1, 0)), 0.22, glow,
+            seg(a, f"TailGlow{i}", add(pts[i], (0, -t / 2, 0)), add(pts[i + 1], (0, -t / 2 + 0.1, 0)), 0.22, glow,
                    **GLOW)
             a.wedge(f"TailSpike{i}", (0.3, 0.8 - 0.08 * i, 0.9), add(mid, (0, t / 2 + 0.3, 0)), dark, rot=(0, 180, 0),
                     role="Accent")
@@ -887,15 +912,15 @@ def nightshade_drake():
     for s, S in SIDES:
         with a.bone(f"LegB{S}", "Body", (1.5 * s, y - 0.6, 2.6)):
             a.oct(f"Thigh{S}", (1.4, 2.2, 2.2), (1.75 * s, y - 1.1, 2.7), body, b=0.4)
-            a.beam(f"Shin{S}", (1.75 * s, y - 2.0, 3.1), (1.75 * s, y - 3.4, 2.3), 0.8, dark)
+            seg(a, f"Shin{S}", (1.75 * s, y - 2.0, 3.1), (1.75 * s, y - 3.4, 2.3), 0.8, dark)
             a.box(f"Foot{S}", (1.0, 0.4, 1.4), (1.75 * s, y - 3.65, 1.9), dark)
             for j, dx in enumerate((-0.35, 0, 0.35)):
-                a.wedge(f"Talon{j}{S}", (0.22, 0.35, 0.6), (1.75 * s + dx, y - 3.72, 0.95), horn, rot=(0, 0, 0),
+                a.wedge(f"Talon{j}{S}", (0.22, 0.35, 0.6), (1.75 * s + dx, y - 3.72, 1.1), horn, rot=(0, 0, 0),
                         role="Accent")
             a.wedge(f"Spur{S}", (0.2, 0.3, 0.5), (1.75 * s, y - 3.5, 2.75), horn, rot=(0, 180, 0), role="Accent")
         with a.bone(f"LegF{S}", "Body", (1.4 * s, y - 0.7, -2.3)):
-            a.beam(f"Arm{S}", (1.45 * s, y - 0.9, -2.3), (1.6 * s, y - 2.1, -2.9), 0.65, body)
-            a.beam(f"Hand{S}", (1.6 * s, y - 2.1, -2.9), (1.5 * s, y - 2.8, -3.5), 0.5, dark)
+            seg(a, f"Arm{S}", (1.45 * s, y - 0.9, -2.3), (1.6 * s, y - 2.1, -2.9), 0.65, body)
+            seg(a, f"Hand{S}", (1.6 * s, y - 2.1, -2.9), (1.5 * s, y - 2.8, -3.5), 0.5, dark)
             for j, dx in enumerate((-0.25, 0.25)):
                 a.wedge(f"Claw{j}{S}", (0.2, 0.3, 0.45), (1.5 * s + dx, y - 3.0, -3.85), horn, role="Accent")
 
