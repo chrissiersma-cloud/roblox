@@ -154,16 +154,17 @@ local P = {
 		idle = "breath", every = { 7, 11 },
 	},
 	ThunderUnicorn = {
-		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 26, bounce = 0.45, headBob = 5,
-		walkSpeed = 16, breathe = 0.1, maxCycles = 2.4,
-		step = { tex = "spark", c = { "#fff7c2", "#4fd6ff" }, size = { 0.9, 0 }, life = { 0.3, 0.6 }, speed = { 6, 12 },
-			spread = 75, count = 14, drag = 2 },
-		stepSpark = { tex = "smoke", c = { "#c9d3f5", "#7f8cc0" }, size = { 1.6, 3.2 }, life = { 0.5, 0.9 },
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11.5, swing = 27, bounce = 0.5, headBob = 5,
+		walkSpeed = 16, breathe = 0.1, maxCycles = 2.4, flapBoost = 1.6, wingRun = 38,
+		step = { tex = "spark", c = { "#e9fdff", "#4fe3ff" }, size = { 1.0, 0 }, life = { 0.3, 0.6 }, speed = { 6, 12 },
+			spread = 75, count = 16, drag = 2 },
+		stepSpark = { tex = "smoke", c = { "#a9b3e8", "#3d4580" }, size = { 1.8, 3.6 }, life = { 0.5, 0.9 },
 			speed = { 2, 5 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
-		stepRing = { color = "#4fd6ff", radius = 5, time = 0.35 },
-		aura = { at = "HornTip", tex = "spark", c = { "#ffffff", "#4fd6ff" }, size = { 0.6, 0 }, life = { 0.3, 0.6 },
-			speed = { 2, 6 }, rate = 30, spread = 180 },
-		idle = "thunder", every = { 7, 11 },
+		stepRing = { color = "#4fe3ff", radius = 6, time = 0.35 },
+		stepBolt = { chance = 0.3, color = "#e9fdff", glow = "#4fe3ff" },
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#4fe3ff" }, size = { 0.7, 0 }, life = { 0.3, 0.6 },
+			speed = { 3, 8 }, rate = 40, spread = 180 },
+		idle = { "storm", "thunder" }, every = { 6, 10 },
 	},
 	Pony = {
 		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 7, swing = 30, bounce = 0.4, headBob = 7,
@@ -366,6 +367,8 @@ local function stream(key: string, at: string, spec, seconds: number)
 end
 
 local fxOn = true
+local running = 0 -- 0..1, how much the animal is running (set every frame)
+local lightning: (Vector3, Vector3, string, number) -> () -- defined further down
 
 local function footstep(pos: Vector3)
 	if not fxOn then
@@ -382,10 +385,16 @@ local function footstep(pos: Vector3)
 	if r then
 		groundRing(pos, r.color, r.radius, r.time)
 	end
+	local b = profile.stepBolt
+	if b and running > 0.5 and math.random() < b.chance then
+		local hit = Vector3.new(pos.X + math.random(-6, 6), groundY(), pos.Z + math.random(-6, 6))
+		lightning(hit + Vector3.new(math.random(-4, 4), 40, math.random(-4, 4)), hit, b.color, 0.35)
+		groundRing(hit, b.glow, 4, 0.3)
+	end
 end
 
 -- A lightning bolt from `from` down to `to`: a jagged line of Neon pieces that flashes and fades.
-local function lightning(from: Vector3, to: Vector3, color: string, width: number)
+function lightning(from: Vector3, to: Vector3, color: string, width: number)
 	local points = { from }
 	local steps = 8
 	for i = 1, steps - 1 do
@@ -785,6 +794,47 @@ ACTIONS.toss = {
 	end },
 }
 
+-- Rears up with its wings spread wide and calls a ring of lightning down around it.
+ACTIONS.storm = {
+	time = 3.2,
+	flapBoost = 2,
+	pose = function(p)
+		local rootPose, legs = rearPose(p)
+		local k = ease(p, 0.05, 0.9)
+		local open = math.min(k * 1.5, 1)
+		legs.WingR = CFrame.Angles(0, 0, R(55) * open)
+		legs.WingL = CFrame.Angles(0, 0, -R(55) * open)
+		return rootPose, legs
+	end,
+	moments = {
+		[0.25] = function()
+			local tip = part("HornTip")
+			lightning(tip.Position + Vector3.new(0, 50, 0), tip.Position, "#e9fdff", 0.7)
+			flash("HornTip", "#bff7ff", 14, 50, 0.7)
+			burst("Storm", "HornTip", { tex = "spark", c = { "#ffffff", "#4fe3ff" }, size = { 1.4, 0 },
+				life = { 0.6, 1.2 }, speed = { 12, 24 }, spread = 180, drag = 3 }, 70)
+		end,
+		[0.4] = function()
+			for i = 1, 6 do
+				local ang = i / 6 * 2 * math.pi + math.random() * 0.4
+				local hit = Vector3.new(root.Position.X + math.cos(ang) * 14, groundY(), root.Position.Z + math.sin(ang) * 14)
+				task.delay(i * 0.07, function()
+					lightning(hit + Vector3.new(math.random(-5, 5), 45, math.random(-5, 5)), hit,
+						if i % 2 == 0 then "#e9fdff" else "#ffe14d", 0.45)
+					groundRing(hit, "#4fe3ff", 6, 0.4)
+				end)
+			end
+		end,
+		[0.82] = function()
+			frontHoovesLand(45)
+			groundRing(root.Position, "#4fe3ff", 28, 0.9)
+			groundRing(root.Position, "#e9fdff", 18, 0.7)
+			groundRing(root.Position, "#ffe14d", 10, 0.5)
+			flash("Body", "#4fe3ff", 8, 40, 0.6)
+		end,
+	},
+}
+
 ACTIONS.thunder = {
 	time = 2.6,
 	pose = rearPose,
@@ -875,6 +925,7 @@ RunService.PreSimulation:Connect(function(dt)
 	local target = math.clamp(effSpeed / (walkSpeed * 0.35), 0, 1)
 	walk += (target - walk) * math.min(1, dt * 5)
 	local run = math.clamp((effSpeed / walkSpeed - 1) / 0.8, 0, 1)
+	running = run
 
 	local cycles = math.max(effSpeed, walk * walkSpeed * 0.3) / profile.stride
 	if profile.maxCycles then
@@ -885,7 +936,11 @@ RunService.PreSimulation:Connect(function(dt)
 
 	-- Idle actions only when standing still.
 	if not action and walk < 0.1 and attribute("IdleActions", true) and now > nextAction then
-		local a = ACTIONS[profile.idle]
+		local idle = profile.idle
+		if type(idle) == "table" then
+			idle = idle[rng:NextInteger(1, #idle)]
+		end
+		local a = ACTIONS[idle]
 		if a then
 			action, actionStart, fired = a, now, {}
 		end
@@ -998,6 +1053,7 @@ RunService.PreSimulation:Connect(function(dt)
 	if flapSpeed > 0 then
 		local boost = 1 + walk * (profile.flapBoost or 0) + flapBoost
 		local angle = math.sin(t * flapSpeed * boost) * R(attribute("FlapAngle", 30))
+			+ R(profile.wingRun or 0) * run
 		for name, _ in joints do
 			if name:sub(1, 4) == "Wing" then
 				local side = if name:sub(-1) == "L" then -1 else 1
