@@ -40,9 +40,12 @@ end
 -- stride: studs per step cycle, swing: leg swing (degrees), bounce: body bob (studs)
 -- step / aura: particle effects (see makeEmitter), ring: shockwave on each step
 -- idle: the special idle action, every = seconds between actions
+-- runPattern: leg phases when running (a gallop), maxCycles: at most this many strides per second, so a very
+-- fast animal (a mount) still moves its legs like a gallop instead of a blur
 
 local TROT = { LegFR = 0, LegBL = 0, LegFL = 0.5, LegBR = 0.5 }
 local WALK4 = { LegFL = 0, LegBR = 0.25, LegFR = 0.5, LegBL = 0.75 }
+local GALLOP = { LegBL = 0, LegBR = 0.1, LegFL = 0.42, LegFR = 0.52 }
 
 local P = {
 	MossbackToad = {
@@ -149,6 +152,18 @@ local P = {
 		aura = { at = "Body", tex = "spark", c = { "#7dffc4", "#5ef0b0" }, size = { 0.6, 0 }, life = { 0.8, 1.4 },
 			speed = { 1, 3 }, rate = 20, accel = Vector3.new(0, 3, 0), spread = 180 },
 		idle = "breath", every = { 7, 11 },
+	},
+	ThunderUnicorn = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 26, bounce = 0.45, headBob = 5,
+		walkSpeed = 16, breathe = 0.1, maxCycles = 2.4,
+		step = { tex = "spark", c = { "#fff7c2", "#4fd6ff" }, size = { 0.9, 0 }, life = { 0.3, 0.6 }, speed = { 6, 12 },
+			spread = 75, count = 14, drag = 2 },
+		stepSpark = { tex = "smoke", c = { "#c9d3f5", "#7f8cc0" }, size = { 1.6, 3.2 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		stepRing = { color = "#4fd6ff", radius = 5, time = 0.35 },
+		aura = { at = "HornTip", tex = "spark", c = { "#ffffff", "#4fd6ff" }, size = { 0.6, 0 }, life = { 0.3, 0.6 },
+			speed = { 2, 6 }, rate = 30, spread = 180 },
+		idle = "thunder", every = { 7, 11 },
 	},
 }
 
@@ -314,6 +329,52 @@ local function footstep(pos: Vector3)
 	if r then
 		groundRing(pos, r.color, r.radius, r.time)
 	end
+end
+
+-- A lightning bolt from `from` down to `to`: a jagged line of Neon pieces that flashes and fades.
+local function lightning(from: Vector3, to: Vector3, color: string, width: number)
+	local points = { from }
+	local steps = 8
+	for i = 1, steps - 1 do
+		local p = from:Lerp(to, i / steps)
+		local jitter = (to - from).Magnitude / steps * 0.6
+		table.insert(points, p + Vector3.new((math.random() - 0.5) * 2 * jitter, 0, (math.random() - 0.5) * 2 * jitter))
+	end
+	table.insert(points, to)
+	local pieces = {}
+	for i = 1, #points - 1 do
+		local a, b = points[i], points[i + 1]
+		local p = Instance.new("Part")
+		p.Name = "FXBolt"
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.Material = Enum.Material.Neon
+		p.Color = hex(color)
+		p.Size = Vector3.new(width, width, (b - a).Magnitude + width)
+		p.CFrame = CFrame.lookAt((a + b) / 2, b)
+		p.Parent = workspace
+		table.insert(pieces, p)
+	end
+	local info = TweenInfo.new(0.45, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+	for _, p in pieces do
+		TweenService:Create(p, info, { Transparency = 1, Size = p.Size * Vector3.new(0.3, 0.3, 1) }):Play()
+		Debris:AddItem(p, 0.5)
+	end
+end
+
+-- A short, bright flash of light at a part.
+local function flash(at: string, color: string, brightness: number, range: number, time: number)
+	local light = Instance.new("PointLight")
+	light.Color = hex(color)
+	light.Brightness = brightness
+	light.Range = range
+	light.Shadows = false
+	light.Parent = part(at)
+	TweenService:Create(light, TweenInfo.new(time), { Brightness = 0 }):Play()
+	Debris:AddItem(light, time + 0.1)
 end
 
 local function jointPos(name: string): Vector3
@@ -555,6 +616,57 @@ ACTIONS.breath = {
 	end },
 }
 
+-- Where the back hooves touch the ground, in the Root joint's frame (measured once, while nothing is posed yet).
+-- Rearing up turns the body around this point.
+local hindPivot = Vector3.new(0, -root.Size.Y / 2, 0)
+do
+	local rootJoint, leg = joints.Root, joints.LegBR or joints.LegBL
+	if rootJoint and leg and leg.Part0 then
+		local frame = root.CFrame * rootJoint.C0
+		local hip = frame:PointToObjectSpace((leg.Part0.CFrame * leg.C0).Position)
+		local ground = frame:PointToObjectSpace(root.Position - Vector3.new(0, root.Size.Y / 2, 0))
+		hindPivot = Vector3.new(0, ground.Y, hip.Z)
+	end
+end
+
+ACTIONS.thunder = {
+	time = 2.6,
+	pose = function(p)
+		local k = ease(p, 0.05, 0.85)
+		local up = math.min(k * 1.6, 1)
+		-- Rear up around the back hooves: lift the front, keep the hind legs on the ground.
+		local pivot = hindPivot
+		local tilt = R(30) * up
+		local kick = math.sin(p * 30) * R(18) * up
+		return CFrame.new(pivot) * CFrame.Angles(tilt, 0, 0) * CFrame.new(-pivot), {
+			LegFR = CFrame.Angles(-R(70) * up + kick, 0, 0),
+			LegFL = CFrame.Angles(-R(55) * up - kick, 0, 0),
+			Head = CFrame.Angles(-R(18) * up, 0, 0),
+			Tail = CFrame.Angles(R(25) * up, 0, 0),
+		}
+	end,
+	moments = { [0.32] = function()
+		local tip = part("HornTip")
+		lightning(tip.Position + Vector3.new(math.random(-6, 6), 45, math.random(-6, 6)), tip.Position, "#fff7c2", 0.6)
+		lightning(tip.Position + Vector3.new(math.random(-8, 8), 40, math.random(-8, 8)), tip.Position, "#4fd6ff", 0.3)
+		flash("HornTip", "#bff3ff", 12, 40, 0.6)
+		burst("Thunder", "HornTip", { tex = "spark", c = { "#ffffff", "#4fd6ff" }, size = { 1.2, 0 },
+			life = { 0.5, 1 }, speed = { 10, 20 }, spread = 180, drag = 3 }, 60)
+		ring(tip.CFrame * CFrame.Angles(R(90), 0, 0), "#fff7c2", 8, 0.5)
+	end, [0.8] = function()
+		for _, leg in { "LegFR", "LegFL" } do
+			local hoof = jointPos(leg)
+			stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
+			if stepFx then
+				stepFx:Emit(40)
+			end
+		end
+		groundRing(root.Position, "#4fd6ff", 22, 0.8)
+		groundRing(root.Position, "#fff7c2", 14, 0.6)
+		flash("Body", "#4fd6ff", 6, 30, 0.5)
+	end },
+}
+
 -- ------------------------------------------------------------- update --
 
 local rng = Random.new()
@@ -627,7 +739,11 @@ RunService.PreSimulation:Connect(function(dt)
 	walk += (target - walk) * math.min(1, dt * 5)
 	local run = math.clamp((effSpeed / walkSpeed - 1) / 0.8, 0, 1)
 
-	gaitPhase += dt * math.max(effSpeed, walk * walkSpeed * 0.3) / profile.stride * 2 * math.pi
+	local cycles = math.max(effSpeed, walk * walkSpeed * 0.3) / profile.stride
+	if profile.maxCycles then
+		cycles = math.min(cycles, profile.maxCycles)
+	end
+	gaitPhase += dt * cycles * 2 * math.pi
 	local swing = R(profile.swing) * walk * (1 + run * 0.35)
 
 	-- Idle actions only when standing still.
@@ -664,7 +780,7 @@ RunService.PreSimulation:Connect(function(dt)
 	local gait = profile.gait
 	local bounce = 0
 	if gait == "quad" or gait == "biped" or gait == "bird" then
-		local pattern = profile.pattern or { LegR = 0, LegL = 0.5 }
+		local pattern = (run > 0.5 and profile.runPattern) or profile.pattern or { LegR = 0, LegL = 0.5 }
 		for leg, offset in pattern do
 			if joints[leg] then
 				local s = math.sin(gaitPhase + offset * 2 * math.pi)
