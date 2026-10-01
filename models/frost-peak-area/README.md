@@ -8,7 +8,8 @@ losse blokken. Het blijft dezelfde gladde low-poly stijl als Critter Woods en Da
 
 - **De kliffen:** ze hellen schuin, met richels en verticale facetten.
 - **De sneeuw:** ligt op de vlakke stukken en loopt in strepen over de top.
-- **De top:** een scherpe piek met vier graten.
+- **De top:** een scherpe piek met vier graten en een dikke witte sneeuwkap. De sneeuwgrens is grillig en loopt
+  langs de graten verder naar beneden. Alleen de steilste rotsen steken eruit.
 
 ![De berg vanaf de ingang](../../previews/frost_peak_area_image.png)
 ![Het hele gebied](../../previews/frost_peak_area_overview.png)
@@ -73,11 +74,13 @@ eigen Model met het draaipunt op de grond (de voorkant is -Z). Zo kun je ze zelf
 het gebied uit te breiden. Elk model heeft een `Description`-attribuut dat zegt wat het is.
 
 ![Het decorpakket](../../previews/frost_peak_decals_overview.png)
+![De besneeuwde toppen](../../previews/frost_peak_decals_peaks.png)
 ![Paden en gebouwtjes](../../previews/frost_peak_decals_paths.png)
 ![De tempelstukken](../../previews/frost_peak_decals_temple.png)
 
 | Map | Stukken |
 |---|---|
+| Mountains | `SnowyPeak` (de besneeuwde top van de berg, ongeveer 100 hoog en 80 breed), `SnowyPeakSmall` (60 hoog) |
 | Trees | `SnowPine1` t/m `SnowPine5` (10 tot 28 studs, dezelfde lichte dennen als in het gebied), `PineSapling`, `SnowyBush` |
 | Rocks | `BasaltCluster` (basaltzuilen met sneeuw), `Landslide` (berg van rots en sneeuw met facetten), `Boulder`, `BoulderLarge`, `RockPile` |
 | Water | `Waterfall` (22 hoog), `WaterfallWide` (34 hoog, 16 breed), allebei met beekje erboven, schuim, mist en een plas; `WaterfallTall`, `FrozenLake`, `IceFloes`, `MistPatch` |

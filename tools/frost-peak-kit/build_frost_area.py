@@ -198,8 +198,13 @@ def ring_angles(n, rng, jitter=0.3):
     return out
 
 
-def shade(rng, nu, y, peak=False):
-    """Colour of one facet from how flat it is: snow on flat facets, rock on steep ones, and streaks between."""
+def shade(rng, nu, y, peak=False, cap=False):
+    """Colour of one facet from how flat it is: snow on flat facets, rock on steep ones, and streaks between.
+    Above the snow line (`cap`) almost everything is snow, with only the steepest crags showing rock."""
+    if cap:
+        if nu > 0.2 or rng.random() < 0.55:
+            return SNOW if rng.random() < 0.75 else SNOW_SHADE
+        return rng.choice((ROCK_LIGHT, ROCK[2], K.SNOW_BLUE))
     if nu > 0.8:
         return SNOW if rng.random() < 0.7 else SNOW_SHADE
     if nu > 0.55:
@@ -211,7 +216,13 @@ def shade(rng, nu, y, peak=False):
     return rng.choice(ROCK[1:]) if rng.random() < 0.8 else ROCK[0]
 
 
-def facet_asset(name, group, rings, rng, peak_from=None, thick=1.4):
+def snow_line(base, deg):
+    """Height of the snow line on the peak: it dips down along the ridges and gullies, so the cap is jagged."""
+    t = math.radians(deg)
+    return base + 9 * math.sin(3 * t + 0.4) + 5 * math.sin(7 * t + 1.3) + 3 * math.sin(13 * t)
+
+
+def facet_asset(name, group, rings, rng, peak_from=None, thick=1.4, snow_from=None):
     a = Asset(name, group, "Mountain", "faceted surface")
     for p0, p1, p2 in F.surface(rings):
         n = F.normal_up(p0, p1, p2)
@@ -219,7 +230,9 @@ def facet_asset(name, group, rings, rng, peak_from=None, thick=1.4):
             continue
         nu = n[1]
         y = (p0[1] + p1[1] + p2[1]) / 3
-        color = shade(rng, nu, y, peak=peak_from is not None and y > peak_from)
+        deg = math.degrees(math.atan2(p0[2] + p1[2] + p2[2], p0[0] + p1[0] + p2[0])) % 360
+        cap = snow_from is not None and y > snow_line(snow_from, deg) + rng.uniform(-3, 3)
+        color = shade(rng, nu, y, peak=peak_from is not None and y > peak_from, cap=cap)
         F.tri(a, "Snow" if color in (SNOW, SNOW_SHADE, K.SNOW_BLUE) else "Rock", p0, p1, p2, color, thick=thick)
     return a
 
@@ -252,20 +265,27 @@ def mountain(rng):
                 rr = (edge_radius(i, d) - 2.2 + foot_radius(i + 1, d)) / 2
                 row.append((d, polar(rr, d, top + 0.6 + rng.uniform(0, 0.5))))
             rings.append(row)
-    # The peak: rings that shrink fast and rise faster, with jagged heights so the top has several crags.
-    r4, y4 = TIERS[-1]
+    y4 = TIERS[-1][1]
+    rings += peak_rings(lambda d: edge_radius(4, d), y4, rng)
+    return facet_asset("Mountain", "Mountain", rings, rng, peak_from=y4 + 10, snow_from=y4 + 30)
+
+
+def peak_rings(base_r, y0, rng, k=1.0):
+    """The peak: rings that shrink fast and rise faster (k scales the height), with jagged heights so the top has
+    several crags. base_r(deg) is the radius of the peak's foot at height y0."""
+    rings = []
     for f, rise, n in ((0.88, 5, 40), (0.76, 22, 36), (0.63, 41, 30), (0.5, 59, 26), (0.38, 74, 20),
                        (0.26, 86, 14), (0.14, 95, 9)):
         row = []
-        for k, d in enumerate(ring_angles(n, rng, 0.25)):
+        for j, d in enumerate(ring_angles(n, rng, 0.25)):
             t = math.radians(d)
             # Four ridges run down from the summit, so the peak has shoulders instead of being a cone.
             ridge = 1 + 0.32 * max(0.0, math.cos(2 * (t - 0.5))) ** 3 + 0.18 * max(0.0, math.cos(2 * t + 1.9)) ** 3
-            spike = rng.uniform(-4, 7) * (rise / 95) if k % 2 else rng.uniform(-3, 2)
-            row.append((d, polar(edge_radius(4, d) * f * ridge * rng.uniform(0.93, 1.07), d, y4 + rise + spike)))
+            spike = rng.uniform(-4, 7) * (rise / 95) if j % 2 else rng.uniform(-3, 2)
+            row.append((d, polar(base_r(d) * f * ridge * rng.uniform(0.93, 1.07), d, y0 + (rise + spike) * k)))
         rings.append(row)
-    rings.append([(0.0, (1.5, y4 + 102, -1.0))])
-    return facet_asset("Mountain", "Mountain", rings, rng, peak_from=y4 + 10)
+    rings.append([(0.0, (1.5, y0 + 102 * k, -1.0))])
+    return rings
 
 
 def basalt(i, rng, gaps):

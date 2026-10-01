@@ -29,13 +29,23 @@ KIT_PIECES = {
     "Lights": ["LanternPost", "Campfire", "CaveEntrance", "SnowfallZone"],
     "Ground": ["SnowDrift", "GrassTufts", "Pebbles"],
 }
-ORDER = ["Trees", "Rocks", "Water", "Paths", "Lights", "Ground", "Temple"]
-GAP = {"Trees": 16, "Rocks": 16, "Water": 44, "Paths": 40, "Lights": 26, "Ground": 12, "Temple": 22}
-ROW_Z = {"Trees": 0, "Rocks": 34, "Water": 80, "Paths": 140, "Lights": 190, "Ground": 228, "Temple": 268}
+ORDER = ["Mountains", "Trees", "Rocks", "Water", "Paths", "Lights", "Ground", "Temple"]
+GAP = {"Mountains": 30, "Trees": 16, "Rocks": 16, "Water": 44, "Paths": 40, "Lights": 26, "Ground": 12, "Temple": 22}
+ROW_Z = {"Mountains": -110, "Trees": 0, "Rocks": 34, "Water": 80, "Paths": 140, "Lights": 190, "Ground": 228, "Temple": 268}
 
 
 def piece(name, category, note):
     return Asset(name, category, "Mountain", note)
+
+
+def snowy_peak(name, R, k, rng):
+    """The snowy peak from the top of the mountain on its own: faceted rock with four ridges, a jagged snow
+    line and a white cap. R = radius of its foot, k scales the height (k = 1 is about 100 studs)."""
+    foot = [(d, A.polar(R * 1.12, d, -1.0)) for d in A.ring_angles(40, rng)]
+    rings = [foot] + A.peak_rings(lambda d: R, 0.0, rng, k)
+    a = A.facet_asset(name, "Mountains", rings, rng, peak_from=0.0, snow_from=30 * k)
+    a.note = f"snowy faceted peak, {102 * k:.0f} studs high and {2 * R:.0f} wide"
+    return a
 
 
 def basalt_cluster(rng, n=5, h=16.0):
@@ -114,6 +124,8 @@ def make_pack():
         a = piece(f"SnowPine{v + 1}", "Trees", f"snowy pine, {h} studs")
         pine_tree(a, random.Random(100 + v), h, w, tiers, lite=True)
         pieces.append(a)
+    pieces.append(snowy_peak("SnowyPeak", 40.0, 1.0, rng))
+    pieces.append(snowy_peak("SnowyPeakSmall", 24.0, 0.6, rng))
     pieces.append(basalt_cluster(rng))
     a = piece("Landslide", "Rocks", "faceted heap of rock and snow")
     T.landslide(a, (0, 0, 0), 13.0, 17.0, rng)
@@ -152,7 +164,7 @@ def main():
             spots.append((a, (x + w / 2, 0.0, ROW_Z[c] * 1.0)))
             x += w
     for uid, (a, pos) in enumerate(spots):
-        node = A.model_node(a, pos, 0.0, 1.0, f"D{uid}", a.category in ("Trees", "Rocks"))
+        node = A.model_node(a, pos, 0.0, 1.0, f"D{uid}", a.category in ("Trees", "Rocks", "Mountains"))
         node["attrs"] = {"Description": a.note}
         folders[a.category].append(node)
     tree = [{"class": "Folder", "name": "FrostPeakDecals", "children": [
@@ -165,13 +177,15 @@ def main():
         print(f"{c:7} {len(folders[c]):3} pieces {n:6} parts")
     print(f"total {len(pieces)} pieces")
 
-    ground = [{"n": "Ground", "s": "block", "z": [520, 2, 360], "cf": [0, -1, 130, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    ground = [{"n": "Ground", "s": "block", "z": [520, 2, 560], "cf": [0, -1, 60, 1, 0, 0, 0, 1, 0, 0, 0, 1],
                "c": list(SNOW_SHADE), "m": "SmoothPlastic", "t": 0, "r": 0, "st": False, "sh": True}]
     parts = ground + viewer_parts([], [(a, pos, 0.0, 1.0) for a, pos in spots if a.name != "SnowfallZone"])
     env = {"sky": [[0, "#3f8fef"], [0.55, "#86c2ff"], [1, "#d8efff"]], "fog": ["#d8efff", 600, 1600],
            "sun": {"dir": [-0.45, 1.0, -0.6], "intensity": 2.6}, "hemi": ["#ffffff", "#8fa3c4", 1.15],
            "bloom": [0.3, 0.45, 0.9]}
     shots = {
+        "peaks": {"camera": {"pos": [30, 70, -250], "target": [0, 40, -110], "fov": 55},
+                  "shadow": {"center": [0, 0, -110], "radius": 120}},
         "catalog": {"camera": {"pos": [0, 190, -40], "target": [0, 0, 150], "fov": 55},
                     "shadow": {"center": [0, 0, 140], "radius": 260}},
         "nature": {"camera": {"pos": [0, 70, -70], "target": [0, 4, 60], "fov": 60},
