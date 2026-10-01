@@ -219,6 +219,137 @@ local P = {
 		rearBurst = { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 1.1, 0 }, life = { 0.8, 1.4 },
 			speed = { 8, 16 }, spread = 180, drag = 2, accel = Vector3.new(0, 2, 0) },
 	},
+	PebbleMarmot = {
+		gait = "hop", stride = 2.6, swing = 30, bounce = 0.9, headBob = 6, walkSpeed = 7, breathe = 0.08,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "graze", every = { 5, 9 },
+	},
+	PikaPuff = {
+		gait = "hop", stride = 2.2, swing = 30, bounce = 1.0, headBob = 6, walkSpeed = 6, breathe = 0.1,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "toss", every = { 5, 8 }, tossColor = { "#ffffff", "#ffe08a" },
+	},
+	CliffKid = {
+		gait = "quad", pattern = TROT, runPattern = GALLOP, stride = 4, swing = 32, bounce = 0.6, headBob = 6,
+		walkSpeed = 9, breathe = 0.08, maxCycles = 3.2,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "toss", every = { 5, 9 }, tossColor = { "#ffffff", "#ffd23f" },
+	},
+	SnowshoeHare = {
+		gait = "hop", stride = 4, swing = 34, bounce = 1.4, headBob = 6, walkSpeed = 9, breathe = 0.08,
+		step = { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1.0, 2.4 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3.5 }, spread = 80, count = 5, light = 0, transparency = 0.45 },
+		idle = "graze", every = { 5, 9 },
+	},
+	BighornRam = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 8, swing = 26, bounce = 0.4, headBob = 5,
+		walkSpeed = 11, breathe = 0.1, maxCycles = 2.8,
+		step = { tex = "smoke", c = { "#e8a070", "#b85532" }, size = { 1.2, 2.8 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 80, count = 5, light = 0, transparency = 0.45 },
+		idle = "headbutt", every = { 6, 10 }, impactColor = "#ffb35a",
+	},
+	AlpineIbex = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 8, swing = 26, bounce = 0.4, headBob = 5,
+		walkSpeed = 11, breathe = 0.1, maxCycles = 2.8,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "graze", every = { 6, 10 },
+	},
+	RedPanda = {
+		gait = "quad", pattern = TROT, stride = 3.4, swing = 30, bounce = 0.3, headBob = 5, walkSpeed = 8,
+		breathe = 0.08,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "graze", every = { 5, 9 },
+	},
+	PeakEagle = {
+		gait = "bird", stride = 2.2, swing = 30, bounce = 0.35, headBob = 14, walkSpeed = 6, breathe = 0.06,
+		step = { tex = "spark", c = { "#fff3b0", "#ffc93c" }, size = { 0.5, 0 }, life = { 0.5, 1 },
+			speed = { 1, 3 }, spread = 60, count = 6 },
+		aura = { at = "Body", tex = "spark", c = { "#fff3b0", "#ffc93c" }, size = { 0.4, 0 }, life = { 1, 1.8 },
+			speed = { 0.4, 1.2 }, rate = 10, spread = 180 },
+		idle = "wingspread", every = { 6, 9 },
+	},
+	MountainYak = {
+		gait = "quad", pattern = WALK4, stride = 9, swing = 22, bounce = 0.3, headBob = 4, walkSpeed = 8,
+		breathe = 0.12, maxCycles = 2.2,
+		step = { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1.0, 2.4 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3.5 }, spread = 80, count = 5, light = 0, transparency = 0.45 },
+		stepRing = { color = "#ffd23f", radius = 4, time = 0.4 },
+		idle = "paw", every = { 6, 10 },
+	},
+	GeodeTortoise = {
+		gait = "quad", pattern = WALK4, stride = 3, swing = 22, bounce = 0.1, headBob = 6, walkSpeed = 4,
+		breathe = 0.05,
+		step = { tex = "spark", c = { "#e9d6ff", "#b46bff" }, size = { 0.6, 0 }, life = { 0.5, 1 },
+			speed = { 1, 3 }, spread = 70, count = 6 },
+		idle = "graze", every = { 6, 10 },
+	},
+	SnowLeopard = {
+		gait = "quad", pattern = TROT, runPattern = GALLOP, stride = 6.5, swing = 34, bounce = 0.3, headBob = 4,
+		walkSpeed = 13, breathe = 0.07, lean = 4, maxCycles = 2.8,
+		step = { tex = "spark", c = { "#e6fbff", "#7fe3ff" }, size = { 0.7, 0 }, life = { 0.4, 0.8 },
+			speed = { 2, 5 }, spread = 70, count = 8 },
+		stepSpark = { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1, 2.2 }, life = { 0.4, 0.7 },
+			speed = { 1, 3 }, spread = 80, count = 3, light = 0, transparency = 0.5 },
+		aura = { at = "Body", tex = "spark", c = { "#e6fbff", "#7fe3ff" }, size = { 0.45, 0 }, life = { 0.5, 1 },
+			speed = { 1, 3 }, rate = 16, spread = 180 },
+		idle = "howl", every = { 6, 10 }, howlColor = { "#e6fbff", "#7fe3ff" },
+	},
+	FrostfangAlpha = {
+		gait = "quad", pattern = TROT, runPattern = GALLOP, stride = 7, swing = 34, bounce = 0.3, headBob = 4,
+		walkSpeed = 14, breathe = 0.08, maxCycles = 2.8,
+		step = { tex = "spark", c = { "#e6fbff", "#7fe3ff" }, size = { 0.8, 0 }, life = { 0.4, 0.8 },
+			speed = { 3, 6 }, spread = 70, count = 10 },
+		stepSpark = { tex = "smoke", c = { "#ffffff", "#bfe6ff" }, size = { 1.2, 2.6 }, life = { 0.4, 0.8 },
+			speed = { 1, 3 }, spread = 80, count = 4, light = 0, transparency = 0.45 },
+		stepRing = { color = "#7fe3ff", radius = 4, time = 0.35 },
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#7fe3ff" }, size = { 0.5, 0 }, life = { 0.4, 0.8 },
+			speed = { 2, 5 }, rate = 20, spread = 180 },
+		idle = "howl", every = { 6, 10 }, howlColor = { "#ffffff", "#7fe3ff" },
+	},
+	LittleYeti = {
+		gait = "biped", pattern = { LegR = 0, LegL = 0.5 }, stride = 3.2, swing = 30, bounce = 0.5, headBob = 6,
+		walkSpeed = 8, breathe = 0.1, armSwing = 30,
+		step = { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1.0, 2.4 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3.5 }, spread = 80, count = 5, light = 0, transparency = 0.45 },
+		idle = "snowball", every = { 5, 9 },
+	},
+	SkyGriffin = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 26, bounce = 0.45, headBob = 5,
+		walkSpeed = 15, breathe = 0.1, maxCycles = 2.5, flapBoost = 1.6, wingRun = 40,
+		step = { tex = "spark", c = { "#fff3b0", "#ffc93c" }, size = { 1.0, 0 }, life = { 0.5, 1 },
+			speed = { 4, 9 }, spread = 75, count = 14, drag = 2 },
+		stepSpark = { tex = "smoke", c = { "#ffffff", "#f2e6c8" }, size = { 1.6, 3.4 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		stepRing = { color = "#ffc93c", radius = 6, time = 0.4 },
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 0.7, 0 }, life = { 0.6, 1.2 },
+			speed = { 3, 7 }, rate = 36, spread = 180 },
+		idle = { "skyroar", "toss" }, every = { 6, 10 }, tossColor = { "#fff3b0", "#ffc93c" },
+	},
+	GlacierMammoth = {
+		gait = "quad", pattern = WALK4, stride = 10, swing = 22, bounce = 0.35, headBob = 4, walkSpeed = 9,
+		breathe = 0.12, maxCycles = 2.2,
+		step = { tex = "spark", c = { "#e6fbff", "#7fe3ff" }, size = { 1.0, 0 }, life = { 0.5, 1 },
+			speed = { 3, 7 }, spread = 75, count = 14 },
+		stepSpark = { tex = "smoke", c = { "#ffffff", "#bfe6ff" }, size = { 2, 4.5 }, life = { 0.6, 1.1 },
+			speed = { 2, 5 }, spread = 80, count = 6, light = 0, transparency = 0.45 },
+		stepRing = { color = "#7fe3ff", radius = 7, time = 0.45 },
+		stepIce = 3,
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#7fe3ff" }, size = { 0.7, 0 }, life = { 0.6, 1.2 },
+			speed = { 2, 6 }, rate = 30, spread = 180 },
+		idle = { "glacierstomp", "paw" }, every = { 6, 10 },
+	},
+	AuroraDragon = {
+		gait = "serpent", stride = 10, swing = 20, bounce = 0, headBob = 4, walkSpeed = 16, breathe = 0.06,
+		waveP = 4, waveY = 7, lean = 6,
+		aura = { at = "Seg4", tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 0.9, 0 }, life = { 0.8, 1.6 },
+			speed = { 2, 6 }, rate = 40, spread = 180 },
+		idle = { "aurora" }, every = { 7, 11 },
+	},
 }
 
 local profile = P[model:GetAttribute("AnimalId") or model.Name] or P.MossbackToad
@@ -369,6 +500,7 @@ end
 local fxOn = true
 local running = 0 -- 0..1, how much the animal is running (set every frame)
 local lightning: (Vector3, Vector3, string, number) -> () -- defined further down
+local iceSpikes: (Vector3, number, number, number) -> () -- defined further down
 
 local function footstep(pos: Vector3)
 	if not fxOn then
@@ -384,6 +516,9 @@ local function footstep(pos: Vector3)
 	local r = profile.stepRing
 	if r then
 		groundRing(pos, r.color, r.radius, r.time)
+	end
+	if profile.stepIce and math.random() < 0.35 then
+		iceSpikes(Vector3.new(pos.X, groundY(), pos.Z), 2.5, profile.stepIce, 3)
 	end
 	local b = profile.stepBolt
 	if b and running > 0.5 and math.random() < b.chance then
@@ -424,6 +559,36 @@ function lightning(from: Vector3, to: Vector3, color: string, width: number)
 	for _, p in pieces do
 		TweenService:Create(p, info, { Transparency = 1, Size = p.Size * Vector3.new(0.3, 0.3, 1) }):Play()
 		Debris:AddItem(p, 0.5)
+	end
+end
+
+-- Ice spikes that burst out of the ground in a ring and then melt away.
+function iceSpikes(center: Vector3, radius: number, count: number, height: number)
+	for i = 1, count do
+		local ang = (i / count) * 2 * math.pi + math.random() * 0.3
+		local h = height * (0.6 + math.random() * 0.6)
+		local p = Instance.new("Part")
+		p.Name = "FXIce"
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.Material = Enum.Material.Glass
+		p.Transparency = 0.2
+		p.Color = hex(if i % 2 == 0 then "#bff3ff" else "#7fe3ff")
+		local base = Vector3.new(center.X + math.cos(ang) * radius, center.Y, center.Z + math.sin(ang) * radius)
+		local tilt = CFrame.Angles(math.rad(math.random(-25, 25)), ang, math.rad(math.random(-25, 25)))
+		p.Size = Vector3.new(1.2, 0.2, 1.2)
+		p.CFrame = CFrame.new(base) * tilt * CFrame.Angles(0, math.rad(45), 0)
+		p.Parent = workspace
+		local grown = CFrame.new(base) * tilt * CFrame.new(0, h / 2, 0) * CFrame.Angles(0, math.rad(45), 0)
+		TweenService:Create(p, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ Size = Vector3.new(1.4, h, 1.4), CFrame = grown }):Play()
+		task.delay(1.1, function()
+			TweenService:Create(p, TweenInfo.new(0.6), { Transparency = 1, Size = Vector3.new(0.3, h, 0.3) }):Play()
+		end)
+		Debris:AddItem(p, 1.8)
 	end
 end
 
@@ -835,6 +1000,161 @@ ACTIONS.storm = {
 	},
 }
 
+-- Lowers its head and charges a step forward: a head-butt with a shockwave.
+ACTIONS.headbutt = {
+	time = 1.6,
+	pose = function(p)
+		local lower = ease(p, 0.05, 0.9)
+		local lunge = ease(p, 0.35, 0.75)
+		return CFrame.new(0, 0, -1.4 * lunge), { Head = CFrame.Angles(-R(28) * lower, 0, 0) }
+	end,
+	moments = { [0.55] = function()
+		local head = part("Head")
+		ring(head.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(R(90), 0, 0), profile.impactColor or "#ffffff", 7, 0.4)
+		burst("Butt", "Head", { tex = "smoke", c = { "#e8a070", "#b85532" }, size = { 1.5, 3 }, life = { 0.5, 0.9 },
+			speed = { 4, 8 }, spread = 60, dir = Enum.NormalId.Front, light = 0, transparency = 0.4 }, 16)
+		groundRing(root.Position, profile.impactColor or "#ffffff", 9, 0.5)
+	end },
+}
+
+-- Throws its head up and howls, with a cold breath and a ring of frost.
+ACTIONS.howl = {
+	time = 2.2,
+	pose = function(p)
+		local up = ease(p, 0.05, 0.95)
+		return CFrame.new(0, -0.2 * up, 0), { Head = CFrame.Angles(R(40) * up, 0, 0),
+			Tail = CFrame.Angles(R(15) * up, 0, 0) }
+	end,
+	moments = { [0.35] = function()
+		local c = profile.howlColor or { "#ffffff", "#ffffff" }
+		local head = part("Head")
+		burst("Howl", "Head", { tex = "smoke", c = c, size = { 1, 4 }, life = { 0.8, 1.4 }, speed = { 4, 8 },
+			spread = 25, dir = Enum.NormalId.Top, light = 0.5, transparency = 0.4 }, 18)
+		burst("HowlSpark", "Head", { tex = "spark", c = c, size = { 0.8, 0 }, life = { 0.8, 1.4 }, speed = { 4, 10 },
+			spread = 180 }, 30)
+		ring(head.CFrame * CFrame.new(0, 2, 0), c[2], 8, 0.6)
+		groundRing(root.Position, c[2], 14, 0.8)
+	end },
+}
+
+-- Winds up and throws a snowball, which bursts in a puff of snow.
+ACTIONS.snowball = {
+	time = 1.8,
+	pose = function(p)
+		local wind = ease(p, 0.05, 0.5)
+		local throw = ease(p, 0.4, 0.9)
+		return CFrame.Angles(R(6) * wind - R(10) * throw, 0, 0), {
+			ArmR = CFrame.Angles(-R(70) * wind + R(130) * throw, 0, 0),
+			Head = CFrame.Angles(R(10) * wind, 0, 0),
+		}
+	end,
+	moments = { [0.62] = function()
+		local ball = part("Snowball")
+		local target = root.Position + root.CFrame.LookVector * 14
+		burst("Snow", "Snowball", { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1.5, 3.5 },
+			life = { 0.6, 1.0 }, speed = { 3, 6 }, spread = 40, dir = Enum.NormalId.Front, light = 0,
+			transparency = 0.3 }, 20)
+		groundRing(target, "#bfe6ff", 6, 0.5)
+		stepPoint.WorldPosition = Vector3.new(target.X, groundY() + 0.3, target.Z)
+		if stepFx then
+			stepFx:Emit(30)
+		end
+		ring(CFrame.new(ball.Position), "#ffffff", 4, 0.3)
+	end },
+}
+
+-- Rears up with its wings spread and lets out a cry: feathers, wind rings and a golden flash.
+ACTIONS.skyroar = {
+	time = 3.0,
+	flapBoost = 2.5,
+	pose = function(p)
+		local rootPose, legs = rearPose(p)
+		local open = math.min(ease(p, 0.05, 0.9) * 1.5, 1)
+		legs.WingR = CFrame.Angles(0, 0, R(60) * open)
+		legs.WingL = CFrame.Angles(0, 0, -R(60) * open)
+		legs.Head = (legs.Head or CFrame.identity) * CFrame.Angles(R(25) * open, 0, 0)
+		return rootPose, legs
+	end,
+	moments = {
+		[0.3] = function()
+			flash("Head", "#ffe08a", 10, 40, 0.7)
+			burst("Feathers", "Body", { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 1.2, 0 },
+				life = { 1.2, 2.2 }, speed = { 10, 22 }, spread = 180, drag = 2, accel = Vector3.new(0, -3, 0) }, 80)
+			local body = part("Body")
+			for i = 0, 2 do
+				task.delay(i * 0.15, function()
+					ring(CFrame.new(body.Position + Vector3.new(0, 3 + i * 3, 0)), if i == 1 then "#ffffff" else "#ffc93c",
+						14 + i * 6, 0.6)
+				end)
+			end
+		end,
+		[0.8] = function()
+			frontHoovesLand(40)
+			groundRing(root.Position, "#ffc93c", 26, 0.9)
+			groundRing(root.Position, "#ffffff", 16, 0.6)
+		end,
+	},
+}
+
+-- Rears up and stomps: the ground freezes and ice spikes burst up in rings around it.
+ACTIONS.glacierstomp = {
+	time = 2.6,
+	pose = function(p)
+		local rootPose, legs = rearPose(p)
+		legs.Head = (legs.Head or CFrame.identity) * CFrame.Angles(R(20) * ease(p, 0.05, 0.75), 0, 0)
+		return rootPose, legs
+	end,
+	moments = {
+		[0.3] = function()
+			burst("Trumpet", "Head", { tex = "spark", c = { "#ffffff", "#7fe3ff" }, size = { 1, 0 }, life = { 0.8, 1.4 },
+				speed = { 8, 16 }, spread = 40, dir = Enum.NormalId.Top }, 40)
+			flash("Head", "#bff3ff", 8, 30, 0.5)
+		end,
+		[0.82] = function()
+			frontHoovesLand(45)
+			local c = Vector3.new(root.Position.X, groundY(), root.Position.Z)
+			iceSpikes(c, 10, 12, 7)
+			task.delay(0.15, function()
+				iceSpikes(c, 16, 16, 5)
+			end)
+			groundRing(root.Position, "#7fe3ff", 30, 0.9)
+			groundRing(root.Position, "#ffffff", 18, 0.6)
+			flash("Body", "#7fe3ff", 8, 40, 0.6)
+		end,
+	},
+}
+
+-- Rises, coils, and bursts into the northern lights: rings of every aurora colour, stars and a flash.
+ACTIONS.aurora = {
+	time = 3.4,
+	pose = function(p)
+		local k = ease(p, 0.05, 0.95)
+		return CFrame.new(0, 3 * k, 0) * CFrame.Angles(R(18) * k, 0, 0), { Head = CFrame.Angles(R(35) * k, 0, 0) }
+	end,
+	moments = {
+		[0.35] = function()
+			local head = part("Head")
+			flash("Head", "#e9fff6", 14, 60, 0.9)
+			burst("Stars", "Head", { tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 1.4, 0 },
+				life = { 1.2, 2.4 }, speed = { 10, 24 }, spread = 180, drag = 2 }, 90)
+			local colors = { "#5effb0", "#3fd6ff", "#8a7bff", "#ff6bd6" }
+			for i, c in colors do
+				task.delay(i * 0.12, function()
+					ring(CFrame.new(head.Position) * CFrame.Angles(R(90 * (i % 2)), R(45 * i), 0), c, 12 + i * 5, 0.8)
+				end)
+			end
+		end,
+		[0.6] = function()
+			local colors = { "#5effb0", "#3fd6ff", "#b45cff" }
+			for i, c in colors do
+				task.delay(i * 0.1, function()
+					groundRing(root.Position, c, 16 + i * 8, 0.9)
+				end)
+			end
+		end,
+	},
+}
+
 ACTIONS.thunder = {
 	time = 2.6,
 	pose = rearPose,
@@ -1008,6 +1328,19 @@ RunService.PreSimulation:Connect(function(dt)
 			footstep(root.Position)
 		end
 		lastSin.hop = air
+	elseif gait == "serpent" then
+		-- A long body that ripples like a ribbon: every joint along it swings a little behind the one before.
+		local speedUp = 1 + walk * (1 + run)
+		local i = 1
+		while joints["SegJoint" .. i] do
+			local w = t * 1.8 * speedUp - i * 0.6
+			pose["SegJoint" .. i] = CFrame.Angles(math.sin(w) * R(profile.waveP or 5),
+				math.sin(w * 0.75 + 1) * R(profile.waveY or 7) * (1 + walk * 0.5), 0)
+			i += 1
+		end
+		for _, leg in { "LegFR", "LegFL", "LegBR", "LegBL" } do
+			pose[leg] = CFrame.Angles(math.sin(t * 2 + #leg) * R(15), 0, 0)
+		end
 	elseif gait == "slither" then
 		local s = math.sin(gaitPhase)
 		bounce = (s * 0.5 + 0.5) * profile.bounce * walk
