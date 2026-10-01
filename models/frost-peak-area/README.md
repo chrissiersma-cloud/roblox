@@ -66,6 +66,28 @@ Ongeveer 1.500 parts.
 ![De tempel apart](../../previews/dragon_temple_front.png)
 ![De tempel van opzij](../../previews/dragon_temple_side.png)
 
+## Het decorpakket
+
+`FrostPeakDecals.rbxm` bevat alle losse decorstukken die in het gebied en de tempel gebruikt zijn. Elk stuk is een
+eigen Model met het draaipunt op de grond (de voorkant is -Z). Zo kun je ze zelf neerzetten, bijvoorbeeld om
+het gebied uit te breiden. Elk model heeft een `Description`-attribuut dat zegt wat het is.
+
+![Het decorpakket](../../previews/frost_peak_decals_overview.png)
+![Paden en gebouwtjes](../../previews/frost_peak_decals_paths.png)
+![De tempelstukken](../../previews/frost_peak_decals_temple.png)
+
+| Map | Stukken |
+|---|---|
+| Trees | `SnowPine1` t/m `SnowPine5` (10 tot 28 studs, dezelfde lichte dennen als in het gebied), `PineSapling`, `SnowyBush` |
+| Rocks | `BasaltCluster` (basaltzuilen met sneeuw), `Landslide` (berg van rots en sneeuw met facetten), `Boulder`, `BoulderLarge`, `RockPile` |
+| Water | `Waterfall` (22 hoog), `WaterfallWide` (34 hoog, 16 breed), allebei met beekje erboven, schuim, mist en een plas; `WaterfallTall`, `FrozenLake`, `IceFloes`, `MistPatch` |
+| Paths | `WoodStairs` (de nieuwe trap op palen, 20 hoog, met touwleuning en bordes), `WoodFence`, `RopeBridge`, `SignPost`, `StoneArch` |
+| Lights | `LanternPost`, `Campfire`, `CaveEntrance`, `SnowfallZone` |
+| Ground | `SnowDrift`, `GrassTufts`, `Pebbles` |
+| Temple | `DragonTemple` (de hele tempel, rechtop), `TemplePillar`, `TemplePillarBroken`, `FallenPillar`, `MoonGate`, `DragonAltar` (met `DragonSpawn`), `GuardianStatue`, `GuardianStatueBroken`, `StoneLantern`, `StoneLanternToppled`, `AuroraCrystalsGreen`, `AuroraCrystalsBlue`, `AuroraCrystalsPink`, `AuroraCrystalsLarge` |
+
+De watervallen hebben geen rots achter zich. Zet ze tegen een klif, met de achterkant (+Z) tegen de rots.
+
 ## In Studio zetten
 
 1. Sleep `FrostPeakArea.rbxm` in Studio. Er komt één Model `FrostPeakArea` in Workspace.
@@ -89,6 +111,7 @@ Wil je het lichter maken? Haal dan wat dennen uit `Trees` weg. Daar zitten de me
 
 ```
 python3 tools/frost-peak-kit/build_frost_area.py --rbxm models/frost-peak-area/FrostPeakArea.rbxm --temple models/frost-peak-area/DragonTemple.rbxm
+python3 tools/frost-peak-kit/build_frost_decals.py --rbxm models/frost-peak-area/FrostPeakDecals.rbxm
 ```
 
 Alles staat bovenaan `tools/frost-peak-kit/build_frost_area.py`, dus het is makkelijk aan te passen:

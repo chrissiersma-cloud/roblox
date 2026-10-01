@@ -270,6 +270,42 @@ def stone_lantern(a, pos, rng, glow_t, toppled=False):
     a.box("LanternSnow", (2.2, 0.35, 2.2), P((0, 7.5, 0)), SNOW, R=matmul(R, angles(0, 45, 0)), **DETAIL)
 
 
+def moon_gate(a, gc):
+    """The round doorway: a gold ring with stone corners, full of shimmering aurora light. gc = its centre."""
+    rgate = 5.6
+    n = 22
+    for k in range(n):
+        t0 = 2 * math.pi * k / n
+        p = add(gc, (rgate * math.cos(t0), rgate * math.sin(t0), 0))
+        a.box("GateRing", (2 * math.pi * rgate / n * 1.12, 1.2, 1.9), p, GOLD if k % 2 else GOLD_DARK,
+              rot=(0, 0, math.degrees(t0) + 90))
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            # Fill the corners between the square opening and the round ring with a turned block.
+            a.box("GateCorner", (2.6, 2.6, 1.3), add(gc, (sx * 5.5, sy * 5.5, 0)), STONE, rot=(0, 0, 45))
+    for k, (r, t, tr) in enumerate(((5.0, 0.15, 0.35), (3.9, 0.4, 0.3), (2.7, 0.65, 0.25), (1.4, 0.95, 0.15))):
+        disc = a.cyl("Portal", 0.2, 2 * r, add(gc, (0, 0, -0.1 * k)), aurora(t), R=angles(0, 90, 0), material="Neon",
+                     collide=False, shadow=False, transparency=tr)
+    disc["effects"] = [
+        light(hexstr(aurora(0.5)), 2.0, 26),
+        emitter("Aurora", hexstr(aurora(0.2)), color2=hexstr(aurora(0.85)), rate=10, lifetime=(1.5, 3), speed=(0.5, 1.5),
+                spread=40, size=((0, 0.8), (1, 0)), emit="Right")]
+    a.box("GateSign", (6.0, 1.6, 0.3), add(gc, (0, 7.2, -0.9)), LACQUER_DARK, **DETAIL)
+    a.box("GateSignGlyph", (4.6, 0.7, 0.1), add(gc, (0, 7.2, -1.05)), GOLD, **DETAIL)
+
+
+def altar(a, c, rng):
+    """The dragon's altar: a round dais with a glowing rune ring, the DragonSpawn spot, and a crystal heart."""
+    x, y, z = c
+    a.disc("Altar", 12, 1.2, (x, y + 0.6, z), STONE_LIGHT)
+    a.disc("AltarRunes", 10.4, 0.2, (x, y + 1.25, z), aurora(0.5), material="Neon", collide=False, shadow=False,
+           transparency=0.3)
+    a.disc("AltarCenter", 7.0, 0.3, (x, y + 1.35, z), STONE, **DETAIL)
+    spawn = a.box("DragonSpawn", (6, 1, 6), (x, y + 2.0, z), STONE, collide=False, shadow=False, transparency=1)
+    spawn["attrs"] = {"Description": "where the Aurora Dragon rests"}
+    crystals(a, (x, y + 0.5, z + 6.5), rng, n=7, h=9.0, t=0.6, tilt=18)
+
+
 # ------------------------------------------------------------------ temple ---
 
 def temple(rng):
@@ -346,37 +382,8 @@ def temple(rng):
             a.box("WallCrack", (0.25, rng.uniform(1.5, 3.5), 0.12), (rng.uniform(-17, 17), PT + rng.uniform(2, 11), FRONT - 0.72),
                   STONE_DARK, rot=(0, 0, rng.uniform(-25, 25)), **DETAIL)
 
-    # The moon gate: a gold-rimmed round doorway full of shimmering aurora light.
-    gc = (0, PT + 6.4, FRONT)
-    rgate = 5.6
-    n = 22
-    for k in range(n):
-        t0 = 2 * math.pi * k / n
-        p = add(gc, (rgate * math.cos(t0), rgate * math.sin(t0), 0))
-        a.box("GateRing", (2 * math.pi * rgate / n * 1.12, 1.2, 1.9), p, GOLD if k % 2 else GOLD_DARK,
-              rot=(0, 0, math.degrees(t0) + 90))
-    for sx in (-1, 1):
-        for sy in (-1, 1):
-            # Fill the corners between the square opening and the round ring with a turned block.
-            a.box("GateCorner", (2.6, 2.6, 1.3), add(gc, (sx * 5.5, sy * 5.5, 0)), STONE, rot=(0, 0, 45))
-    for k, (r, t, tr) in enumerate(((5.0, 0.15, 0.35), (3.9, 0.4, 0.3), (2.7, 0.65, 0.25), (1.4, 0.95, 0.15))):
-        disc = a.cyl("Portal", 0.2, 2 * r, add(gc, (0, 0, -0.1 * k)), aurora(t), R=angles(0, 90, 0), material="Neon",
-                     collide=False, shadow=False, transparency=tr)
-    disc["effects"] = [
-        light(hexstr(aurora(0.5)), 2.0, 26),
-        emitter("Aurora", hexstr(aurora(0.2)), color2=hexstr(aurora(0.85)), rate=10, lifetime=(1.5, 3), speed=(0.5, 1.5),
-                spread=40, size=((0, 0.8), (1, 0)), emit="Right")]
-    a.box("GateSign", (6.0, 1.6, 0.3), (0, PT + 13.6, FRONT - 0.9), LACQUER_DARK, **DETAIL)
-    a.box("GateSignGlyph", (4.6, 0.7, 0.1), (0, PT + 13.6, FRONT - 1.05), GOLD, **DETAIL)
-
-    # Inside: the dragon's altar with a rune ring, a crystal heart behind it.
-    a.disc("Altar", 12, 1.2, (0, PT + 0.6, 7.0), STONE_LIGHT)
-    a.disc("AltarRunes", 10.4, 0.2, (0, PT + 1.25, 7.0), aurora(0.5), material="Neon", collide=False, shadow=False,
-           transparency=0.3)
-    a.disc("AltarCenter", 7.0, 0.3, (0, PT + 1.35, 7.0), STONE, **DETAIL)
-    spawn = a.box("DragonSpawn", (6, 1, 6), (0, PT + 2.0, 7.0), STONE, collide=False, shadow=False, transparency=1)
-    spawn["attrs"] = {"Description": "where the Aurora Dragon rests"}
-    crystals(a, (0, PT + 0.5, 13.5), rng, n=7, h=9.0, t=0.6, tilt=18)
+    moon_gate(a, (0, PT + 6.4, FRONT))
+    altar(a, (0, PT, 7.0), rng)
 
     # Lower roof (with the hole) and the upper storey with its own roof.
     lower = [rect_ring(54, 46, PT + 15.0, 3.4, 6), rect_ring(46, 38, PT + 16.6, 1.8, 5),
@@ -481,6 +488,13 @@ def landslide(a, center, radius, height, rng, name="Landslide"):
         r = radius * rng.uniform(0.7, 1.05)
         boulder(a, (cx + r * math.cos(ang), cy + rng.uniform(0.2, 1.2), cz + r * math.sin(ang)),
                 (rng.uniform(1.6, 3.2), rng.uniform(1.2, 2.4), rng.uniform(1.6, 3.0)), rng, name=f"{name}Rock")
+
+
+def shift(a, d):
+    """Move every part of an asset by d (used to cut single pieces out of the temple for the decal pack)."""
+    for p in a.parts:
+        p["p"] = add(p["p"], d)
+    return a
 
 
 def sink(a, pitch=9.0, roll=7.0, down=6.5):

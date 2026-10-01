@@ -293,23 +293,17 @@ def basalt(i, rng, gaps):
     return a
 
 
-def big_fall(upper, deg, width, rng, pool=True):
-    """A wide waterfall over cliff `upper`, like the falls in the picture: a turquoise stream on the ring above
-    running out from the next cliff, the falling sheet split in strands with flowing sparkles, foam and mist at the
-    foot, and a pool with ice on the ring below."""
-    top = TIERS[upper][1]
-    low = TIERS[upper - 1][1] if upper else 0.0
-    base = low - 0.6 if upper == 0 else low + 0.9
-    H = top - base + 1.2
-    edge = edge_radius(upper, deg) + run(upper, deg) * 0.55 + 0.9
-    name = f"Fall{upper}_{int(deg)}"
-    a = Asset(name, "Water", "Mountain", "wide waterfall over a cliff ring")
-    yaw = yaw_facing(deg)
+def waterfall(name, H, width, stream, rng, pool=True):
+    """A wide waterfall like the falls in the picture, in its own coordinates: the cliff face is at z = 0 with
+    the water falling down its front (-Z) from height H to the ground (y = 0). The sheet is split in strands
+    with flowing sparkles, there is foam, mist and spray at the foot, a pool with rocks and ice in front, and
+    (when `stream` > 0) a turquoise stream that runs `stream` studs back over the top of the cliff."""
+    a = Asset(name, "Water", "Mountain", f"waterfall {H:.0f} studs high and {width:.0f} wide")
 
     def at(out, up, side=0.0):
-        return add(polar(edge + out, deg, base + up), apply(angles(0, yaw, 0), (side, 0, 0)))
+        return (side, up, -out)
 
-    a.box("FallBack", (width + 1.6, H, 1.2), at(-0.5, H / 2), K.WATER_DEEP, rot=(0, yaw, 0), collide=False, shadow=False)
+    a.box("FallBack", (width + 1.6, H, 1.2), at(-0.5, H / 2), K.WATER_DEEP, collide=False, shadow=False)
     # Strands of different widths, a little in front of each other, lighter at the top where the water is thin.
     x = -width / 2
     j = 0
@@ -317,28 +311,24 @@ def big_fall(upper, deg, width, rng, pool=True):
         sw = min(rng.uniform(1.8, 3.6), width / 2 - x)
         hh = H * rng.uniform(0.9, 1.0)
         out = rng.uniform(0.3, 0.9)
-        a.box("Fall", (sw, hh, 0.9), at(out, H - hh / 2, x + sw / 2), WATER, rot=(0, yaw, 0), collide=False,
-              shadow=False, transparency=0.1,
+        a.box("Fall", (sw, hh, 0.9), at(out, H - hh / 2, x + sw / 2), WATER, collide=False, shadow=False,
+              transparency=0.1,
               effects=K.flow_beam(f"{name}{j}", "Flow", (0, hh / 2, -0.6), (0, -hh / 2, -0.6), sw, speed=1.5 + 0.2 * (j % 3)))
-        a.box("FallTop", (sw * 0.98, H * 0.22, 0.95), at(out + 0.05, H - H * 0.11, x + sw / 2), WATER_LIGHT,
-              rot=(0, yaw, 0), **DETAIL)
-        a.box("Streak", (0.35, hh * rng.uniform(0.4, 0.8), 0.2), at(out + 0.5, H * rng.uniform(0.35, 0.6), x + sw * rng.uniform(0.25, 0.75)),
-              K.ICE_LIGHT, rot=(0, yaw, 0), **DETAIL)
+        a.box("FallTop", (sw * 0.98, H * 0.22, 0.95), at(out + 0.05, H - H * 0.11, x + sw / 2), WATER_LIGHT, **DETAIL)
+        a.box("Streak", (0.35, hh * rng.uniform(0.4, 0.8), 0.2),
+              at(out + 0.5, H * rng.uniform(0.35, 0.6), x + sw * rng.uniform(0.25, 0.75)), K.ICE_LIGHT, **DETAIL)
         x += sw
         j += 1
-    a.box("Lip", (width + 0.6, 1.2, 3.2), at(-0.6, H - 0.3), WATER_LIGHT, rot=(-28, yaw, 0), **DETAIL)
-    if upper + 1 < len(TIERS):
-        inner = foot_radius(upper + 1, deg)
-        L = edge - inner + 1.0
-        mid = polar((edge + inner) / 2 - 0.5, deg, top + 1.05)
-        a.box("Stream", (width * 0.8, 0.5, L), mid, WATER, rot=(0, yaw, 0), collide=False, shadow=False)
-        a.box("StreamDeep", (width * 0.35, 0.52, L), mid, K.WATER_DEEP, rot=(0, yaw, 0), **DETAIL)
+    a.box("Lip", (width + 0.6, 1.2, 3.2), at(-0.6, H - 0.3), WATER_LIGHT, rot=(-28, 0, 0), **DETAIL)
+    if stream > 0:
+        mid = (0, H - 0.15, stream / 2)
+        a.box("Stream", (width * 0.8, 0.5, stream), mid, WATER, collide=False, shadow=False)
+        a.box("StreamDeep", (width * 0.35, 0.52, stream), mid, K.WATER_DEEP, **DETAIL)
         for s in (-1, 1):
-            a.box("StreamBank", (1.4, 0.9, L), add(mid, apply(angles(0, yaw, 0), (s * width * 0.42, 0.1, 0))), SNOW,
-                  rot=(0, yaw, 0), **DETAIL)
-        for k in range(int(L / 4)):
-            p = polar(inner + 2 + k * 4, deg + rng.uniform(-0.8, 0.8), top + 1.33)
-            a.box("Ripple", (rng.uniform(1.2, 2.6), 0.1, 0.35), p, WATER_LIGHT, rot=(0, yaw + 90, 0), **DETAIL)
+            a.box("StreamBank", (1.4, 0.9, stream), add(mid, (s * width * 0.42, 0.1, 0)), SNOW, **DETAIL)
+        for k in range(int(stream / 4)):
+            a.box("Ripple", (rng.uniform(1.2, 2.6), 0.1, 0.35),
+                  (rng.uniform(-0.15, 0.15) * width, H + 0.13, stream - 2 - k * 4), WATER_LIGHT, rot=(0, 90, 0), **DETAIL)
     # Foot: round white foam, mist and spray.
     for k in range(int(width / 1.4)):
         a.ball("Foam", rng.uniform(1.8, 3.0), at(1.4 + rng.uniform(0, 1.6), 0.5, rng.uniform(-width / 2, width / 2)),
@@ -364,71 +354,82 @@ def big_fall(upper, deg, width, rng, pool=True):
     return a
 
 
-def stairs(i, start_deg, rng):
-    """Wooden stairs on posts that climb along the foot of cliff i+1 from ring i to ring i+1: open plank steps on
-    two stringers, posts down to the ground, a rope railing on the open side, and a landing at the top that
-    reaches back to the cliff edge. Returns the asset and the angle where they end."""
-    base = bench_y(i) - 0.3 if i >= 0 else 0.0
-    top = TIERS[i + 1][1] + 0.5
-    a = Asset(f"Stairs{i + 1}", "Paths", "Mountain", "wooden stairs up the cliff")
+def big_fall(area, upper, deg, width, rng, pool=True):
+    """Puts a waterfall over cliff `upper` at this angle, with its stream running back to the next cliff."""
+    top = TIERS[upper][1]
+    low = TIERS[upper - 1][1] if upper else 0.0
+    base = low - 0.6 if upper == 0 else low + 0.9
+    H = top - base + 1.2
+    edge = edge_radius(upper, deg) + run(upper, deg) * 0.55 + 0.9
+    stream = edge - foot_radius(upper + 1, deg) + 1.0 if upper + 1 < len(TIERS) else 0.0
+    a = waterfall(f"Fall{upper}_{int(deg)}", H, width, stream, rng, pool)
+    area.put("Water", a, polar(edge, deg, base), yaw_facing(deg))
+
+
+def stair_flight(a, base, top, at, yaw_at, landing_in, rng, W=4.6):
+    """Wooden stairs on posts: open plank steps on two stringers, posts with braces down to the ground, a rope
+    railing on the open side, a foot stone and a landing at the top. `at(s, side, y)` gives the world point at
+    step s (counted along the run), `side` studs to the open side, at height y; `yaw_at(s)` turns a part's X
+    along the run. The landing reaches `landing_in` studs back from the stairs' centre line."""
     steps = int(round((top - base) / STEP_RISE))
     rise = (top - base) / steps
-    rad0 = foot_radius(i + 1, start_deg) + 3.4
-    dth = math.degrees(STEP_TREAD / rad0)
-
-    def rad(deg):
-        return foot_radius(i + 1, deg) + 3.4
-
-    W = 4.6
     rail = []
     for s in range(steps):
-        deg = start_deg - s * dth
-        r = rad(deg)
         y = base + (s + 1) * rise
-        yaw = yaw_along(deg)
-        a.box("Step", (STEP_TREAD * 0.92, 0.45, W), polar(r, deg, y - 0.22), WOOD if s % 2 else K.WOOD_LIGHT,
-              rot=(0, yaw, 0))
+        yaw = yaw_at(s)
+        a.box("Step", (STEP_TREAD * 0.92, 0.45, W), at(s, 0, y - 0.22), WOOD if s % 2 else K.WOOD_LIGHT, rot=(0, yaw, 0))
         if s % 3 == 1:
-            a.box("StepSnow", (STEP_TREAD * 0.7, 0.18, rng.uniform(1.2, 2.2)), polar(r + 1.2, deg, y + 0.05), SNOW,
+            a.box("StepSnow", (STEP_TREAD * 0.7, 0.18, rng.uniform(1.2, 2.2)), at(s, 1.2, y + 0.05), SNOW,
                   rot=(0, yaw, 0), **DETAIL)
         for side in (-1, 1):
             if s + 1 < steps:
-                d2 = start_deg - (s + 1) * dth
-                p0 = polar(rad(deg) + side * (W / 2 - 0.3), deg, y - 0.75)
-                p1 = polar(rad(d2) + side * (W / 2 - 0.3), d2, y + rise - 0.75)
-                a.rod("Stringer", p0, p1, 0.55, WOOD_DARK, octagon=False)
+                a.rod("Stringer", at(s, side * (W / 2 - 0.3), y - 0.75), at(s + 1, side * (W / 2 - 0.3), y + rise - 0.75),
+                      0.55, WOOD_DARK, octagon=False)
         if s % 4 == 0:
             post_top = y - 0.8
-            p = polar(r + W / 2 - 0.3, deg, (post_top + base - 0.6) / 2)
             if post_top - base > 1.2:
-                a.box("Post", (0.7, post_top - base + 0.6, 0.7), p, WOOD_DARK)
-                a.rod("Brace", polar(r + W / 2 - 0.3, deg, base + 0.4),
-                      polar(rad(deg - 3 * dth) + W / 2 - 0.3, deg - 3 * dth, post_top - 0.2), 0.35, WOOD, octagon=False,
-                      **DETAIL)
+                a.box("Post", (0.7, post_top - base + 0.6, 0.7), at(s, W / 2 - 0.3, (post_top + base - 0.6) / 2), WOOD_DARK)
+                a.rod("Brace", at(s, W / 2 - 0.3, base + 0.4), at(s + 3, W / 2 - 0.3, post_top - 0.2), 0.35, WOOD,
+                      octagon=False, **DETAIL)
         if s % 3 == 0 or s == steps - 1:
-            rp = polar(r + W / 2 + 0.1, deg, y + 1.6)
-            a.box("RailPost", (0.45, 3.2, 0.45), polar(r + W / 2 + 0.1, deg, y + 1.4), WOOD_DARK, **DETAIL)
-            a.box("RailCap", (0.65, 0.3, 0.65), add(rp, (0, 1.4, 0)), SNOW, **DETAIL)
-            rail.append(add(rp, (0, 1.1, 0)))
+            a.box("RailPost", (0.45, 3.2, 0.45), at(s, W / 2 + 0.1, y + 1.4), WOOD_DARK, **DETAIL)
+            a.box("RailCap", (0.65, 0.3, 0.65), at(s, W / 2 + 0.1, y + 3.0), SNOW, **DETAIL)
+            rail.append(at(s, W / 2 + 0.1, y + 2.7))
     for p0, p1 in zip(rail, rail[1:]):
         a.rod("Rope", p0, p1, 0.22, K.ROPE, octagon=False, **DETAIL)
         mid = add(scale((add(p0, p1)), 0.5), (0, -1.0, 0))
         a.rod("Rope", add(p0, (0, -1.0, 0)), mid, 0.18, K.ROPE, octagon=False, **DETAIL)
         a.rod("Rope", mid, add(p1, (0, -1.0, 0)), 0.18, K.ROPE, octagon=False, **DETAIL)
-    end = start_deg - steps * dth
-    # Landing at the top, reaching from the stairs back over the cliff edge.
-    deg = end - dth * 0.5
-    r_in = edge_radius(i + 1, deg) - 2.5
-    r_out = rad(deg) + W / 2
-    a.box("Landing", (STEP_TREAD * 2.4, 0.5, r_out - r_in), polar((r_in + r_out) / 2, deg, top - 0.25), WOOD,
-          rot=(0, yaw_facing(deg), 0))
+    # Landing at the top, reaching back over the cliff edge.
+    s = steps - 0.5
+    lat = (W / 2 - landing_in) / 2
+    a.box("Landing", (STEP_TREAD * 2.4, 0.5, W / 2 + landing_in), at(s, lat, top - 0.25), WOOD, rot=(0, yaw_at(s), 0))
     for side in (-1, 1):
-        a.box("LandingBeam", (0.5, 0.6, r_out - r_in), add(polar((r_in + r_out) / 2, deg, top - 0.75),
-                                                            apply(angles(0, yaw_facing(deg), 0), (side * STEP_TREAD, 0, 0))),
-              WOOD_DARK, rot=(0, yaw_facing(deg), 0))
-    a.box("FootStone", (STEP_TREAD * 2.2, 0.8, W + 1), polar(rad(start_deg + dth), start_deg + dth, base + 0.1), ROCK[2],
-          rot=(0, yaw_along(start_deg), 0))
-    return a, end
+        a.box("LandingBeam", (0.5, 0.6, W / 2 + landing_in), at(s + side, lat, top - 0.75), WOOD_DARK,
+              rot=(0, yaw_at(s), 0))
+    a.box("FootStone", (STEP_TREAD * 2.2, 0.8, W + 1), at(-1, 0, base + 0.1), ROCK[2], rot=(0, yaw_at(0), 0))
+    return steps
+
+
+def stairs(i, start_deg, rng):
+    """Stairs that climb along the foot of cliff i+1 from ring i to ring i+1. Returns the asset and the angle
+    where they end."""
+    base = bench_y(i) - 0.3 if i >= 0 else 0.0
+    top = TIERS[i + 1][1] + 0.5
+    a = Asset(f"Stairs{i + 1}", "Paths", "Mountain", "wooden stairs up the cliff")
+    dth = math.degrees(STEP_TREAD / (foot_radius(i + 1, start_deg) + 3.4))
+
+    def deg_at(s):
+        return start_deg - s * dth
+
+    def at(s, side, y):
+        d = deg_at(s)
+        return polar(foot_radius(i + 1, d) + 3.4 + side, d, y)
+
+    end_deg = deg_at(int(round((top - base) / STEP_RISE)))
+    landing_in = foot_radius(i + 1, end_deg) - edge_radius(i + 1, end_deg) + 5.9
+    steps = stair_flight(a, base, top, at, lambda s: yaw_along(deg_at(s)), landing_in, rng)
+    return a, deg_at(steps)
 
 
 def path_arc(name, r, y, d0, d1, width, rng, fences=None):
@@ -602,9 +603,9 @@ def build():
         area.put("Mountain", basalt(i, rng, []), (0, 0, 0))
     for deg in FALL_CHAINS:
         for upper in range(len(TIERS)):
-            area.put("Water", big_fall(upper, deg, 16 - 2 * upper, rng, pool=upper > 0), (0, 0, 0))
+            big_fall(area, upper, deg, 16 - 2 * upper, rng, pool=upper > 0)
     for i, deg, w in EXTRA_FALLS:
-        area.put("Water", big_fall(i, deg, w, rng, pool=i > 0), (0, 0, 0))
+        big_fall(area, i, deg, w, rng, pool=i > 0)
 
     # Stairs from the ground up the cliffs, a path along each ring to the next stairs, and on the third ring to
     # the cave.
