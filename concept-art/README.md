@@ -46,6 +46,10 @@ Waar de dieren staan, van de ingang naar achteren: Mossback Toad en Shroom Snail
 Duskbat (Uncommon), Hollow Badger en Glowmoth (Rare), Barkling (Epic), Wisp Lynx en Moonraven (Legendary),
 Umbra Panther (Mythic), en in The Heart de Mossking Elk (Mythic) en de Nightshade Drake (Secret).
 
+## Mountain Range
+
+Het gebied na de Dark Woods, met vijf zones en 16 nieuwe dieren: zie [`mountain-range/README.md`](mountain-range/README.md).
+
 Opnieuw maken: `python3 tools/concept-art/dark_woods_scenes.py` schrijft `tools/concept-art/build/dark_woods_world.json`
 en `tools/animal-models/build/dark_woods.json`. Kopieer die twee naar `tools/viewer/` en render met
 `node sceneshot.js dark_woods_world.json overview uit.png` (of: path, lasso, heart).
