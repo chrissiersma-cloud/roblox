@@ -350,6 +350,16 @@ local P = {
 			speed = { 2, 6 }, rate = 40, spread = 180 },
 		idle = { "aurora" }, every = { 7, 11 },
 	},
+	Phoenix = {
+		gait = "bird", stride = 2.6, swing = 30, bounce = 0.35, headBob = 12, walkSpeed = 7, breathe = 0.06,
+		flapBoost = 1.4,
+		step = { tex = "fire", c = { "#ffd23a", "#ff4a10" }, size = { 1.4, 0 }, life = { 0.4, 0.7 }, speed = { 1, 3 },
+			spread = 40, count = 10, accel = Vector3.new(0, 5, 0) },
+		stepSpark = { tex = "spark", c = { "#fff2a8", "#ff6a14" }, size = { 0.6, 0 }, life = { 0.5, 1 },
+			speed = { 3, 6 }, spread = 70, count = 8 },
+		stepRing = { color = "#ff6a14", radius = 4, time = 0.4 },
+		idle = { "rebirth", "wingspread" }, every = { 7, 11 },
+	},
 }
 
 local profile = P[model:GetAttribute("AnimalId") or model.Name] or P.MossbackToad
@@ -1172,6 +1182,50 @@ ACTIONS.thunder = {
 		groundRing(root.Position, "#fff7c2", 14, 0.6)
 		flash("Body", "#4fd6ff", 6, 30, 0.5)
 	end },
+}
+
+-- Wraps itself in its wings and glows hotter and hotter, then bursts open in a storm of fire and rises from it.
+ACTIONS.rebirth = {
+	time = 3.6,
+	pose = function(p)
+		local wrap = if p < 0.35 then math.sin(p / 0.35 * math.pi / 2) elseif p < 0.45 then 1
+			else math.max(0, 1 - (p - 0.45) / 0.08)
+		local open = if p < 0.45 then 0 else math.min(1, (p - 0.45) / 0.08) * (1 - ease(math.max(p, 0.75), 0.5, 1))
+		local tremble = if p > 0.2 and p < 0.45 then math.sin(p * 120) * R(2) else 0
+		return CFrame.new(0, -0.9 * wrap + 1.2 * open, 0), {
+			WingR = CFrame.Angles(0, R(35) * wrap, -R(40) * wrap + R(75) * open + tremble),
+			WingL = CFrame.Angles(0, -R(35) * wrap, R(40) * wrap - R(75) * open - tremble),
+			Head = CFrame.Angles(-R(25) * wrap + R(30) * open, 0, 0),
+			Tail = CFrame.Angles(R(15) * open, 0, 0),
+		}
+	end,
+	moments = {
+		[0.1] = function()
+			stream("RebirthGlow", "Body", { tex = "fire", c = { "#ffd23a", "#ff4a10" }, size = { 2.2, 0 },
+				life = { 0.4, 0.8 }, speed = { 1, 3 }, spread = 180, rate = 60, accel = Vector3.new(0, 6, 0) }, 1.2)
+			flash("Body", "#ff6a14", 3, 20, 1.2)
+		end,
+		[0.45] = function()
+			flash("Body", "#fff2a8", 12, 50, 0.9)
+			burst("RebirthFire", "Body", { tex = "fire", c = { "#fff2a8", "#ff4a10" }, size = { 4, 0 },
+				life = { 0.6, 1.2 }, speed = { 14, 28 }, spread = 180, drag = 3 }, 120)
+			burst("RebirthEmbers", "Body", { tex = "spark", c = { "#fff2a8", "#ff6a14" }, size = { 0.9, 0 },
+				life = { 1.2, 2.2 }, speed = { 10, 24 }, spread = 180, drag = 2, accel = Vector3.new(0, 3, 0) }, 150)
+			local body = part("Body")
+			for i = 0, 2 do
+				task.delay(i * 0.12, function()
+					ring(CFrame.new(body.Position + Vector3.new(0, 2 + i * 3, 0)), if i == 1 then "#fff2a8" else "#ff6a14",
+						12 + i * 6, 0.6)
+				end)
+			end
+			groundRing(root.Position, "#ff6a14", 28, 0.9)
+			groundRing(root.Position, "#fff2a8", 16, 0.6)
+		end,
+		[0.6] = function()
+			burst("RebirthAsh", "Body", { tex = "smoke", c = { "#5a2a1a", "#1a0a05" }, size = { 3, 6 }, life = { 1.2, 2 },
+				speed = { 4, 8 }, spread = 180, light = 0, transparency = 0.4, accel = Vector3.new(0, 3, 0) }, 30)
+		end,
+	},
 }
 
 -- ------------------------------------------------------------- update --

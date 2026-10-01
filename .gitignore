@@ -37,6 +37,7 @@ __pycache__/
 !models/mountain-range/*.rbxm
 !models/frost-peak-kit/*.rbxm
 !models/frost-peak-area/*.rbxm
+!models/phoenix/*.rbxm
 !tools/rbxm-writer/Cargo.lock
 
 # Viewer dependencies and copied scene data
