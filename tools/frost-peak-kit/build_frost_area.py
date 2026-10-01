@@ -3,22 +3,25 @@
 
 Modelled on the first mountain of the reference picture, turned into a big circle (about 660 studs across):
 
-  * The Mountain in the middle: five rings of snow-capped basalt cliffs, each higher and smaller than the last
-    (20, 42, 66, 100 and 135 studs high), with pines on every ring and a faceted snowy peak on top (about 215).
-    Waterfalls pour from ring to ring into pools in three places around it.
-  * A wooden path with stairs climbs along the cliffs from the entrance bridge to a cave in the mountain, with
-    lanterns and fences.
+  * The Mountain in the middle is one faceted shape (triangles made of wedges, see facets.py): five rings of
+    leaning, ridged cliffs with snowy benches between them (tops at 20, 42, 66, 100 and 135 studs), and a jagged
+    peak with four ridges up to about 240. Basalt columns stand against the cliffs here and there, pines grow on
+    every ring, and wide waterfalls pour from ring to ring into pools.
+  * Wooden stairs on posts climb the cliffs from the ground ring by ring, with fenced paths and lanterns between
+    them, past a cave to the Aurora Dragon's temple (dragon_temple.py), which sank crooked into the cliff.
   * A turquoise river runs in a ring around the mountain, with ice floes and rope bridges.
   * The Valley around it: pine forest, a frozen lake, a campfire, a round walking path with lanterns and fences,
     two rivers running out to the rim with rope bridges over them.
-  * The Rim: a wall of tall snowy cliffs around the whole circle, with two big waterfalls, and one entrance under
-    a stone arch at the south (+Z).
+  * The Rim: a ring of faceted snowy mountains around the whole circle, with basalt columns at their foot, two
+    waterfalls where the rivers end, and one entrance pass with a stone arch at the south (+Z).
 
     python3 tools/frost-peak-kit/build_frost_area.py                  -> build/area.json and build/area_world.json
-    python3 tools/frost-peak-kit/build_frost_area.py --rbxm OUT.rbxm  -> also writes the .rbxm (needs cargo)
+    python3 tools/frost-peak-kit/build_frost_area.py --rbxm OUT.rbxm  -> also writes the area .rbxm (needs cargo)
+                                                     --temple OUT.rbxm -> also writes the temple on its own
 """
 
 import copy
+import functools
 import json
 import math
 import random
@@ -30,9 +33,11 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
 import build_frost_kit as K  # noqa: E402
+import facets as F  # noqa: E402
+import dragon_temple  # noqa: E402
 from build_frost_kit import (DETAIL, DIRT, ROCK, ROCK_LIGHT, SNOW, SNOW_SHADE, WATER, WATER_DEEP,  # noqa: E402
-                             WATER_LIGHT, WOOD, WOOD_DARK, Asset, boulder, column, make_kit, pine_tree)
-from lib import add, angles, apply, cframe, compose, inverse, matmul  # noqa: E402
+                             WATER_LIGHT, WOOD, WOOD_DARK, Asset, boulder, make_kit, pine_tree)
+from lib import add, angles, apply, cframe, compose, inverse, matmul, scale  # noqa: E402
 from build_kit import viewer_parts  # noqa: E402
 
 TIERS = [(150, 20), (118, 42), (88, 66), (62, 100), (40, 135)]   # (edge radius, top height)
@@ -45,10 +50,12 @@ FALL_CHAINS = (150.0, 230.0, 310.0)
 # Extra single falls (ring, angle, width): staggered so the mountain has water everywhere, like the picture.
 EXTRA_FALLS = [(0, 60, 12), (0, 120, 10), (0, 190, 14), (0, 270, 11), (0, 350, 12), (0, 20, 9),
                (1, 75, 10), (1, 115, 12), (1, 200, 9), (1, 285, 11), (1, 10, 10),
-               (2, 105, 9), (2, 175, 10), (2, 260, 9), (2, 30, 8),
+               (2, 105, 9), (2, 175, 10), (2, 30, 8),
                (3, 95, 8), (3, 200, 8), (3, 40, 7), (4, 130, 7), (4, 280, 7)]
-STAIRS = [(0, 90.0), (1, 45.0), (2, 0.0)]                         # (tier climbed from, start angle)
+STAIRS = [(-1, 101.0), (0, 90.0), (1, 45.0), (2, 50.0)]           # (ring climbed from, -1 = ground; start angle)
 CAVE_ANGLE = 330.0
+TEMPLE_ANGLE = 268.0                                              # the Aurora Dragon's sunken temple
+STEP_RISE, STEP_TREAD = 1.0, 1.7
 
 
 def polar(r, deg, y=0.0):
@@ -74,14 +81,13 @@ def yaw_facing(deg):
 
 
 def yaw_along(deg):
-    """Yaw that lines a model's local X up with the tangent (direction of increasing angle) at this angle."""
-    return yaw_facing(deg) + 90.0 if _x_ok(yaw_facing(deg) + 90.0, deg) else yaw_facing(deg) - 90.0
-
-
-def _x_ok(yaw, deg):
+    """Yaw that lines a model's local X up with the tangent (direction of increasing angle) at this angle.
+    (With the front turned outward, local X already runs along the circle.)"""
+    yaw = yaw_facing(deg)
     v = apply(angles(0, yaw, 0), (1, 0, 0))
     t = math.radians(deg)
-    return abs(v[0] + math.sin(t)) < 1e-6 and abs(v[2] - math.cos(t)) < 1e-6
+    assert abs(v[0] + math.sin(t)) < 1e-6 and abs(v[2] - math.cos(t)) < 1e-6
+    return yaw
 
 
 def ang_dist(a, b):
@@ -116,173 +122,313 @@ def dodecagon(a, name, r, y0, y1, color, **kw):
         a.box(name, (side, y1 - y0, side), (0, (y0 + y1) / 2, 0), color, rot=(0, k * 30, 0), **kw)
 
 
+def smoothstep(t):
+    t = max(0.0, min(1.0, t))
+    return t * t * (3 - 2 * t)
+
+
+def stair_span(i):
+    """Degrees that the stairs from ring i to ring i+1 cover (they run clockwise from their start angle)."""
+    h = TIERS[i + 1][1] - (TIERS[i][1] if i >= 0 else 0.0)
+    return math.degrees(h / STEP_RISE * STEP_TREAD / (TIERS[i + 1][0] + 8))
+
+
+def calm(i, deg):
+    """1 where cliff i must be steep and smooth (waterfalls, stairs, the cave), 0 elsewhere."""
+    near = 99.0
+    for f in FALL_CHAINS:
+        near = min(near, ang_dist(deg, f) - 3)
+    for j, f, w in EXTRA_FALLS:
+        if j == i:
+            near = min(near, ang_dist(deg, f) - math.degrees(w * 0.6 / TIERS[i][0]))
+    for j, start in STAIRS:
+        if j + 1 == i:
+            mid = start - stair_span(j) / 2
+            near = min(near, ang_dist(deg, mid) - stair_span(j) / 2 - 2)
+    if i == 3:
+        near = min(near, ang_dist(deg, CAVE_ANGLE) - 7, ang_dist(deg, TEMPLE_ANGLE) - 24)
+    if i == 4:
+        near = min(near, ang_dist(deg, TEMPLE_ANGLE) - 20)
+    return 1.0 - smoothstep(near / 4.0)
+
+
+def run(i, deg):
+    """How far the foot of cliff i sticks out past its top edge: cliffs lean back, more on the ridges."""
+    t = math.radians(deg)
+    h = TIERS[i][1] - (TIERS[i - 1][1] if i else 0.0)
+    wild = h * (0.12 + 0.2 * (0.5 + 0.5 * math.sin(7 * t + 1.3 * i)) * (0.6 + 0.4 * math.sin(3 * t + 0.6)))
+    if i >= 3:
+        wild *= 1.7               # the high cliffs lean back more, so they flow into the peak
+    return 1.6 + (wild - 1.6) * (1 - calm(i, deg))
+
+
+@functools.lru_cache(maxsize=None)
 def edge_radius(i, deg):
-    """The cliff edge of ring i wobbles in and out, so the mountain looks wild instead of like a cake."""
+    """Top edge of cliff ring i. The bulges line up from ring to ring, so they read as ridges running down one
+    mountain instead of a stack of rings."""
     r = TIERS[i][0]
     t = math.radians(deg)
-    return r * (1 + 0.075 * math.sin(3 * t + 1.1 * i) + 0.045 * math.sin(5 * t + 2.3 * i) + 0.025 * math.sin(9 * t))
+    e = r * (1 + 0.07 * math.sin(3 * t + 0.6) + 0.045 * math.sin(5 * t + 1.9) + 0.02 * math.sin(9 * t + i)
+             + 0.015 * math.sin(4 * t + 2 * i))
+    if i == 0:
+        return min(e, RIVER[0] - 10 - run(0, deg))
+    if i == 3:
+        # The cliff gives way where the temple sank into it.
+        e -= 8.0 * (1 - smoothstep((ang_dist(deg, TEMPLE_ANGLE) - 8) / 16))
+    return min(e, edge_radius(i - 1, deg) - run(i, deg) - 10)
 
 
 def min_radius(i):
     return min(edge_radius(i, d) for d in range(0, 360, 2))
 
 
-def tier(i, rng, gaps):
-    top = TIERS[i][1]
-    low = TIERS[i - 1][1] if i else 0.0
-    a = Asset(f"Tier{i + 1}", "Mountain", "Mountain", f"mountain ring {i + 1}")
-    core = min_radius(i) - 3
-    a.cyl("Rock", top - low + 0.5, 2 * core, (0, (low + top) / 2 - 0.5, 0), ROCK[1], R=angles(0, 0, 90))
-    a.cyl("Snow", 0.8, 2 * core - 1, (0, top - 0.2, 0), SNOW, R=angles(0, 0, 90))
-    circ = 2 * math.pi * TIERS[i][0]
-    n = int(circ / 5.2)
-    for j in range(n):
-        deg = 360 * (j + rng.uniform(-0.15, 0.15)) / n
-        if any(ang_dist(deg, g) < w for g, w in gaps):
+def foot_radius(i, deg):
+    return edge_radius(i, deg) + run(i, deg)
+
+
+def bench_y(i):
+    """Walking height on top of ring i (the snow lies a little above the rock)."""
+    return TIERS[i][1] + 0.7
+
+
+def ring_angles(n, rng, jitter=0.3):
+    out = [0.0]
+    for k in range(1, n):
+        out.append((k + rng.uniform(-jitter, jitter)) * 360.0 / n)
+    return out
+
+
+def shade(rng, nu, y, peak=False):
+    """Colour of one facet from how flat it is: snow on flat facets, rock on steep ones, and streaks between."""
+    if nu > 0.8:
+        return SNOW if rng.random() < 0.7 else SNOW_SHADE
+    if nu > 0.55:
+        return rng.choice((SNOW_SHADE, K.SNOW_BLUE, ROCK_LIGHT))
+    if peak and nu > 0.3 and rng.random() < 0.45:
+        return rng.choice((SNOW_SHADE, K.SNOW_BLUE))          # snow streaks down the peak
+    if y > 150 and rng.random() < 0.3:
+        return ROCK_LIGHT
+    return rng.choice(ROCK[1:]) if rng.random() < 0.8 else ROCK[0]
+
+
+def facet_asset(name, group, rings, rng, peak_from=None, thick=1.4):
+    a = Asset(name, group, "Mountain", "faceted surface")
+    for p0, p1, p2 in F.surface(rings):
+        n = F.normal_up(p0, p1, p2)
+        if n is None:
             continue
-        edge = edge_radius(i, deg)
-        r = edge
-        first = True
-        # Columns from the edge inwards until they reach the solid core (more rows where the edge bulges out).
-        while first or r > core + 2:
-            w = rng.uniform(5.0, 6.8)
-            h = (top - low) + 1.2 + rng.uniform(-1.5, 4.0 if first else 2.0)
-            x, _, z = polar(r - w * 0.3, deg + rng.uniform(-0.4, 0.4))
-            yaw = yaw_along(deg) + rng.uniform(-8, 8)
-            if first:
-                column(a, (x, low - 1, z), w, rng.uniform(5.5, 7.5), h, rng, yaw=yaw, name="Cliff", lite=True)
-            else:
-                # Inner columns hardly show: one block with a snow top is enough.
-                d = rng.uniform(5.5, 7.5)
-                a.box("CliffInner", (w, h, d), (x, low - 1 + h / 2, z), rng.choice(ROCK[1:]),
-                      rot=(rng.uniform(-3, 3), yaw, rng.uniform(-3, 3)))
-                if rng.random() < 0.6:
-                    a.box("CliffInnerSnow", (w * 0.92, 0.7, d * 0.92), (x, low - 1 + h + 0.3, z), SNOW,
-                          rot=(0, yaw + rng.uniform(-10, 10), 0), collide=False)
-            r -= 5.5
-            first = False
+        nu = n[1]
+        y = (p0[1] + p1[1] + p2[1]) / 3
+        color = shade(rng, nu, y, peak=peak_from is not None and y > peak_from)
+        F.tri(a, "Snow" if color in (SNOW, SNOW_SHADE, K.SNOW_BLUE) else "Rock", p0, p1, p2, color, thick=thick)
     return a
 
 
-def peak(rng):
-    a = Asset("Peak", "Mountain", "Peak", "the snowy peak")
-    r5, y = TIERS[-1]
-    levels = 8
-    for j in range(levels):
-        f = 1 - j / levels
-        s = 66 * f + 6
-        hh = 11.5
-        yy = y + j * 10
-        for k in range(2):
-            a.box("PeakRock", (s * (1 - 0.12 * k), hh, s * (0.85 - 0.1 * k)), (rng.uniform(-2, 2), yy + hh / 2, rng.uniform(-2, 2)),
-                  rng.choice(ROCK[1:]) if j < 4 else ROCK_LIGHT,
-                  rot=(rng.uniform(-4, 4), j * 23 + k * 40, rng.uniform(-4, 4)))
-        if j >= 2:
-            # Snow on the shoulders, more the higher it gets.
-            for k in range(3 if j < 5 else 4):
-                ang = rng.uniform(0, 360)
-                p = add((0, yy + hh, 0), polar(s * 0.28, ang))
-                a.box("PeakSnow", (s * 0.55, 1.6 + j * 0.3, s * 0.4), p, SNOW if k % 2 == 0 else SNOW_SHADE,
-                      rot=(rng.uniform(-14, 14), rng.uniform(0, 90), rng.uniform(-14, 14)), collide=False)
-    top = y + levels * 10
-    a.box("Spire", (7, 14, 6), (0, top + 6, 0), ROCK_LIGHT, rot=(4, 20, -6))
-    a.box("SpireSnow", (6.4, 8, 5.4), (0, top + 11, 0), SNOW, rot=(4, 35, -6), collide=False)
-    a.box("SpireTip", (3.4, 6, 3), (0.4, top + 16, 0), SNOW, rot=(8, 60, 4), collide=False)
+def mountain(rng):
+    """The mountain as one faceted shape: for every ring a leaning, ridged cliff (foot, a zig-zag middle row
+    that gives the basalt-like vertical facets, and the top edge), a rounded snowy lip, a snowy bench that
+    drifts up against the next cliff, and above the last ring a tall jagged peak."""
+    rings = []
+    for i, (r, top) in enumerate(TIERS):
+        low = TIERS[i - 1][1] if i else 0.0
+        h = top - low
+        n = int(2 * math.pi * r / 6.0)
+        degs = ring_angles(n, rng)
+        foot_y = low - 0.8 if i == 0 else low + 1.4                 # the next cliff's foot is buried in drift
+        rings.append([(d, polar(foot_radius(i, d), d, foot_y)) for d in degs])
+        for frac, zig in ((0.35, 1.3), (0.72, 1.0)):
+            row = []
+            for k, d in enumerate(ring_angles(n, rng, 0.15)):
+                c = calm(i, d)
+                rr = edge_radius(i, d) + run(i, d) * (1 - frac) + (1 - c) * zig * (1 if k % 2 else -1) * rng.uniform(0.6, 1.2)
+                row.append((d, polar(rr, d, low + h * frac + (1 - c) * rng.uniform(-1.2, 1.2))))
+            rings.append(row)
+        rings.append([(d, polar(edge_radius(i, d) + rng.uniform(-0.2, 0.3), d, top + rng.uniform(-0.3, 0.5)))
+                      for d in degs])
+        rings.append([(d, polar(edge_radius(i, d) - 2.2, d, top + 0.55)) for d in ring_angles(n, rng)])
+        if i + 1 < len(TIERS):
+            row = []
+            for d in ring_angles(max(12, int(n * 0.8)), rng):
+                rr = (edge_radius(i, d) - 2.2 + foot_radius(i + 1, d)) / 2
+                row.append((d, polar(rr, d, top + 0.6 + rng.uniform(0, 0.5))))
+            rings.append(row)
+    # The peak: rings that shrink fast and rise faster, with jagged heights so the top has several crags.
+    r4, y4 = TIERS[-1]
+    for f, rise, n in ((0.88, 5, 40), (0.76, 22, 36), (0.63, 41, 30), (0.5, 59, 26), (0.38, 74, 20),
+                       (0.26, 86, 14), (0.14, 95, 9)):
+        row = []
+        for k, d in enumerate(ring_angles(n, rng, 0.25)):
+            t = math.radians(d)
+            # Four ridges run down from the summit, so the peak has shoulders instead of being a cone.
+            ridge = 1 + 0.32 * max(0.0, math.cos(2 * (t - 0.5))) ** 3 + 0.18 * max(0.0, math.cos(2 * t + 1.9)) ** 3
+            spike = rng.uniform(-4, 7) * (rise / 95) if k % 2 else rng.uniform(-3, 2)
+            row.append((d, polar(edge_radius(4, d) * f * ridge * rng.uniform(0.93, 1.07), d, y4 + rise + spike)))
+        rings.append(row)
+    rings.append([(0.0, (1.5, y4 + 102, -1.0))])
+    return facet_asset("Mountain", "Mountain", rings, rng, peak_from=y4 + 10)
+
+
+def basalt(i, rng, gaps):
+    """Clusters of basalt columns standing against the cliffs here and there, like in the picture."""
+    a = Asset(f"Basalt{i + 1}", "Mountain", "Mountain", f"basalt columns on ring {i + 1}")
+    low = TIERS[i - 1][1] if i else 0.0
+    h = TIERS[i][1] - low
+    n = int(2 * math.pi * TIERS[i][0] / 34)
+    for j in range(n):
+        deg = 360 * (j + rng.uniform(-0.3, 0.3)) / n
+        if calm(i, deg) > 0.01 or any(ang_dist(deg, g) < w + 3 for g, w in gaps):
+            continue
+        for k in range(rng.randint(3, 5)):
+            d = deg + (k - 2) * math.degrees(3.4 / TIERS[i][0]) + rng.uniform(-0.3, 0.3)
+            w = rng.uniform(2.6, 3.8)
+            hh = h * rng.uniform(0.45, 0.85)
+            base = low - (0.8 if i == 0 else -1.0)
+            x, _, z = polar(foot_radius(i, d) - run(i, d) * (hh / h) * 0.6 - 0.8, d)
+            yaw = yaw_along(d) + rng.uniform(-12, 12)
+            col = rng.choice(ROCK[1:])
+            a.box("Column", (w, hh, w * 0.9), (x, base + hh / 2, z), col, rot=(rng.uniform(-3, 3), yaw, rng.uniform(-3, 3)))
+            a.box("ColumnFacet", (w * 0.75, hh * 0.98, w * 0.75), (x, base + hh / 2, z), ROCK[0], rot=(0, yaw + 45, 0), **DETAIL)
+            a.wedge("ColumnTop", (w * 0.95, 0.9, w * 0.85), (x, base + hh + 0.45, z), ROCK_LIGHT, rot=(0, yaw + 180 * (k % 2), 0), **DETAIL)
+            a.box("ColumnSnow", (w * 0.8, 0.5, w * 0.7), (x, base + hh + 0.55, z), SNOW, rot=(0, yaw + 10, 0), **DETAIL)
     return a
 
 
 def big_fall(upper, deg, width, rng, pool=True):
-    """A wide waterfall over the cliff of tier `upper`, like the falls in the picture: a turquoise stream on the
-    tier's top running out from the cliff behind it, the falling sheet with flowing sparkles and white streaks,
-    foam and mist at the foot, and a pool on the tier below."""
+    """A wide waterfall over cliff `upper`, like the falls in the picture: a turquoise stream on the ring above
+    running out from the next cliff, the falling sheet split in strands with flowing sparkles, foam and mist at the
+    foot, and a pool with ice on the ring below."""
     top = TIERS[upper][1]
     low = TIERS[upper - 1][1] if upper else 0.0
-    H = top - low + 1.0
-    edge = edge_radius(upper, deg) + 1.2
+    base = low - 0.6 if upper == 0 else low + 0.9
+    H = top - base + 1.2
+    edge = edge_radius(upper, deg) + run(upper, deg) * 0.55 + 0.9
     name = f"Fall{upper}_{int(deg)}"
     a = Asset(name, "Water", "Mountain", "wide waterfall over a cliff ring")
     yaw = yaw_facing(deg)
 
     def at(out, up, side=0.0):
-        """A point `out` studs outward from the cliff edge, `up` above the foot, `side` along the cliff."""
-        return add(polar(edge + out, deg, low + up), apply(angles(0, yaw, 0), (side, 0, 0)))
+        return add(polar(edge + out, deg, base + up), apply(angles(0, yaw, 0), (side, 0, 0)))
 
-    a.box("FallBack", (width + 1.2, H, 1.0), at(-0.3, H / 2), K.WATER_DEEP, rot=(0, yaw, 0), collide=False,
-          shadow=False)
-    a.box("Fall", (width, H, 1.0), at(0.4, H / 2), WATER, rot=(0, yaw, 0), collide=False, shadow=False,
-          transparency=0.12,
-          effects=K.flow_beam(name, "Flow", (0, H / 2, -0.7), (0, -H / 2, -0.7), width, speed=1.8))
-    for j in range(int(width / 2.2)):
-        x = -width / 2 + 1.1 + j * 2.2 + rng.uniform(-0.4, 0.4)
-        hh = H * rng.uniform(0.45, 0.95)
-        a.box("Streak", (rng.uniform(0.35, 0.7), hh, 0.2), at(1.0, H - hh / 2 - rng.uniform(0, 2), x),
-              K.WATER_LIGHT if j % 2 else K.ICE_LIGHT, rot=(0, yaw, 0), **DETAIL)
-    a.box("Lip", (width + 0.8, 1.0, 3.0), at(-0.2, H - 0.2), K.WATER_LIGHT, rot=(-25, yaw, 0), **DETAIL)
-    # The stream on top of the tier, from the next cliff inward to the edge.
+    a.box("FallBack", (width + 1.6, H, 1.2), at(-0.5, H / 2), K.WATER_DEEP, rot=(0, yaw, 0), collide=False, shadow=False)
+    # Strands of different widths, a little in front of each other, lighter at the top where the water is thin.
+    x = -width / 2
+    j = 0
+    while x < width / 2 - 0.8:
+        sw = min(rng.uniform(1.8, 3.6), width / 2 - x)
+        hh = H * rng.uniform(0.9, 1.0)
+        out = rng.uniform(0.3, 0.9)
+        a.box("Fall", (sw, hh, 0.9), at(out, H - hh / 2, x + sw / 2), WATER, rot=(0, yaw, 0), collide=False,
+              shadow=False, transparency=0.1,
+              effects=K.flow_beam(f"{name}{j}", "Flow", (0, hh / 2, -0.6), (0, -hh / 2, -0.6), sw, speed=1.5 + 0.2 * (j % 3)))
+        a.box("FallTop", (sw * 0.98, H * 0.22, 0.95), at(out + 0.05, H - H * 0.11, x + sw / 2), WATER_LIGHT,
+              rot=(0, yaw, 0), **DETAIL)
+        a.box("Streak", (0.35, hh * rng.uniform(0.4, 0.8), 0.2), at(out + 0.5, H * rng.uniform(0.35, 0.6), x + sw * rng.uniform(0.25, 0.75)),
+              K.ICE_LIGHT, rot=(0, yaw, 0), **DETAIL)
+        x += sw
+        j += 1
+    a.box("Lip", (width + 0.6, 1.2, 3.2), at(-0.6, H - 0.3), WATER_LIGHT, rot=(-28, yaw, 0), **DETAIL)
     if upper + 1 < len(TIERS):
-        inner = edge_radius(upper + 1, deg) + 1.0
-        L = edge - inner + 1.5
-        mid = polar((edge + inner) / 2, deg, top + 0.55)
-        a.box("Stream", (width * 0.85, 0.5, L), mid, WATER, rot=(0, yaw, 0), collide=False, shadow=False)
-        a.box("StreamDeep", (width * 0.4, 0.52, L), mid, K.WATER_DEEP, rot=(0, yaw, 0), **DETAIL)
-        for j in range(int(L / 5)):
-            p = polar(inner + 2 + j * 5 + rng.uniform(-1, 1), deg + rng.uniform(-1, 1), top + 0.85)
-            a.box("Ripple", (rng.uniform(1.2, 3), 0.1, 0.35), p, K.WATER_LIGHT, rot=(0, yaw + 90, 0), **DETAIL)
-    # Foot: foam, mist and a pool.
-    for j in range(int(width / 1.6)):
-        a.octo("Foam", (rng.uniform(1.6, 2.6), rng.uniform(0.8, 1.4), rng.uniform(1.6, 2.4)),
-               at(1.8 + rng.uniform(0, 1.5), 0.5, rng.uniform(-width / 2, width / 2)), SNOW, yaw=rng.uniform(0, 45),
-               **DETAIL)
+        inner = foot_radius(upper + 1, deg)
+        L = edge - inner + 1.0
+        mid = polar((edge + inner) / 2 - 0.5, deg, top + 1.05)
+        a.box("Stream", (width * 0.8, 0.5, L), mid, WATER, rot=(0, yaw, 0), collide=False, shadow=False)
+        a.box("StreamDeep", (width * 0.35, 0.52, L), mid, K.WATER_DEEP, rot=(0, yaw, 0), **DETAIL)
+        for s in (-1, 1):
+            a.box("StreamBank", (1.4, 0.9, L), add(mid, apply(angles(0, yaw, 0), (s * width * 0.42, 0.1, 0))), SNOW,
+                  rot=(0, yaw, 0), **DETAIL)
+        for k in range(int(L / 4)):
+            p = polar(inner + 2 + k * 4, deg + rng.uniform(-0.8, 0.8), top + 1.33)
+            a.box("Ripple", (rng.uniform(1.2, 2.6), 0.1, 0.35), p, WATER_LIGHT, rot=(0, yaw + 90, 0), **DETAIL)
+    # Foot: round white foam, mist and spray.
+    for k in range(int(width / 1.4)):
+        a.ball("Foam", rng.uniform(1.8, 3.0), at(1.4 + rng.uniform(0, 1.6), 0.5, rng.uniform(-width / 2, width / 2)),
+               SNOW if k % 3 else K.ICE_LIGHT, **DETAIL)
     a.parts[-1]["effects"] = [
-        K.emitter("Mist", "#ffffff", texture=K.SMOKE, rate=5, lifetime=(1.5, 3), speed=(1, 3), spread=70,
-                  size=((0, 3), (1, 8)), transparency=((0, 0.6), (1, 1)), light_=0.2, accel=(0, 1.2, 0)),
-        K.emitter("Spray", "#e8fbff", rate=8, lifetime=(0.6, 1.2), speed=(3, 6), spread=50,
+        K.emitter("Mist", "#ffffff", texture=K.SMOKE, rate=6, lifetime=(1.5, 3), speed=(1, 3), spread=70,
+                  size=((0, 3), (1, 9)), transparency=((0, 0.55), (1, 1)), light_=0.2, accel=(0, 1.2, 0)),
+        K.emitter("Spray", "#e8fbff", rate=10, lifetime=(0.6, 1.2), speed=(3, 6), spread=50,
                   size=((0, 0.5), (1, 0)), accel=(0, -8, 0))]
     if pool:
-        c = at(width * 0.45, 0.3)
-        a.disc("Pool", width * 1.5, 0.5, c, WATER, collide=False, shadow=False)
-        a.disc("PoolDeep", width * 0.8, 0.52, add(c, (0, 0.01, 0)), K.WATER_DEEP, **DETAIL)
-        for j in range(7):
-            ang = j * 360 / 7 + rng.uniform(-15, 15)
-            a.box("PoolRock", (rng.uniform(2, 3.5), rng.uniform(1.2, 2), rng.uniform(2, 3)),
-                  add(c, polar(width * 0.75, ang, 0.6)), rng.choice(ROCK[1:]),
-                  rot=(rng.uniform(-10, 10), rng.uniform(0, 90), rng.uniform(-10, 10)))
-            a.box("PoolRockSnow", (2.2, 0.5, 2.0), add(c, polar(width * 0.75, ang, 1.6)), SNOW,
-                  rot=(0, rng.uniform(0, 90), 0), **DETAIL)
-        for j in range(3):
+        c = at(width * 0.5 + 1, 0.15)
+        a.disc("Pool", width * 1.5, 0.6, c, WATER, collide=False, shadow=False)
+        a.disc("PoolDeep", width * 0.8, 0.62, add(c, (0, 0.01, 0)), K.WATER_DEEP, **DETAIL)
+        a.disc("PoolRim", width * 1.5 + 2.4, 0.5, add(c, (0, -0.05, 0)), SNOW_SHADE, **DETAIL)
+        for k in range(6):
+            ang = k * 60 + rng.uniform(-20, 20)
+            p = add(c, polar(width * 0.78, ang, 0.5))
+            boulder(a, p, (rng.uniform(2, 3.2), rng.uniform(1.4, 2.0), rng.uniform(2, 3)), rng, name="PoolRock")
+        for k in range(3):
             a.box("Floe", (rng.uniform(1.5, 3), 0.35, rng.uniform(1.5, 2.5)),
-                  add(c, polar(rng.uniform(1, width * 0.5), rng.uniform(0, 360), 0.45)), K.ICE_LIGHT,
+                  add(c, polar(rng.uniform(1, width * 0.5), rng.uniform(0, 360), 0.35)), K.ICE_LIGHT,
                   rot=(0, rng.uniform(0, 90), 0), **DETAIL)
     return a
 
 
 def stairs(i, start_deg, rng):
-    """Wooden stairs that climb along the outside of tier i+1's cliff, from tier i's top to tier i+1's top.
-    Returns the angle where they end."""
-    base = TIERS[i][1] if i >= 0 else 0.0
-    top = TIERS[i + 1][1]
+    """Wooden stairs on posts that climb along the foot of cliff i+1 from ring i to ring i+1: open plank steps on
+    two stringers, posts down to the ground, a rope railing on the open side, and a landing at the top that
+    reaches back to the cliff edge. Returns the asset and the angle where they end."""
+    base = bench_y(i) - 0.3 if i >= 0 else 0.0
+    top = TIERS[i + 1][1] + 0.5
     a = Asset(f"Stairs{i + 1}", "Paths", "Mountain", "wooden stairs up the cliff")
-    rad = max(edge_radius(i + 1, start_deg - d) for d in range(0, 30, 2)) + 4.6
-    steps = int(top - base)
-    tread = 1.55
-    dtheta = math.degrees(tread / rad)
+    steps = int(round((top - base) / STEP_RISE))
+    rise = (top - base) / steps
+    rad0 = foot_radius(i + 1, start_deg) + 3.4
+    dth = math.degrees(STEP_TREAD / rad0)
+
+    def rad(deg):
+        return foot_radius(i + 1, deg) + 3.4
+
+    W = 4.6
+    rail = []
     for s in range(steps):
-        deg = start_deg - s * dtheta
-        hgt = (s + 1) * (top - base) / steps
-        a.box("Step", (tread * 1.04, hgt, 6.0), polar(rad, deg, base + hgt / 2), WOOD if s % 2 else K.WOOD_LIGHT,
-              rot=(0, yaw_along(deg), 0))
-        if s % 5 == 0:
-            post = polar(rad + 3.1, deg, base + hgt + 1.5)
-            a.box("RailPost", (0.5, 3.0, 0.5), post, WOOD_DARK, **DETAIL)
-            if s + 5 < steps:
-                nxt_deg = start_deg - (s + 5) * dtheta
-                nxt = polar(rad + 3.1, nxt_deg, base + (s + 6) * (top - base) / steps + 3.0)
-                a.rod("Rail", add(post, (0, 1.5, 0)), nxt, 0.35, WOOD, octagon=False, **DETAIL)
-        if s % 4 == 2:
-            a.box("StepSnow", (tread * 0.8, 0.15, rng.uniform(1.5, 3)), polar(rad + rng.uniform(-2, 2), deg,
-                                                                              base + hgt + 0.08), SNOW,
-                  rot=(0, yaw_along(deg), 0), **DETAIL)
-    return a, start_deg - steps * dtheta
+        deg = start_deg - s * dth
+        r = rad(deg)
+        y = base + (s + 1) * rise
+        yaw = yaw_along(deg)
+        a.box("Step", (STEP_TREAD * 0.92, 0.45, W), polar(r, deg, y - 0.22), WOOD if s % 2 else K.WOOD_LIGHT,
+              rot=(0, yaw, 0))
+        if s % 3 == 1:
+            a.box("StepSnow", (STEP_TREAD * 0.7, 0.18, rng.uniform(1.2, 2.2)), polar(r + 1.2, deg, y + 0.05), SNOW,
+                  rot=(0, yaw, 0), **DETAIL)
+        for side in (-1, 1):
+            if s + 1 < steps:
+                d2 = start_deg - (s + 1) * dth
+                p0 = polar(rad(deg) + side * (W / 2 - 0.3), deg, y - 0.75)
+                p1 = polar(rad(d2) + side * (W / 2 - 0.3), d2, y + rise - 0.75)
+                a.rod("Stringer", p0, p1, 0.55, WOOD_DARK, octagon=False)
+        if s % 4 == 0:
+            post_top = y - 0.8
+            p = polar(r + W / 2 - 0.3, deg, (post_top + base - 0.6) / 2)
+            if post_top - base > 1.2:
+                a.box("Post", (0.7, post_top - base + 0.6, 0.7), p, WOOD_DARK)
+                a.rod("Brace", polar(r + W / 2 - 0.3, deg, base + 0.4),
+                      polar(rad(deg - 3 * dth) + W / 2 - 0.3, deg - 3 * dth, post_top - 0.2), 0.35, WOOD, octagon=False,
+                      **DETAIL)
+        if s % 3 == 0 or s == steps - 1:
+            rp = polar(r + W / 2 + 0.1, deg, y + 1.6)
+            a.box("RailPost", (0.45, 3.2, 0.45), polar(r + W / 2 + 0.1, deg, y + 1.4), WOOD_DARK, **DETAIL)
+            a.box("RailCap", (0.65, 0.3, 0.65), add(rp, (0, 1.4, 0)), SNOW, **DETAIL)
+            rail.append(add(rp, (0, 1.1, 0)))
+    for p0, p1 in zip(rail, rail[1:]):
+        a.rod("Rope", p0, p1, 0.22, K.ROPE, octagon=False, **DETAIL)
+        mid = add(scale((add(p0, p1)), 0.5), (0, -1.0, 0))
+        a.rod("Rope", add(p0, (0, -1.0, 0)), mid, 0.18, K.ROPE, octagon=False, **DETAIL)
+        a.rod("Rope", mid, add(p1, (0, -1.0, 0)), 0.18, K.ROPE, octagon=False, **DETAIL)
+    end = start_deg - steps * dth
+    # Landing at the top, reaching from the stairs back over the cliff edge.
+    deg = end - dth * 0.5
+    r_in = edge_radius(i + 1, deg) - 2.5
+    r_out = rad(deg) + W / 2
+    a.box("Landing", (STEP_TREAD * 2.4, 0.5, r_out - r_in), polar((r_in + r_out) / 2, deg, top - 0.25), WOOD,
+          rot=(0, yaw_facing(deg), 0))
+    for side in (-1, 1):
+        a.box("LandingBeam", (0.5, 0.6, r_out - r_in), add(polar((r_in + r_out) / 2, deg, top - 0.75),
+                                                            apply(angles(0, yaw_facing(deg), 0), (side * STEP_TREAD, 0, 0))),
+              WOOD_DARK, rot=(0, yaw_facing(deg), 0))
+    a.box("FootStone", (STEP_TREAD * 2.2, 0.8, W + 1), polar(rad(start_deg + dth), start_deg + dth, base + 0.1), ROCK[2],
+          rot=(0, yaw_along(start_deg), 0))
+    return a, end
 
 
 def path_arc(name, r, y, d0, d1, width, rng, fences=None):
@@ -338,25 +484,78 @@ def radial_river(deg, rng):
     return a
 
 
+# The rim: mountains all around the valley. Rows of (radius offset from RIM, base height, extra height).
+RIM_ROWS = [(-30, 0.0, 0.0), (-16, 1.0, 2.5), (-5, 3.0, 4.0), (3, 24.0, 14.0), (18, 46.0, 26.0), (42, 74.0, 46.0),
+            (76, 66.0, 30.0), (125, 38.0, 14.0), (180, 8.0, 4.0)]
+
+
+def rim_gap(deg, floor=0.25):
+    """0 in the entrance pass, `floor` where the two streams cut into the rim, 1 elsewhere."""
+    m = smoothstep((ang_dist(deg, 90) - 1.5) / 10.0)
+    for d in RADIAL_RIVERS:
+        m = min(m, floor + (1 - floor) * smoothstep((ang_dist(deg, d) - 2.0) / 6.0))
+    return m
+
+
+def rim_height(k, deg, rng=None):
+    off, base, extra = RIM_ROWS[k]
+    t = math.radians(deg)
+    n = 0.5 + 0.5 * math.sin(5 * t + 1.3 + k) * math.cos(3 * t + 0.4 * k)
+    y = base + extra * n
+    if rng is not None and k >= 4:
+        y += rng.uniform(-0.25, 0.35) * extra          # jagged crests
+    if k == 0:
+        return y
+    if k <= 2:
+        return y * rim_gap(deg, 0.0)
+    gap = rim_gap(deg)
+    return y * gap if ang_dist(deg, 90) < 14 else y * (0.55 + 0.45 * gap)
+
+
+def ground_y(r, deg):
+    """Height of the ground in the valley (it rises into the rim mountains near the edge)."""
+    for k in range(len(RIM_ROWS) - 1):
+        r0, r1 = RIM + RIM_ROWS[k][0], RIM + RIM_ROWS[k + 1][0]
+        if r < r0:
+            return 0.0
+        if r <= r1:
+            t = (r - r0) / (r1 - r0)
+            return rim_height(k, deg) * (1 - t) + rim_height(k + 1, deg) * t
+    return rim_height(len(RIM_ROWS) - 1, deg)
+
+
 def rim(rng):
-    a = Asset("Rim", "Rim", "Rim", "the cliffs around the area")
-    n = int(2 * math.pi * (RIM + 10) / 6.4)
-    for j in range(n):
-        deg = 360 * j / n
-        if ang_dist(deg, 90) < 4.5:
-            continue          # the entrance
-        tall = 34 + 22 * (0.5 + 0.5 * math.sin(math.radians(deg) * 5 + 1.3)) + rng.uniform(-4, 6)
-        x, _, z = polar(RIM + 12, deg)
-        column(a, (x, -1, z), rng.uniform(6.2, 8.0), 8, tall, rng, yaw=yaw_along(deg) + rng.uniform(-10, 10),
-               name="RimCliff", lite=True)
-        if j % 2 == 0 and not any(ang_dist(deg, d) < 3 for d in RADIAL_RIVERS):
-            x, _, z = polar(RIM + 1, deg + rng.uniform(-1, 1))
-            column(a, (x, -1, z), rng.uniform(5, 6.5), 6, rng.uniform(10, 20), rng,
-                   yaw=yaw_along(deg) + rng.uniform(-10, 10), name="RimFoot", lite=True)
-    # Ground beyond the rim, so the edge never shows.
-    ring_boxes(a, "OuterGround", RIM + 18, OUTER + 40, 8, 18, ROCK[1], 60)
-    ring_boxes(a, "OuterSnow", RIM + 18, OUTER + 40, 17.2, 0.6, SNOW, 60, collide=False)
+    rings = []
+    for k, (off, _, _) in enumerate(RIM_ROWS):
+        r = RIM + off
+        n = 144 if k < 6 else 96 if k < 8 else 72
+        row = []
+        for j, d in enumerate(ring_angles(n, rng, 0.0 if k < 3 else 0.25)):
+            row.append((d, polar(r + (rng.uniform(-2, 2) if k >= 3 else 0), d, rim_height(k, d, rng) - (0.4 if k == 0 else 0))))
+        rings.append(row)
+    a = facet_asset("RimMountains", "Rim", rings, rng, peak_from=40, thick=1.6)
+    # Basalt columns at the foot of the rim cliffs, like on the mountain.
+    for j in range(80):
+        deg = rng.uniform(0, 360)
+        if ang_dist(deg, 90) < 12 or any(ang_dist(deg, d) < 6 for d in RADIAL_RIVERS):
+            continue
+        for k in range(rng.randint(2, 4)):
+            d = deg + (k - 1.5) * 1.0
+            r = RIM + 2 + rng.uniform(-1, 2)
+            hh = ground_y(r, d) + rng.uniform(-6, 4)
+            if hh < 6:
+                continue
+            w = rng.uniform(3, 4.4)
+            x, _, z = polar(r - 3, d)
+            yaw = yaw_along(d) + rng.uniform(-12, 12)
+            a.box("Column", (w, hh, w * 0.9), (x, hh / 2 - 0.5, z), rng.choice(ROCK[1:]), rot=(rng.uniform(-3, 3), yaw, 0))
+            a.wedge("ColumnTop", (w * 0.95, 0.9, w * 0.85), (x, hh, z), ROCK_LIGHT, rot=(0, yaw + 180 * (k % 2), 0), **DETAIL)
+            a.box("ColumnSnow", (w * 0.8, 0.5, w * 0.7), (x, hh + 0.1, z), SNOW, rot=(0, yaw + 10, 0), **DETAIL)
     return a
+
+
+def ground_at(x, z):
+    return ground_y(math.hypot(x, z), math.degrees(math.atan2(z, x)) % 360)
 
 
 def scatter_points(rng, count, r0, r1, gap, ok):
@@ -397,51 +596,58 @@ def build():
         g.octo("SnowPatch", (rng.uniform(6, 14), 0.3, rng.uniform(6, 14)), p, SNOW, yaw=rng.uniform(0, 45), **DETAIL)
     area.put("Ground", g, (0, 0, 0))
 
-    # The mountain.
-    gaps_for = {i: [] for i in range(len(TIERS))}
-    for deg in FALL_CHAINS:
-        for i in range(len(TIERS)):
-            gaps_for[i].append((deg, 3.2))
-    for i, deg, w in EXTRA_FALLS:
-        gaps_for[i].append((deg, math.degrees(w * 0.45 / TIERS[i][0])))
-    end_angles = {}
-    for i, start in STAIRS:
-        st, end = stairs(i, start, rng)
-        end_angles[i] = end
-        area.put("Paths", st, (0, 0, 0))
-        gaps_for[i + 1].append((end + 1.0, 4.5))
-    gaps_for[0].append((90.0, 3.0))
+    # The mountain: one faceted shape, basalt columns on the cliffs, and waterfalls from ring to ring.
+    area.put("Mountain", mountain(rng), (0, 0, 0))
     for i in range(len(TIERS)):
-        area.put("Mountain", tier(i, rng, gaps_for[i]), (0, 0, 0))
-    area.put("Mountain", peak(rng), (0, 0, 0))
+        area.put("Mountain", basalt(i, rng, []), (0, 0, 0))
     for deg in FALL_CHAINS:
         for upper in range(len(TIERS)):
             area.put("Water", big_fall(upper, deg, 16 - 2 * upper, rng, pool=upper > 0), (0, 0, 0))
     for i, deg, w in EXTRA_FALLS:
         area.put("Water", big_fall(i, deg, w, rng, pool=i > 0), (0, 0, 0))
 
-    # Paths on the mountain: from the entrance bridge to the first stairs, then along each ring to the next
-    # stairs, and on the third ring to the cave.
-    area.put("Paths", path_arc("BaseLanding", 155, 0, 90, 90.5, 6, rng), (0, 0, 0))
+    # Stairs from the ground up the cliffs, a path along each ring to the next stairs, and on the third ring to
+    # the cave.
+    end_angles = {}
     for i, start in STAIRS:
-        y = TIERS[i + 1][1]
+        st, end = stairs(i, start, rng)
+        end_angles[i] = end
+        area.put("Paths", st, (0, 0, 0))
+        y0 = bench_y(i) if i >= 0 else 0.0
+        area.put("Paths", kit["LanternPost"], polar(foot_radius(i + 1, start + 3) + 7.5, start + 3, y0 - 0.4),
+                 yaw_facing(start + 3) + 90)
+    area.put("Paths", path_arc("BaseLanding", lambda d: foot_radius(0, d) + 4.5, 0, 88, STAIRS[0][1] + 2, 6, rng),
+             (0, 0, 0))
+    for k in range(len(STAIRS) - 1):
+        i = STAIRS[k][0]
+        j = i + 1
+        y = bench_y(j) + 0.1
 
-        def ledge_r(deg, j=i + 1):
+        def ledge_r(deg, j=j):
             # Along the outer edge of the ring's top, but never into the cliff above.
-            return max(edge_radius(j, deg) - 6.0, edge_radius(j + 1, deg) + 4.5)
+            return max(edge_radius(j, deg) - 6.0, foot_radius(j + 1, deg) + 4.5)
 
-        nxt = STAIRS[i + 1][1] if i + 1 < len(STAIRS) else CAVE_ANGLE - 360 + 6
-        area.put("Paths", path_arc(f"Ledge{i + 1}", ledge_r, y, end_angles[i] - 2, nxt + 2, 6, rng), (0, 0, 0))
-        for deg in (end_angles[i] - 4, (end_angles[i] + nxt) / 2):
-            area.put("Paths", kit["LanternPost"], polar(ledge_r(deg) + 3.5, deg, y), yaw_facing(deg) + 90)
+        # On ring 2 the path goes on past the next stairs to the cave.
+        nxt = TEMPLE_ANGLE - 360 + 19 if j == 2 else STAIRS[k + 1][1]
+        if nxt >= end_angles[i] - 6:
+            continue
+        area.put("Paths", path_arc(f"Ledge{j}", ledge_r, y, end_angles[i] - 2, nxt + 2, 6, rng), (0, 0, 0))
+        area.put("Paths", kit["LanternPost"], polar(ledge_r((end_angles[i] + nxt) / 2) + 3.5,
+                                                   (end_angles[i] + nxt) / 2, y - 0.5), yaw_facing((end_angles[i] + nxt) / 2) + 90)
         # A fence along the drop side of the ledge path, like the wooden fence in the picture.
         deg = end_angles[i] - 8
         while deg > nxt + 6:
-            area.put("Paths", kit["WoodFence"], polar(ledge_r(deg) + 3.6, deg, y), yaw_along(deg))
+            area.put("Paths", kit["WoodFence"], polar(ledge_r(deg) + 3.6, deg, y - 0.5), yaw_along(deg))
             deg -= math.degrees(12.6 / ledge_r(deg))
-    cave_r, cave_y = edge_radius(3, CAVE_ANGLE) + 3.5, TIERS[2][1]
+    # The Aurora Dragon's temple, sunk crooked into the cliff of ring 3: its front steps end at the edge of ring 2.
+    tpl = dragon_temple.sink(dragon_temple.temple(random.Random(77)))
+    area.put("Temple", tpl, polar(edge_radius(2, TEMPLE_ANGLE) - 30.5, TEMPLE_ANGLE, bench_y(2) - 0.7),
+             yaw_facing(TEMPLE_ANGLE))
+    cave_r, cave_y = foot_radius(3, CAVE_ANGLE) + 2.0, bench_y(2) - 0.6
     area.put("Decor", kit["CaveEntrance"], polar(cave_r, CAVE_ANGLE, cave_y), yaw_facing(CAVE_ANGLE), 1.35)
-    area.put("Decor", kit["Campfire"], polar(TIERS[3][0] + 14, CAVE_ANGLE + 14, cave_y), 0.0, 0.9)
+    fire_deg = CAVE_ANGLE + 12
+    area.put("Decor", kit["Campfire"], polar((edge_radius(2, fire_deg) - 2 + foot_radius(3, fire_deg)) / 2, fire_deg,
+                                             bench_y(2) - 0.3), 0.0, 0.9)
 
     # The ring river with bridges and ice floes.
     area.put("Water", river_ring(rng), (0, 0, 0))
@@ -458,7 +664,8 @@ def build():
     # valley path crosses.
     for deg in RADIAL_RIVERS:
         area.put("Water", radial_river(deg, rng), (0, 0, 0))
-        area.put("Water", kit["WaterfallTall"], polar(RIM + 3, deg), yaw_facing(deg + 180), 1.7)
+        area.put("Water", kit["WaterfallTall"], polar(RIM - 1, deg, -0.3), yaw_facing(deg + 180),
+                 (ground_y(RIM + 3, deg) + 0.8) / 24)
         area.put("Paths", kit["RopeBridge"], polar(PATH_R, deg), yaw_facing(deg) + 90, 0.9)
 
     # The valley path, with fences on the inside and lanterns.
@@ -485,9 +692,10 @@ def build():
         ep.box("Path", (7, 0.3, 6.4), polar(r, 90, 0.15), DIRT, rot=(0, yaw_facing(90), 0), collide=False)
     area.put("Paths", ep, (0, 0, 0))
     area.put("Decor", kit["StoneArch"], polar(RIM + 6, 90), yaw_along(90), 1.4)
-    area.put("Decor", kit["SignPost"], polar(RIM - 14, 96), 30.0)
+    area.put("Decor", kit["SignPost"], polar(RIM - 14, 96, ground_y(RIM - 14, 96)), 30.0)
     for s in (-1, 1):
-        area.put("Paths", kit["LanternPost"], polar(RIM - 6, 90 + s * 2.6), yaw_facing(90) + 90 * s)
+        area.put("Paths", kit["LanternPost"], polar(RIM - 6, 90 + s * 2.6, ground_y(RIM - 6, 90 + s * 2.6)),
+                 yaw_facing(90) + 90 * s)
 
     # The frozen lake, a campfire by the path, mist on the river.
     area.put("Water", kit["FrozenLake"], polar(254, 128), 0.0, 1.3)
@@ -513,30 +721,31 @@ def build():
         return True
 
     for x, z in scatter_points(rng, 140, RIVER[1] + 6, RIM - 8, 9.5, valley_ok):
-        area.put("Trees", rng.choice(pines), (x, 0, z), rng.uniform(0, 360), rng.uniform(0.85, 1.25), lod=True)
+        area.put("Trees", rng.choice(pines), (x, ground_at(x, z) - 0.3, z), rng.uniform(0, 360), rng.uniform(0.85, 1.25),
+                 lod=True)
     for x, z in scatter_points(rng, 110, RIVER[1] + 4, RIM - 4, 6, valley_ok):
         item = kit[rng.choice(["Boulder", "BoulderLarge", "RockPile", "SnowDrift", "GrassTufts", "SnowyBush",
                                "Pebbles", "PineSapling"])]
-        area.put("Decor", item, (x, 0, z), rng.uniform(0, 360), rng.uniform(0.9, 1.3))
+        area.put("Decor", item, (x, ground_at(x, z) - 0.2, z), rng.uniform(0, 360), rng.uniform(0.9, 1.3))
     # Pines and rocks on the mountain rings.
     for i in range(len(TIERS)):
         r_out = max(edge_radius(i, d) for d in range(0, 360, 4)) - 6
         r_in = min_radius(i + 1) + 4 if i + 1 < len(TIERS) else 0
-        y = TIERS[i][1]
+        y = bench_y(i) - 0.4
         if i + 1 >= len(TIERS):
             continue
 
         def tier_ok(r, deg, i=i):
             # The ring's top runs from the cliff above (plus room for the ledge path) to this ring's own edge.
-            if not edge_radius(i + 1, deg) + 9 < r < edge_radius(i, deg) - (13 if 1 <= i <= 3 else 5):
+            if not foot_radius(i + 1, deg) + 4 < r < edge_radius(i, deg) - (13 if 1 <= i <= 3 else 5):
                 return False
             if any(ang_dist(deg, f) < 7 for f in FALL_CHAINS):
                 return False
             if any(j in (i, i + 1) and ang_dist(deg, f) < math.degrees((w + 6) / max(r, 1)) for j, f, w in EXTRA_FALLS):
                 return False
-            if i in end_angles and ang_dist(deg, end_angles[i] - 10) < 26:
+            if i - 1 in end_angles and ang_dist(deg, end_angles[i - 1] - 10) < 26:
                 return False
-            if i == 2 and ang_dist(deg, CAVE_ANGLE) < 16:
+            if i == 2 and (ang_dist(deg, CAVE_ANGLE) < 16 or ang_dist(deg, TEMPLE_ANGLE) < 24):
                 return False
             return True
 
@@ -596,7 +805,8 @@ def model_node(asset, pos, yaw, k, uid, lod):
         if i == 1:
             props["PivotOffset"] = cframe(*compose(inverse(R, world), (Ry, pos)))
         kids.append({"class": "WedgePart" if p["shape"] == "wedge" else "Part", "name": p["name"],
-                     **({"id": prim} if i == 1 else {}), "props": props,
+                     **({"id": prim} if i == 1 else {}), **({"attrs": p["attrs"]} if p.get("attrs") else {}),
+                     "props": props,
                      "children": remap(p["effects"], f"#{uid}", k)})
     props = {"PrimaryPart": {"ref": prim}}
     if lod:
@@ -615,7 +825,7 @@ def main():
         "Description": "where players arrive: just inside the arch, facing the mountain"}, "props": {
         "Size": [6, 1, 6], "CFrame": cframe(angles(0, yaw_facing(270), 0), polar(RIM - 20, 90, 0.5)), "Anchored": True,
         "CanCollide": False, "CanTouch": False, "CanQuery": False, "Transparency": 1}}
-    order = ["Ground", "Mountain", "Rim", "Water", "Paths", "Trees", "Decor"]
+    order = ["Ground", "Mountain", "Temple", "Rim", "Water", "Paths", "Trees", "Decor"]
     tree = [{"class": "Model", "name": "FrostPeakArea",
              "attrs": {"Diameter": OUTER * 2, "Description": "The Frost Peak mountain area, built from the FrostPeakKit"},
              "props": {"PrimaryPart": {"ref": "Area.Entrance"}},
@@ -631,8 +841,8 @@ def main():
     parts = viewer_parts([], [(a, pos, yaw, k) for _, a, pos, yaw, k, _ in area.items
                               if a.name not in ("SnowfallZone",)])
     env = {"sky": [[0, "#3f8fef"], [0.55, "#86c2ff"], [1, "#d8efff"]], "fog": ["#d8efff", 500, 1500],
-           "sun": {"dir": [-0.45, 1.0, 0.5], "intensity": 2.6}, "hemi": ["#ffffff", "#9fb4d0", 1.5],
-           "bloom": [0.45, 0.5, 0.85]}
+           "sun": {"dir": [-0.45, 1.0, 0.5], "intensity": 2.6}, "hemi": ["#ffffff", "#8fa3c4", 1.15],
+           "bloom": [0.3, 0.45, 0.9]}
     shots = {
         "overview": {"camera": {"pos": [120, 260, 560], "target": [0, 60, 0], "fov": 52},
                      "shadow": {"center": [0, 0, 0], "radius": 360}},
@@ -646,11 +856,34 @@ def main():
                   "shadow": {"center": list(polar(120, 150)), "radius": 160}},
         "cave": {"camera": {"pos": list(polar(130, 340, 95)), "target": list(polar(60, 330, 76)), "fov": 60},
                  "shadow": {"center": list(polar(80, 330)), "radius": 90}},
+        "temple": {"camera": {"pos": list(polar(150, TEMPLE_ANGLE + 8, 88)), "target": list(polar(66, TEMPLE_ANGLE, 76)),
+                   "fov": 50}, "shadow": {"center": list(polar(70, TEMPLE_ANGLE)), "radius": 70}},
+        "temple_close": {"camera": {"pos": list(polar(112, TEMPLE_ANGLE - 14, 74)),
+                                    "target": list(polar(70, TEMPLE_ANGLE, 74)), "fov": 55},
+                         "shadow": {"center": list(polar(70, TEMPLE_ANGLE)), "radius": 50}},
         "top": {"camera": {"pos": [0, 760, 1], "target": [0, 0, 0], "fov": 52},
                 "shadow": {"center": [0, 0, 0], "radius": 360}},
     }
     (out / "area_world.json").write_text(json.dumps({"env": env, "parts": parts, "models": [], "texts": [],
                                                      "sprites": [], "shots": shots}))
+    # The temple on its own (upright, so it can be placed anywhere), with a preview scene.
+    tpl = dragon_temple.temple(random.Random(77))
+    (out / "temple.json").write_text(json.dumps([model_node(tpl, (0, 0, 0), 0.0, 1.0, "T", False)]))
+    ground = [{"n": "Ground", "s": "block", "z": [140, 2, 140], "cf": [0, -1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+               "c": list(SNOW_SHADE), "m": "SmoothPlastic", "t": 0, "r": 0, "st": False, "sh": True}]
+    (out / "temple_world.json").write_text(json.dumps({
+        "env": env, "parts": ground + viewer_parts([], [(tpl, (0, 0, 0), 0.0, 1.0)]), "models": [], "texts": [],
+        "sprites": [], "shots": {
+            "front": {"camera": {"pos": [-38, 22, -68], "target": [0, 13, -4], "fov": 50},
+                      "shadow": {"center": [0, 0, 0], "radius": 60}},
+            "side": {"camera": {"pos": [52, 30, -40], "target": [0, 14, 0], "fov": 50},
+                     "shadow": {"center": [0, 0, 0], "radius": 60}}}}))
+    if "--temple" in sys.argv:
+        target = sys.argv[sys.argv.index("--temple") + 1]
+        Path(target).parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["cargo", "run", "--quiet", "--release", "--manifest-path",
+                        str(HERE.parent / "rbxm-writer" / "Cargo.toml"), "--", str(out / "temple.json"), target],
+                       check=True)
     if "--rbxm" in sys.argv:
         target = sys.argv[sys.argv.index("--rbxm") + 1]
         Path(target).parent.mkdir(parents=True, exist_ok=True)

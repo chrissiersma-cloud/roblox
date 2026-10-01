@@ -37,7 +37,7 @@ await document.fonts.load('600 40px "Fredoka"');
 
 const params = new URLSearchParams(location.search);
 const W = +(params.get("w") || 1600), H = +(params.get("h") || 900);
-const sceneData = await (await fetch(params.get("scene"))).json();
+const sceneData = await (await fetch(params.get("scene"), { cache: "no-store" })).json();
 const animals = sceneData.models.length ? await (await fetch(sceneData.modelsFile || "animals.json")).json()
   : [{ children: [] }];
 const templates = Object.fromEntries(animals[0].children.map(m => [m.name, m]));
@@ -221,7 +221,7 @@ Object.assign(sun.shadow.camera, { left: -shadow.radius, right: shadow.radius, t
   near: 1, far: shadow.radius * 7 });
 sun.shadow.mapSize.set(4096, 4096);
 sun.shadow.bias = -0.0004;
-sun.shadow.normalBias = 0.05;
+sun.shadow.normalBias = Math.max(0.05, shadow.radius * 0.0012);
 scene.add(sun, sun.target);
 
 const partMeshes = {};
