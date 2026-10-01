@@ -29,6 +29,12 @@ local TEX = {
 	spark = "rbxasset://textures/particles/sparkles_main.dds",
 	smoke = "rbxasset://textures/particles/smoke_main.dds",
 	fire = "rbxasset://textures/particles/fire_main.dds",
+	flamespark = "rbxasset://textures/particles/fire_sparks_main.dds",
+	glow = "rbxasset://textures/particles/forcefield_glow_main.dds",
+	vortex = "rbxasset://textures/particles/forcefield_vortex_main.dds",
+	core = "rbxasset://textures/particles/explosion01_core_main.dds",
+	shock = "rbxasset://textures/particles/explosion01_shockwave_main.dds",
+	implode = "rbxasset://textures/particles/explosion01_implosion_main.dds",
 }
 
 local function hex(h: string): Color3
@@ -351,14 +357,15 @@ local P = {
 		idle = { "aurora" }, every = { 7, 11 },
 	},
 	Phoenix = {
-		gait = "bird", stride = 2.6, swing = 30, bounce = 0.35, headBob = 12, walkSpeed = 7, breathe = 0.06,
-		flapBoost = 1.4,
-		step = { tex = "fire", c = { "#ffd23a", "#ff4a10" }, size = { 1.4, 0 }, life = { 0.4, 0.7 }, speed = { 1, 3 },
-			spread = 40, count = 10, accel = Vector3.new(0, 5, 0) },
-		stepSpark = { tex = "spark", c = { "#fff2a8", "#ff6a14" }, size = { 0.6, 0 }, life = { 0.5, 1 },
-			speed = { 3, 6 }, spread = 70, count = 8 },
+		-- Struts like a proud bird, and takes off and flies when it moves fast (flyRun).
+		gait = "bird", stride = 2.6, swing = 30, bounce = 0.35, headBob = 12, walkSpeed = 7, breathe = 0.08,
+		flapBoost = 1.4, flyRun = true, flyHeight = 4.5, flyPitch = 12,
+		step = { tex = "fire", c = { "#fffbe6", "#ff8a1f", "#8f1610" }, size = { 1.6, 0 }, life = { 0.4, 0.7 },
+			speed = { 1, 3 }, spread = 40, count = 10, accel = Vector3.new(0, 6, 0) },
+		stepSpark = { tex = "flamespark", c = { "#fffbe6", "#ffd23a", "#ff4a10" }, size = { 0.9, 0 },
+			life = { 0.5, 1 }, speed = { 4, 8 }, spread = 70, count = 10, drag = 2, spin = 300 },
 		stepRing = { color = "#ff6a14", radius = 4, time = 0.4 },
-		idle = { "rebirth", "wingspread" }, every = { 7, 11 },
+		idle = { "rebirth", "flamecry", "wingstretch", "ascend" }, every = { 6, 10 },
 	},
 }
 
@@ -410,7 +417,13 @@ local function makeEmitter(spec, parent: Instance): ParticleEmitter
 	local e = Instance.new("ParticleEmitter")
 	e.Enabled = false
 	e.Texture = TEX[spec.tex or "spark"]
-	e.Color = ColorSequence.new(hex(spec.c[1]), hex(spec.c[2] or spec.c[1]))
+	if spec.c[3] then
+		-- three colours: start, middle, end (white-hot -> orange -> deep red for fire)
+		e.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex(spec.c[1])),
+			ColorSequenceKeypoint.new(0.4, hex(spec.c[2])), ColorSequenceKeypoint.new(1, hex(spec.c[3])) })
+	else
+		e.Color = ColorSequence.new(hex(spec.c[1]), hex(spec.c[2] or spec.c[1]))
+	end
 	e.Size = seq(spec.size[1], spec.size[2])
 	e.Transparency = seq(spec.transparency or 0.1, 1)
 	e.Lifetime = NumberRange.new(spec.life[1], spec.life[2])
@@ -421,8 +434,14 @@ local function makeEmitter(spec, parent: Instance): ParticleEmitter
 	e.LightEmission = spec.light or 1
 	e.LightInfluence = if (spec.light or 1) > 0 then 0 else 1
 	e.Rotation = NumberRange.new(0, 360)
-	e.RotSpeed = NumberRange.new(-90, 90)
+	e.RotSpeed = NumberRange.new(-(spec.spin or 90), spec.spin or 90)
 	e.EmissionDirection = spec.dir or Enum.NormalId.Top
+	if spec.squash then
+		e.Squash = seq(spec.squash, spec.squash)
+	end
+	if spec.orient then
+		e.Orientation = Enum.ParticleOrientation[spec.orient]
+	end
 	e.Rate = spec.rate or 10
 	e.Parent = parent
 	return e
@@ -617,6 +636,39 @@ end
 local function jointPos(name: string): Vector3
 	local j = joints[name]
 	return if j and j.Part1 then j.Part1.Position else root.Position
+end
+
+-- One-off flat effect lying on the ground (or in the air): a shockwave, a flaring sigil.
+local function flatBurst(pos: Vector3, spec, count: number)
+	local holder = Instance.new("Part")
+	holder.Name = "FXFlat"
+	holder.Anchored = true
+	holder.CanCollide = false
+	holder.CanQuery = false
+	holder.CanTouch = false
+	holder.Transparency = 1
+	holder.Size = Vector3.new(0.2, 0.2, 0.2)
+	holder.CFrame = CFrame.new(pos)
+	holder.Parent = workspace
+	local e = makeEmitter(spec, holder)
+	e.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+	e.Speed = NumberRange.new(0.01)
+	e.SpreadAngle = Vector2.zero
+	e.Acceleration = Vector3.zero
+	e:Emit(count)
+	Debris:AddItem(holder, spec.life[2] + 0.3)
+end
+
+local FIRE3 = { "#fffbe6", "#ff8a1f", "#8f1610" }
+
+-- A beat of burning wings in flight: sparks fly off both wing tips and a ring of heat pushes down.
+local function wingbeat()
+	for _, side in { "R", "L" } do
+		burst("Beat" .. side, "Wing" .. side .. "Flame72", { tex = "flamespark", c = FIRE3, size = { 1.1, 0 },
+			life = { 0.4, 0.8 }, speed = { 6, 12 }, spread = 40, drag = 3, dir = Enum.NormalId.Bottom, spin = 300 }, 14)
+	end
+	flatBurst(part("Body").Position - Vector3.new(0, 3, 0), { tex = "shock", c = { "#ffd23a", "#ff4a10" },
+		size = { 3, 20 }, life = { 0.5, 0.5 }, transparency = 0.35, spin = 0 }, 1)
 end
 
 -- ------------------------------------------------------ idle actions --
@@ -1184,46 +1236,191 @@ ACTIONS.thunder = {
 	end },
 }
 
--- Wraps itself in its wings and glows hotter and hotter, then bursts open in a storm of fire and rises from it.
+-- The Phoenix's idle actions. They use the wing tip, crest and tail tip joints when the model has them.
+
+-- Rebirth: it wraps itself in its burning wings, the fire is sucked into it and it glows white-hot, then it bursts
+-- open in a storm of fire: a fireball, a pillar of flame, a shockwave across the ground and a flaring sigil, ash,
+-- and glowing feathers drifting down.
 ACTIONS.rebirth = {
-	time = 3.6,
+	time = 4.0,
 	pose = function(p)
 		local wrap = if p < 0.35 then math.sin(p / 0.35 * math.pi / 2) elseif p < 0.45 then 1
-			else math.max(0, 1 - (p - 0.45) / 0.08)
-		local open = if p < 0.45 then 0 else math.min(1, (p - 0.45) / 0.08) * (1 - ease(math.max(p, 0.75), 0.5, 1))
-		local tremble = if p > 0.2 and p < 0.45 then math.sin(p * 120) * R(2) else 0
-		return CFrame.new(0, -0.9 * wrap + 1.2 * open, 0), {
-			WingR = CFrame.Angles(0, R(35) * wrap, -R(40) * wrap + R(75) * open + tremble),
-			WingL = CFrame.Angles(0, -R(35) * wrap, R(40) * wrap - R(75) * open - tremble),
-			Head = CFrame.Angles(-R(25) * wrap + R(30) * open, 0, 0),
-			Tail = CFrame.Angles(R(15) * open, 0, 0),
+			else math.max(0, 1 - (p - 0.45) / 0.07)
+		local settle = if p < 0.75 then 1 else math.cos((p - 0.75) / 0.25 * math.pi / 2)
+		local open = if p < 0.45 then 0 else math.min(1, (p - 0.45) / 0.07) * settle
+		local tremble = if p > 0.2 and p < 0.45 then math.sin(p * 140) * R(2.5) * wrap else 0
+		return CFrame.new(0, -1.0 * wrap + 1.6 * open, 0), {
+			WingR = CFrame.Angles(0, R(100) * wrap, -R(25) * wrap + R(70) * open + tremble),
+			WingL = CFrame.Angles(0, -R(100) * wrap, R(25) * wrap - R(70) * open - tremble),
+			WingTipR = CFrame.Angles(0, R(60) * wrap, -R(10) * wrap + R(25) * open),
+			WingTipL = CFrame.Angles(0, -R(60) * wrap, R(10) * wrap - R(25) * open),
+			Head = CFrame.Angles(-R(30) * wrap + R(35) * open, 0, 0),
+			Tail = CFrame.Angles(-R(10) * wrap + R(20) * open, 0, 0),
+			Crest = CFrame.Angles(-R(25) * wrap + R(20) * open, 0, 0),
 		}
 	end,
 	moments = {
-		[0.1] = function()
-			stream("RebirthGlow", "Body", { tex = "fire", c = { "#ffd23a", "#ff4a10" }, size = { 2.2, 0 },
-				life = { 0.4, 0.8 }, speed = { 1, 3 }, spread = 180, rate = 60, accel = Vector3.new(0, 6, 0) }, 1.2)
-			flash("Body", "#ff6a14", 3, 20, 1.2)
+		[0.08] = function()
+			stream("RebirthIn", "Body", { tex = "implode", c = { "#fff2a8", "#ff6a14" }, size = { 12, 1 },
+				life = { 0.7, 0.7 }, speed = { 0, 0 }, rate = 3, transparency = 0.2, spin = 60 }, 1.4)
+			stream("RebirthGlow", "Body", { tex = "fire", c = FIRE3, size = { 2.4, 0 }, life = { 0.4, 0.8 },
+				speed = { 1, 3 }, spread = 180, rate = 60, accel = Vector3.new(0, 6, 0) }, 1.3)
+			flash("Body", "#ff6a14", 3, 20, 1.4)
+		end,
+		[0.3] = function()
+			flash("Body", "#fffbe6", 5, 24, 0.5)
+			burst("RebirthCharge", "SunGem", { tex = "glow", c = { "#ffffff", "#ffd23a" }, size = { 2, 10 },
+				life = { 0.5, 0.5 }, speed = { 0, 0 }, transparency = 0.3 }, 2)
 		end,
 		[0.45] = function()
-			flash("Body", "#fff2a8", 12, 50, 0.9)
-			burst("RebirthFire", "Body", { tex = "fire", c = { "#fff2a8", "#ff4a10" }, size = { 4, 0 },
-				life = { 0.6, 1.2 }, speed = { 14, 28 }, spread = 180, drag = 3 }, 120)
-			burst("RebirthEmbers", "Body", { tex = "spark", c = { "#fff2a8", "#ff6a14" }, size = { 0.9, 0 },
-				life = { 1.2, 2.2 }, speed = { 10, 24 }, spread = 180, drag = 2, accel = Vector3.new(0, 3, 0) }, 150)
+			flash("Body", "#fff2a8", 14, 60, 1.0)
+			burst("RebirthCore", "Body", { tex = "core", c = { "#fffbe6", "#ffb52e", "#ff4a10" }, size = { 6, 26 },
+				life = { 0.7, 0.9 }, speed = { 0, 0 }, transparency = 0.1, spin = 40 }, 3)
+			burst("RebirthFire", "Body", { tex = "fire", c = FIRE3, size = { 5, 0 }, life = { 0.6, 1.2 },
+				speed = { 16, 30 }, spread = 180, drag = 3 }, 120)
+			burst("RebirthEmbers", "Body", { tex = "flamespark", c = FIRE3, size = { 1.2, 0 }, life = { 1.2, 2.4 },
+				speed = { 12, 26 }, spread = 180, drag = 2, accel = Vector3.new(0, 2, 0), spin = 400 }, 160)
+			stream("RebirthPillar", "SigilCore", { tex = "fire", c = FIRE3, size = { 4, 0 }, life = { 0.5, 0.9 },
+				speed = { 35, 50 }, spread = 6, rate = 140, accel = Vector3.new(0, 10, 0) }, 0.8)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 6, 70 }, life = { 0.9, 0.9 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#fff2a8", "#ff4a10" }, size = { 36, 30 }, life = { 1.8, 1.8 },
+				transparency = 0.25, spin = 160 }, 1)
 			local body = part("Body")
 			for i = 0, 2 do
 				task.delay(i * 0.12, function()
-					ring(CFrame.new(body.Position + Vector3.new(0, 2 + i * 3, 0)), if i == 1 then "#fff2a8" else "#ff6a14",
-						12 + i * 6, 0.6)
+					ring(CFrame.new(body.Position + Vector3.new(0, 2 + i * 4, 0)), if i == 1 then "#fff2a8" else "#ff6a14",
+						14 + i * 7, 0.6)
 				end)
 			end
-			groundRing(root.Position, "#ff6a14", 28, 0.9)
-			groundRing(root.Position, "#fff2a8", 16, 0.6)
+			groundRing(root.Position, "#ff6a14", 30, 0.9)
+			groundRing(root.Position, "#fff2a8", 18, 0.6)
 		end,
-		[0.6] = function()
-			burst("RebirthAsh", "Body", { tex = "smoke", c = { "#5a2a1a", "#1a0a05" }, size = { 3, 6 }, life = { 1.2, 2 },
-				speed = { 4, 8 }, spread = 180, light = 0, transparency = 0.4, accel = Vector3.new(0, 3, 0) }, 30)
+		[0.62] = function()
+			burst("RebirthAsh", "Body", { tex = "smoke", c = { "#5a2a1a", "#1a0a05" }, size = { 3, 7 }, life = { 1.2, 2 },
+				speed = { 4, 8 }, spread = 180, light = 0, transparency = 0.45, accel = Vector3.new(0, 3, 0) }, 30)
+			burst("RebirthFeathers", "Body", { tex = "flamespark", c = FIRE3, size = { 0.9, 0.5 }, life = { 2.5, 3.5 },
+				speed = { 6, 12 }, spread = 180, drag = 2.5, accel = Vector3.new(0, -3, 0), squash = 1.6, spin = 120 }, 40)
+		end,
+	},
+}
+
+-- Flame cry: throws its head back, raises its wings and screams a pillar of fire into the sky.
+ACTIONS.flamecry = {
+	time = 2.8,
+	flapBoost = 1.5,
+	pose = function(p)
+		local up = ease(p, 0, 1)
+		local cry = ease(p, 0.3, 0.85)
+		return CFrame.new(0, up * 0.8, 0) * CFrame.Angles(R(8) * up, 0, 0), {
+			WingR = CFrame.Angles(0, 0, R(55) * up + math.sin(p * 30) * R(6) * cry),
+			WingL = CFrame.Angles(0, 0, -R(55) * up - math.sin(p * 30) * R(6) * cry),
+			WingTipR = CFrame.Angles(0, 0, R(25) * up),
+			WingTipL = CFrame.Angles(0, 0, -R(25) * up),
+			Head = CFrame.Angles(R(40) * up + math.sin(p * 50) * R(3) * cry, 0, 0),
+			Crest = CFrame.Angles(R(15) * cry, 0, 0),
+			Tail = CFrame.Angles(R(18) * up, 0, 0),
+		}
+	end,
+	moments = {
+		[0.32] = function()
+			flash("Head", "#ffd23a", 8, 40, 1.2)
+			stream("CryFire", "Head", { tex = "fire", c = FIRE3, size = { 3.2, 0 }, life = { 0.5, 0.9 },
+				speed = { 28, 42 }, spread = 9, rate = 110, accel = Vector3.new(0, 8, 0) }, 1.3)
+			stream("CrySparks", "Head", { tex = "flamespark", c = FIRE3, size = { 1, 0 }, life = { 0.8, 1.4 },
+				speed = { 20, 34 }, spread = 20, rate = 60, drag = 1, spin = 300 }, 1.3)
+			local head = part("Head")
+			for i = 0, 3 do
+				task.delay(i * 0.18, function()
+					ring(CFrame.new(head.Position + Vector3.new(0, 6 + i * 6, 0)),
+						if i % 2 == 0 then "#ffd23a" else "#ff6a14", 6 + i * 3, 0.5)
+				end)
+			end
+			groundRing(root.Position, "#ff6a14", 18, 0.8)
+		end,
+	},
+}
+
+-- Wing stretch: stretches one burning wing out low and wide, shakes the sparks off it, then the other one.
+ACTIONS.wingstretch = {
+	time = 3.6,
+	pose = function(p)
+		local r = ease(p, 0.02, 0.5)
+		local l = ease(p, 0.5, 0.98)
+		local shakeR = math.sin(p * 90) * R(4) * ease(p, 0.2, 0.4)
+		local shakeL = math.sin(p * 90) * R(4) * ease(p, 0.7, 0.9)
+		return CFrame.Angles(0, 0, R(6) * (l - r)), {
+			WingR = CFrame.Angles(0, -R(20) * r, R(10) * r + shakeR),
+			WingTipR = CFrame.Angles(0, -R(15) * r, -R(18) * r),
+			WingL = CFrame.Angles(0, R(20) * l, -R(10) * l - shakeL),
+			WingTipL = CFrame.Angles(0, R(15) * l, R(18) * l),
+			Head = CFrame.Angles(-R(10) * (r + l), R(35) * r - R(35) * l, 0),
+			Tail = CFrame.Angles(0, R(12) * (r - l), 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			burst("ShakeR", "WingRFlame42", { tex = "flamespark", c = FIRE3, size = { 0.9, 0 }, life = { 0.6, 1.2 },
+				speed = { 5, 10 }, spread = 90, drag = 2, accel = Vector3.new(0, -4, 0), spin = 300 }, 30)
+		end,
+		[0.8] = function()
+			burst("ShakeL", "WingLFlame42", { tex = "flamespark", c = FIRE3, size = { 0.9, 0 }, life = { 0.6, 1.2 },
+				speed = { 5, 10 }, spread = 90, drag = 2, accel = Vector3.new(0, -4, 0), spin = 300 }, 30)
+		end,
+	},
+}
+
+-- Ascend: crouches, leaps up with a blast of fire and hovers on beating wings, turns once round in a spiral of
+-- flame, then drops back down and lands with a shockwave.
+ACTIONS.ascend = {
+	time = 4.4,
+	pose = function(p)
+		local crouch = ease(p, 0, 0.2)
+		local up = if p < 0.15 then 0 elseif p < 0.28 then math.sin((p - 0.15) / 0.13 * math.pi / 2)
+			elseif p < 0.78 then 1 elseif p < 0.9 then math.cos((p - 0.78) / 0.12 * math.pi / 2) else 0
+		local spin = if p < 0.32 then 0 elseif p < 0.72 then (1 - math.cos((p - 0.32) / 0.4 * math.pi)) / 2 else 1
+		local land = ease(p, 0.88, 1)
+		local flap = math.sin(p * 70) * up
+		local tip = math.sin(p * 70 - 1.1) * up
+		return CFrame.new(0, -0.8 * crouch + 6.5 * up + math.sin(p * 35) * 0.4 * up - 0.6 * land, 0)
+			* CFrame.Angles(0, spin * 2 * math.pi, 0), {
+			WingR = CFrame.Angles(0, 0, R(40) * flap + R(15) * up + R(20) * crouch),
+			WingL = CFrame.Angles(0, 0, -R(40) * flap - R(15) * up - R(20) * crouch),
+			WingTipR = CFrame.Angles(0, 0, R(30) * tip),
+			WingTipL = CFrame.Angles(0, 0, -R(30) * tip),
+			LegL = CFrame.Angles(-R(60) * up, 0, 0),
+			LegR = CFrame.Angles(-R(60) * up, 0, 0),
+			Head = CFrame.Angles(R(12) * up - R(15) * crouch, 0, 0),
+			Tail = CFrame.Angles(R(15) * up, 0, 0),
+		}
+	end,
+	moments = {
+		[0.16] = function()
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 4, 34 }, life = { 0.6, 0.6 },
+				transparency = 0.25, spin = 0 }, 1)
+			groundRing(root.Position, "#ff6a14", 14, 0.6)
+			burst("LaunchFire", "SigilCore", { tex = "fire", c = FIRE3, size = { 3, 0 }, life = { 0.4, 0.8 },
+				speed = { 8, 16 }, spread = 70, drag = 2, accel = Vector3.new(0, 6, 0) }, 60)
+		end,
+		[0.32] = function()
+			for _, side in { "R", "L" } do
+				stream("Spiral" .. side, "Wing" .. side .. "Flame72", { tex = "fire", c = FIRE3, size = { 2.2, 0 },
+					life = { 0.5, 0.9 }, speed = { 0.5, 2 }, spread = 30, rate = 70, accel = Vector3.new(0, 3, 0) }, 1.7)
+			end
+		end,
+		[0.88] = function()
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flash("Body", "#ffd23a", 8, 40, 0.6)
+			flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 6, 55 }, life = { 0.8, 0.8 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#fff2a8", "#ff4a10" }, size = { 28, 22 }, life = { 1.4, 1.4 },
+				transparency = 0.3, spin = 140 }, 1)
+			groundRing(root.Position, "#ff6a14", 24, 0.8)
+			groundRing(root.Position, "#fffbe6", 14, 0.6)
+			burst("LandSparks", "SigilCore", { tex = "flamespark", c = FIRE3, size = { 1.2, 0 }, life = { 0.6, 1.2 },
+				speed = { 14, 24 }, spread = 85, drag = 3, spin = 400 }, 70)
 		end,
 	},
 }
@@ -1242,6 +1439,7 @@ local nextAction = os.clock() + rng:NextNumber(2, 5)
 local action, actionStart = nil, 0
 local fired: { [number]: boolean } = {}
 local posed = false
+local air, lastFlap = 0, 0 -- flight (0 = on the ground, 1 = flying) and the last wing beat, for flyRun animals
 
 local function identityAll()
 	for _, j in joints do
@@ -1300,6 +1498,9 @@ RunService.PreSimulation:Connect(function(dt)
 	walk += (target - walk) * math.min(1, dt * 5)
 	local run = math.clamp((effSpeed / walkSpeed - 1) / 0.8, 0, 1)
 	running = run
+	-- Animals with flyRun take off when they move fast (or when the game sets State = "Fly").
+	local airTarget = if profile.flyRun and (run > 0.25 or state == "Fly") then 1 else 0
+	air += (airTarget - air) * math.min(1, dt * 2.5)
 
 	local cycles = math.max(effSpeed, walk * walkSpeed * 0.3) / profile.stride
 	if profile.maxCycles then
@@ -1353,7 +1554,7 @@ RunService.PreSimulation:Connect(function(dt)
 				local lift = math.max(0, math.cos(gaitPhase + offset * 2 * math.pi)) * 0.25 * walk
 				pose[leg] = CFrame.new(0, lift, 0) * CFrame.Angles(s * swing, 0, 0)
 				local prev = lastSin[leg] or s
-				if prev > 0 and s <= 0 and walk > 0.4 then
+				if prev > 0 and s <= 0 and walk > 0.4 and air < 0.5 then
 					footstep(jointPos(leg))
 				end
 				lastSin[leg] = s
@@ -1413,7 +1614,9 @@ RunService.PreSimulation:Connect(function(dt)
 	local hover = attribute("Hover", 0)
 	local hoverY = if hover > 0 then math.sin(t * attribute("HoverSpeed", 2)) * hover else 0
 	if joints.Root then
-		joints.Root.Transform = CFrame.new(0, hoverY + bounce + breathe, 0) * CFrame.Angles(-lean, 0, roll) * actionRoot
+		local flyLift = air * (profile.flyHeight or 4) + math.sin(t * 7.5 - 0.6) * 0.35 * air
+		joints.Root.Transform = CFrame.new(0, hoverY + bounce * (1 - air) + breathe + flyLift, 0)
+			* CFrame.Angles(-lean - R(profile.flyPitch or 0) * air, 0, roll) * actionRoot
 	end
 
 	-- Head: looks around when idle, bobs when walking.
@@ -1451,6 +1654,53 @@ RunService.PreSimulation:Connect(function(dt)
 		-- a walking bird holds its wings a little open for balance
 		pose.WingR = CFrame.Angles(0, 0, R(12) * walk)
 		pose.WingL = CFrame.Angles(0, 0, -R(12) * walk)
+	end
+
+	-- Secondary motion (Phoenix): the wing tips trail behind every beat, the far half of the tail ripples like
+	-- a flame, the crest flickers and the halo turns. In flight the wings beat hard and the legs tuck in.
+	if joints.WingTipR or joints.TailTip or joints.Crest or joints.Halo then
+		local boost = 1 + walk * (profile.flapBoost or 0) + flapBoost
+		local flapAngle = R(attribute("FlapAngle", 30))
+		local beat = t * flapSpeed * boost
+		local wingAngle = math.sin(beat) * flapAngle + R(8) * walk
+		local tipAngle = math.sin(beat - 0.9) * flapAngle * 0.9 - R(6) * walk
+		if air > 0.01 then
+			local f = t * 7.5
+			local flap = math.sin(f)
+			wingAngle = wingAngle * (1 - air) + (flap * R(42) + R(12)) * air
+			tipAngle = tipAngle * (1 - air) + (math.sin(f - 1.1) * R(32) - R(4)) * air
+			if lastFlap > 0 and flap <= 0 and air > 0.6 and fxOn then
+				wingbeat()
+			end
+			lastFlap = flap
+			for _, leg in { "LegL", "LegR" } do
+				if joints[leg] then
+					pose[leg] = (pose[leg] or CFrame.identity):Lerp(CFrame.new(0, 0.6, 0.3) * CFrame.Angles(-R(65), 0, 0), air)
+				end
+			end
+			pose.Tail = (pose.Tail or CFrame.identity) * CFrame.Angles(R(12) * air, 0, 0)
+			pose.Head = (pose.Head or CFrame.identity) * CFrame.Angles(R(8) * air, 0, 0)
+		end
+		for _, side in { "R", "L" } do
+			local sgn = if side == "L" then -1 else 1
+			if joints["Wing" .. side] then
+				pose["Wing" .. side] = CFrame.Angles(0, 0, (wingAngle + R(profile.wingRun or 0) * run * (1 - air)) * sgn)
+			end
+			if joints["WingTip" .. side] then
+				pose["WingTip" .. side] = CFrame.Angles(0, 0, tipAngle * sgn)
+			end
+		end
+		if joints.TailTip then
+			pose.TailTip = CFrame.Angles(math.sin(t * 2.2 - 0.9) * R(7) * (1 + air),
+				math.sin(t * (1.6 + walk * 3) - 1.0) * R(14) * (1 + walk * 0.5), 0)
+		end
+		if joints.Crest then
+			pose.Crest = CFrame.Angles(math.noise(t * 3, 2.7) * R(10) - R(8) * walk - R(20) * air,
+				math.noise(t * 2.5, 5.3) * R(8), 0)
+		end
+		if joints.Halo then
+			pose.Halo = CFrame.Angles(0, 0, t * 0.9)
+		end
 	end
 
 	local orbit = attribute("OrbitSpeed", 0)
