@@ -15,6 +15,7 @@ tools/forest-kit/build/
 tools/dark-woods-kit/build/
 tools/buildings/build/
 tools/music/build/
+tools/lassos/build/
 tools/statue/build/
 tools/rbxm-writer/target/
 __pycache__/
@@ -28,6 +29,7 @@ __pycache__/
 !models/dark-woods-kit/*.rbxm
 !models/hub-buildings/*.rbxm
 !audio/*.rbxm
+!models/lassos/*.rbxm
 !tools/rbxm-writer/Cargo.lock
 
 # Viewer dependencies and copied scene data
