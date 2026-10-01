@@ -165,6 +165,59 @@ local P = {
 			speed = { 2, 6 }, rate = 30, spread = 180 },
 		idle = "thunder", every = { 7, 11 },
 	},
+	Pony = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 7, swing = 30, bounce = 0.4, headBob = 7,
+		walkSpeed = 10, breathe = 0.08, maxCycles = 3,
+		step = { tex = "smoke", c = { "#e8d2a8", "#b89a6a" }, size = { 1.2, 2.8 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		idle = "graze", every = { 5, 9 },
+	},
+	BrownHorse = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 10, swing = 26, bounce = 0.4, headBob = 5,
+		walkSpeed = 12, breathe = 0.1, maxCycles = 2.6,
+		step = { tex = "smoke", c = { "#e8d2a8", "#b89a6a" }, size = { 1.2, 2.8 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		idle = "paw", every = { 6, 10 },
+	},
+	PaintHorse = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 10, swing = 26, bounce = 0.4, headBob = 5,
+		walkSpeed = 12, breathe = 0.1, maxCycles = 2.6,
+		step = { tex = "smoke", c = { "#e8d2a8", "#b89a6a" }, size = { 1.2, 2.8 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		stepSpark = { tex = "spark", c = { "#ffffff", "#c99bff" }, size = { 0.6, 0 }, life = { 0.4, 0.8 },
+			speed = { 3, 6 }, spread = 70, count = 6 },
+		stepRing = { color = "#c99bff", radius = 3.5, time = 0.35 },
+		idle = "toss", every = { 6, 10 },
+		tossColor = { "#ffffff", "#c99bff" },
+	},
+	BlackStallion = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 26, bounce = 0.45, headBob = 5,
+		walkSpeed = 13, breathe = 0.12, maxCycles = 2.5,
+		step = { tex = "smoke", c = { "#6a6070", "#2a2430" }, size = { 1.4, 3.2 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 80, count = 6, light = 0, transparency = 0.45 },
+		stepSpark = { tex = "spark", c = { "#fff2a8", "#ff9a1a" }, size = { 0.7, 0 }, life = { 0.3, 0.6 },
+			speed = { 5, 10 }, spread = 70, count = 8, drag = 2 },
+		stepRing = { color = "#ffcf3f", radius = 4.5, time = 0.35 },
+		idle = "rear", every = { 7, 11 },
+		rearRing = "#ffcf3f",
+		rearBurst = { tex = "spark", c = { "#fff2a8", "#ff9a1a" }, size = { 0.9, 0 }, life = { 0.5, 1 },
+			speed = { 6, 12 }, spread = 180, drag = 2 },
+	},
+	GoldenMustang = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 27, bounce = 0.45, headBob = 5,
+		walkSpeed = 14, breathe = 0.1, maxCycles = 2.5,
+		step = { tex = "spark", c = { "#fffbe6", "#ffc93c" }, size = { 0.9, 0 }, life = { 0.6, 1.2 },
+			speed = { 3, 7 }, spread = 75, count = 12, accel = Vector3.new(0, 2, 0) },
+		stepSpark = { tex = "smoke", c = { "#ffe8a8", "#d9a84c" }, size = { 1.2, 2.6 }, life = { 0.4, 0.8 },
+			speed = { 2, 4 }, spread = 80, count = 4, light = 0, transparency = 0.55 },
+		stepRing = { color = "#ffe27a", radius = 5, time = 0.4 },
+		aura = { at = "Body", tex = "spark", c = { "#fffbe6", "#ffc93c" }, size = { 0.5, 0 }, life = { 0.8, 1.4 },
+			speed = { 1, 3 }, rate = 10, spread = 180, accel = Vector3.new(0, 1.5, 0) },
+		idle = "rear", every = { 7, 11 },
+		rearRing = "#ffe27a",
+		rearBurst = { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 1.1, 0 }, life = { 0.8, 1.4 },
+			speed = { 8, 16 }, spread = 180, drag = 2, accel = Vector3.new(0, 2, 0) },
+	},
 }
 
 local profile = P[model:GetAttribute("AnimalId") or model.Name] or P.MossbackToad
@@ -629,22 +682,112 @@ do
 	end
 end
 
-ACTIONS.thunder = {
-	time = 2.6,
+-- Rear up around the back hooves: lift the front, keep the hind legs on the ground, kick the front legs.
+local function rearPose(p)
+	local k = ease(p, 0.05, 0.85)
+	local up = math.min(k * 1.6, 1)
+	local pivot = hindPivot
+	local tilt = R(30) * up
+	local kick = math.sin(p * 30) * R(18) * up
+	return CFrame.new(pivot) * CFrame.Angles(tilt, 0, 0) * CFrame.new(-pivot), {
+		LegFR = CFrame.Angles(-R(70) * up + kick, 0, 0),
+		LegFL = CFrame.Angles(-R(55) * up - kick, 0, 0),
+		Head = CFrame.Angles(-R(18) * up, 0, 0),
+		Tail = CFrame.Angles(R(25) * up, 0, 0),
+	}
+end
+
+local function frontHoovesLand(count: number)
+	for _, leg in { "LegFR", "LegFL" } do
+		local hoof = jointPos(leg)
+		stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
+		if stepFx then
+			stepFx:Emit(count)
+		end
+		if stepSpark then
+			stepSpark:Emit(math.floor(count / 2))
+		end
+	end
+end
+
+-- A horse rears up and whinnies, and lands with a shockwave.
+ACTIONS.rear = {
+	time = 2.4,
+	pose = rearPose,
+	moments = { [0.3] = function()
+		if profile.rearBurst then
+			burst("Rear", "Head", profile.rearBurst, 45)
+		end
+	end, [0.8] = function()
+		frontHoovesLand(30)
+		groundRing(root.Position, profile.rearRing or "#e8d2a8", 16, 0.7)
+	end },
+}
+
+-- Lowers its head to nibble the grass, swishing its tail.
+ACTIONS.graze = {
+	time = 3.2,
 	pose = function(p)
-		local k = ease(p, 0.05, 0.85)
-		local up = math.min(k * 1.6, 1)
-		-- Rear up around the back hooves: lift the front, keep the hind legs on the ground.
-		local pivot = hindPivot
-		local tilt = R(30) * up
-		local kick = math.sin(p * 30) * R(18) * up
-		return CFrame.new(pivot) * CFrame.Angles(tilt, 0, 0) * CFrame.new(-pivot), {
-			LegFR = CFrame.Angles(-R(70) * up + kick, 0, 0),
-			LegFL = CFrame.Angles(-R(55) * up - kick, 0, 0),
-			Head = CFrame.Angles(-R(18) * up, 0, 0),
-			Tail = CFrame.Angles(R(25) * up, 0, 0),
+		local k = ease(p, 0.02, 0.98)
+		local down = math.min(k * 1.8, 1)
+		local chew = math.sin(p * 40) * R(4) * down
+		return CFrame.Angles(-R(5) * down, 0, 0), {
+			Head = CFrame.Angles(-R(65) * down + chew, 0, 0),
+			Tail = CFrame.Angles(0, math.sin(p * 14) * R(25), 0),
 		}
 	end,
+	moments = { [0.45] = function()
+		burst("Graze", "Head", { tex = "spark", c = { "#8fe05a", "#3f9a3a" }, size = { 0.4, 0 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 120, accel = Vector3.new(0, -6, 0), light = 0 }, 10)
+	end },
+}
+
+-- Paws at the ground with a front hoof, twice, kicking up dust.
+ACTIONS.paw = {
+	time = 2.2,
+	pose = function(p)
+		local k = ease(p, 0.05, 0.95)
+		local scrape = 0.6 + 0.4 * math.sin(p * 4 * math.pi * 2)
+		return CFrame.identity, {
+			LegFR = CFrame.Angles(-R(45) * k * scrape, 0, 0),
+			Head = CFrame.Angles(-R(12) * k, 0, 0),
+		}
+	end,
+	moments = { [0.35] = function()
+		local hoof = jointPos("LegFR")
+		stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
+		if stepFx then
+			stepFx:Emit(14)
+		end
+	end, [0.7] = function()
+		local hoof = jointPos("LegFR")
+		stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
+		if stepFx then
+			stepFx:Emit(14)
+		end
+	end },
+}
+
+-- Tosses its head and mane from side to side.
+ACTIONS.toss = {
+	time = 1.8,
+	pose = function(p)
+		local k = ease(p, 0.05, 0.95)
+		return CFrame.identity, {
+			Head = CFrame.Angles(R(10) * k, math.sin(p * 3 * 2 * math.pi) * R(25) * k, math.sin(p * 3 * 2 * math.pi) * R(10) * k),
+			Tail = CFrame.Angles(0, math.sin(p * 18) * R(20) * k, 0),
+		}
+	end,
+	moments = { [0.5] = function()
+		local c = profile.tossColor or { "#ffffff", "#ffffff" }
+		burst("Toss", "Head", { tex = "spark", c = c, size = { 0.6, 0 }, life = { 0.5, 1 }, speed = { 4, 8 },
+			spread = 180, drag = 2 }, 24)
+	end },
+}
+
+ACTIONS.thunder = {
+	time = 2.6,
+	pose = rearPose,
 	moments = { [0.32] = function()
 		local tip = part("HornTip")
 		lightning(tip.Position + Vector3.new(math.random(-6, 6), 45, math.random(-6, 6)), tip.Position, "#fff7c2", 0.6)
@@ -654,13 +797,7 @@ ACTIONS.thunder = {
 			life = { 0.5, 1 }, speed = { 10, 20 }, spread = 180, drag = 3 }, 60)
 		ring(tip.CFrame * CFrame.Angles(R(90), 0, 0), "#fff7c2", 8, 0.5)
 	end, [0.8] = function()
-		for _, leg in { "LegFR", "LegFL" } do
-			local hoof = jointPos(leg)
-			stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
-			if stepFx then
-				stepFx:Emit(40)
-			end
-		end
+		frontHoovesLand(40)
 		groundRing(root.Position, "#4fd6ff", 22, 0.8)
 		groundRing(root.Position, "#fff7c2", 14, 0.6)
 		flash("Body", "#4fd6ff", 6, 30, 0.5)

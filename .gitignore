@@ -32,6 +32,7 @@ __pycache__/
 !audio/*.rbxm
 !models/lassos/*.rbxm
 !models/thunder-unicorn/*.rbxm
+!models/horses/*.rbxm
 !tools/rbxm-writer/Cargo.lock
 
 # Viewer dependencies and copied scene data
