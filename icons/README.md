@@ -13,7 +13,7 @@ glanzende kleuren en een zonnestralen-achtergrond. Elk icoon is **512 × 512**, 
 | `LuckyWrangler.png` | Lucky Wrangler | 299 R$ | een klavertjevier in een gouden lasso, met twee dobbelstenen (twee keer gooien) |
 | `VIP.png` | VIP | 249 R$ | een gouden kroon met edelstenen en **VIP** op een lint |
 | `BigBackpack.png` | Big Backpack | 149 R$ | een leren rugzak vol munten en touw, met **+50** |
-| `ThunderUnicorn.png` | Thunder Unicorn | 499 R$ | de Thunder Unicorn met zijn onweerswolk-manen en bliksemhoorn, en **8X** |
+| `ThunderUnicorn.png` | Thunder Unicorn | 499 R$ | de Thunder Unicorn met zijn onweerswolk-manen en bliksemhoorn, en **5X** |
 | `AutoSell.png` | Auto-Sell | 99 R$ | een munt in twee ronddraaiende pijlen, met een **AUTO**-schakelaar die aan staat |
 
 ## Developer products

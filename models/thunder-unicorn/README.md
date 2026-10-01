@@ -18,7 +18,7 @@ beweegt, dus je hoeft niets aan te zetten:
 - **Stilstaan:** hij ademt, kijkt rond, zijn hoorn knettert, de wolken in zijn manen en staart rommelen en de bollen
   draaien rond.
 - **Lopen:** een rustige stap, met vonkjes en een kleine schokgolf onder elke hoef.
-- **Rennen:** hij gaat over in een **galop**. Bij 8x snelheid blijven zijn benen netjes galopperen (niet wazig
+- **Rennen:** hij gaat over in een **galop**. Bij 5x snelheid blijven zijn benen netjes galopperen (niet wazig
   snel), en zijn achterhoeven en staart trekken **bliksemsporen** achter zich aan.
 - **Elke paar seconden stilstaan:** hij **steigert**, er slaat een **bliksemschicht** op zijn hoorn met een flits en
   een regen van vonken, en als zijn voorhoeven neerkomen gaat er een grote schokgolf over de grond.
@@ -40,7 +40,7 @@ beweegt, dus je hoeft niets aan te zetten:
 | Attribuut | Waarde | Wat het doet |
 |---|---|---|
 | `Mount` | true | voor je scripts: dit is een rijdier |
-| `SpeedMultiplier` | 8 | voor je mount-script: 8x snelheid |
+| `SpeedMultiplier` | 5 | voor je mount-script: 5x snelheid |
 | `WalkSpeed` | 16 | de snelheid (studs/s) van een gewone stap. Sneller = galop |
 | `OrbitSpeed` | 0.45 | hoe snel de bollen ronddraaien (0 = stil) |
 | `State` | "" | "Idle", "Walk" of "Run" om een animatie te forceren |

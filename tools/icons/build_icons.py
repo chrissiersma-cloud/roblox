@@ -498,7 +498,7 @@ def thunder_unicorn():
     cloud_blob(ic, [(300, 500, 50), (360, 470, 44), (420, 490, 50), (480, 470, 46), (250, 520, 44)],
                light="#6f78c2", dark="#3a3f86", lit=(0.25, 0.35))
     bolt(ic, 420, 300, 92, rot=12, sw=7)
-    label(ic, "8X", 340, 430, 104, rot=-8)
+    label(ic, "5X", 340, 430, 104, rot=-8)
     return ic
 
 

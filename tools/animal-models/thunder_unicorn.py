@@ -9,7 +9,7 @@ trails, sparks and a shockwave under every hoof, and every few seconds while it 
 calls a lightning bolt down onto its horn.
 
 The RideAttachment on the RootPart is where the rider sits (on the saddle). The model's attributes Mount = true
-and SpeedMultiplier = 8 are for your mount script.
+and SpeedMultiplier = 5 are for your mount script.
 """
 
 import math
@@ -229,7 +229,7 @@ def thunder_unicorn():
        light("StormLight", SPARK, brightness=1.0, range_=18, pulse=1.8))
     pulse(a, "HoofFL", "HoofFR", "HoofBL", "HoofBR", seconds=0.8)
     pulse(a, "InnerEarL", "InnerEarR", seconds=1.2)
-    extras(a, attrs={"OrbitSpeed": 0.45, "Mount": True, "SpeedMultiplier": 8, "WalkSpeed": 16},
+    extras(a, attrs={"OrbitSpeed": 0.45, "Mount": True, "SpeedMultiplier": 5, "WalkSpeed": 16},
            highlight=(SPARK, C("#bff3ff"), 1.0, 0.6))
     return a
 
