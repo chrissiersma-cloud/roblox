@@ -113,7 +113,7 @@ def snow_cap(a, center, w, d, yaw, rng, t=0.7, drips=4, name="Snow"):
         slab(a, f"{name}Drip", size, add(p, (0, -h / 2 + t * 0.4, 0)), SNOW_SHADE, yaw, **DETAIL)
 
 
-def column(a, base, w, d, h, rng, yaw=None, snow=True, name="Column"):
+def column(a, base, w, d, h, rng, yaw=None, snow=True, name="Column", lite=False):
     """One basalt column: two stacked blocks with a ledge between them, a facet, dark cracks, and a snow cap."""
     yaw = rng.uniform(0, 90) if yaw is None else yaw
     col = rng.choice(ROCK[1:])
@@ -123,15 +123,15 @@ def column(a, base, w, d, h, rng, yaw=None, snow=True, name="Column"):
     a.box(f"{name}Upper", (w * 0.9, h - split, d * 0.9), (x, y + split + (h - split) / 2, z), rng.choice(ROCK[1:]),
           rot=(rng.uniform(-5, 5), yaw + rng.uniform(-8, 8), rng.uniform(-5, 5)))
     slab(a, f"{name}Ledge", (w * 1.02, 0.5, d * 1.02), (x, y + split, z), ROCK_LIGHT, yaw, **DETAIL)
-    if h > 6:
+    if h > 6 and not lite:
         snow_cap(a, (x, y + split + 0.25, z), w * 0.98, d * 0.98, yaw, rng, t=0.4, drips=1, name=f"{name}LedgeSnow")
     # Chamfer: the same block turned 45 degrees, a little smaller, gives it facets.
     slab(a, f"{name}Facet", (w * 0.8, split * 0.98, d * 0.8), (x, y + split / 2, z), ROCK[0], yaw + 45, **DETAIL)
     R = angles(0, yaw, 0)
-    for k, side in enumerate((-1, 1)):
+    for k, side in enumerate((-1,) if lite else (-1, 1)):
         crack = add((x, y + h * (0.3 + 0.35 * k), z), apply(R, (rng.uniform(-0.3, 0.3) * w, 0, side * (d / 2 + 0.02))))
         slab(a, f"{name}Crack", (0.28, h * 0.32, 0.12), crack, ROCK_DARK, yaw, **DETAIL)
-    if h > 7 and rng.random() < 0.6:
+    if h > 7 and rng.random() < (0.3 if lite else 0.6):
         for k in range(3):
             ic = add((x, y + split - 0.1, z), apply(R, ((k - 1) * w * 0.25, 0, -d / 2 - 0.15)))
             ih = rng.uniform(0.8, 1.8)
@@ -139,11 +139,11 @@ def column(a, base, w, d, h, rng, yaw=None, snow=True, name="Column"):
     a.box(f"{name}Frost", (w * 0.91, 0.6, d * 0.91), (x, y + h - 0.3, z), ROCK_LIGHT,
           rot=(0, yaw + rng.uniform(-8, 8), 0), **DETAIL)
     if snow:
-        snow_cap(a, (x, y + h, z), w * 0.9, d * 0.9, yaw, rng, drips=3)
+        snow_cap(a, (x, y + h, z), w * 0.9, d * 0.9, yaw, rng, drips=1 if lite else 3)
     return y + h
 
 
-def pine_tree(a, rng, h, w, tiers, snow=1.0, x=0.0, z=0.0, name="Pine"):
+def pine_tree(a, rng, h, w, tiers, snow=1.0, x=0.0, z=0.0, name="Pine", lite=False):
     """A snowy pine in the style of the forest kit's pines: every layer is a faceted cone of 8 wedges, and snow lies
     on the upper half of each layer (white wedges on the same slopes, a hair above them)."""
     trunk_h = h * 0.16
@@ -161,14 +161,14 @@ def pine_tree(a, rng, h, w, tiers, snow=1.0, x=0.0, z=0.0, name="Pine"):
             wj = ww if j < 4 else ww * 0.94
             pos = add((x, y + hgt / 2, z), apply(R, (0, 0, -wj / 4)))
             a.wedge(f"{name}Needles", (wj, hgt, wj / 2), pos, color if j < 4 else PINE[0], R=R, collide=False)
-            if snow:
+            if snow and (j < 4 or not lite):
                 # The same wedge shape scaled down around its top edge covers the top of the slope with snow.
                 k = (0.62 if j < 4 else 0.5) * snow
                 top_inner = add((x, y + hgt, z), (0, 0.16, 0))
                 spos = add(top_inner, apply(R, (0, -hgt * k / 2, -wj * k / 4)))
                 a.wedge(f"{name}Snow", (wj * 0.99, hgt * k, wj * k / 2), spos, SNOW if j % 2 == 0 else SNOW_SHADE,
                         R=R, **DETAIL)
-        if snow and ww > 2.5:
+        if snow and ww > 2.5 and not lite:
             # Clumps of snow resting on the tips of the branches.
             for j in range(3):
                 ang = math.radians(yaw0 + 45 + j * 120 + rng.uniform(-20, 20))
