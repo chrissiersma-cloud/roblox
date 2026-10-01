@@ -49,9 +49,18 @@ gloed. Je hoeft dus niets te uploaden. Het vuur loopt van witheet via geel en or
 - **Lopen:** stoer als een vogel. De kop beweegt mee, de vleugels staan iets open en bij elke stap komen er
   vlammen, vonken en een ring van vuur.
 - **Vliegen:**
-  - Als hij snel bewogen wordt (of als je het attribuut `State` op `"Fly"` zet), stijgt hij op.
-  - De vleugels slaan krachtig en de punten zwiepen erachteraan. De poten gaan omhoog en de staart waaiert uit.
+  - Als hij snel bewogen wordt (of als je het attribuut `State` op `"Fly"` zet), stijgt hij op met een vuurstoot
+    en een schokgolf op de grond.
+  - In de lucht ligt hij plat, ongeveer 7 studs hoog. De kop kijkt vooruit, de poten zijn ingetrokken en de
+    staart stroomt achter hem aan.
+  - Hij vliegt in een ritme: eerst een paar krachtige vleugelslagen waarbij de punten erachteraan zwiepen, dan
+    een stuk zweven op gespreide vleugels. In bochten helt hij over.
+  - Achter zijn lijf trekt hij een komeetstaart van vuur en uit zijn rug komen nabrandervlammen. Er regenen
+    meer gloeiende veren uit zijn vleugels.
   - Bij elke neerslag spatten vonken van de vleugelpunten en gaat er een schokgolf van hitte omlaag.
+  - De vuurring op de grond verdwijnt zolang hij vliegt. Bij de landing komt hij terug met een schokgolf en een
+    oplichtende sigil.
+
 - **Idle-acties** (om de 6 tot 10 seconden een willekeurige):
   - **Rebirth:**
     1. Hij hult zich in zijn vleugels en het vuur wordt naar binnen gezogen.
@@ -66,6 +75,7 @@ gloed. Je hoeft dus niets te uploaden. Het vuur loopt van witheet via geel en or
     één keer rond in een spiraal van vuur en landt met een schokgolf.
 
 ![De animaties](../../previews/phoenix_animations.png)
+![Vliegen](../../previews/phoenix_flight.png)
 
 ## Instellingen (attributen op het Model)
 

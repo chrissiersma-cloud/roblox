@@ -359,7 +359,7 @@ local P = {
 	Phoenix = {
 		-- Struts like a proud bird, and takes off and flies when it moves fast (flyRun).
 		gait = "bird", stride = 2.6, swing = 30, bounce = 0.35, headBob = 12, walkSpeed = 7, breathe = 0.08,
-		flapBoost = 1.4, flyRun = true, flyHeight = 4.5, flyPitch = 12,
+		flapBoost = 1.4, flyRun = true, flyHeight = 7, flyPitch = 42, flyHead = 32, flyTail = 45,
 		step = { tex = "fire", c = { "#fffbe6", "#ff8a1f", "#8f1610" }, size = { 1.6, 0 }, life = { 0.4, 0.7 },
 			speed = { 1, 3 }, spread = 40, count = 10, accel = Vector3.new(0, 6, 0) },
 		stepSpark = { tex = "flamespark", c = { "#fffbe6", "#ffd23a", "#ff4a10" }, size = { 0.9, 0 },
@@ -1427,6 +1427,82 @@ ACTIONS.ascend = {
 
 -- ------------------------------------------------------------- update --
 
+-- Flight effects (flyRun animals): a comet trail of fire behind the body, afterburn flames, more ember feathers,
+-- a blast on takeoff and a shockwave on landing, and the fire ring on the ground hidden while it flies.
+local flight = nil
+if profile.flyRun then
+	local body = part("Body")
+	local half = body.Size.Y / 2
+	local top = attachmentOn(body, "FXFlightTop")
+	top.Position = Vector3.new(0, half, 0)
+	local bottom = attachmentOn(body, "FXFlightBottom")
+	bottom.Position = Vector3.new(0, -half, 0)
+	local trail = Instance.new("Trail")
+	trail.Name = "FlightTrail"
+	trail.Attachment0 = top
+	trail.Attachment1 = bottom
+	trail.Texture = TEX.fire
+	trail.TextureMode = Enum.TextureMode.Stretch
+	trail.Lifetime = 0.9
+	trail.LightEmission = 1
+	trail.LightInfluence = 0
+	trail.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex("#fffbe6")),
+		ColorSequenceKeypoint.new(0.3, hex("#ffb52e")), ColorSequenceKeypoint.new(1, hex("#8f1610")) })
+	trail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+	trail.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.2) })
+	trail.Enabled = false
+	trail.Parent = body
+	local back = attachmentOn(body, "FXAfterburn")
+	back.Position = Vector3.new(0, 0, body.Size.Z / 2)
+	local burn = makeEmitter({ tex = "fire", c = FIRE3, size = { 3, 0 }, life = { 0.3, 0.6 }, speed = { 3, 7 },
+		spread = 25, dir = Enum.NormalId.Back, rate = 0 }, back)
+	burn.Enabled = true
+	local ground, embers = {}, {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and (d.Name:sub(1, 8) == "FireRing" or d.Name == "SigilCore") then
+			table.insert(ground, { part = d, t = d.Transparency })
+		elseif d:IsA("ParticleEmitter") and d.Name == "EmberFeathers" then
+			table.insert(embers, { e = d, rate = d.Rate })
+		end
+	end
+	flight = { trail = trail, burn = burn, ground = ground, embers = embers, up = false }
+end
+
+local function setFlying(up: boolean)
+	flight.up = up
+	flight.trail.Enabled = up
+	for _, g in flight.ground do
+		g.part.Transparency = if up then 1 else g.t
+		for _, e in g.part:GetChildren() do
+			if e:IsA("ParticleEmitter") then
+				e.Enabled = not up
+			end
+		end
+	end
+	if not fxOn then
+		return
+	end
+	local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+	if up then
+		-- takeoff: a blast of fire pushes off the ground
+		flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 4, 40 }, life = { 0.6, 0.6 },
+			transparency = 0.25, spin = 0 }, 1)
+		groundRing(root.Position, "#ff6a14", 16, 0.6)
+		burst("Takeoff", "Body", { tex = "fire", c = FIRE3, size = { 3.5, 0 }, life = { 0.4, 0.8 }, speed = { 10, 18 },
+			spread = 50, drag = 2, dir = Enum.NormalId.Bottom }, 50)
+	else
+		-- landing: a shockwave and the sigil flares up again
+		flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 6, 50 }, life = { 0.8, 0.8 },
+			transparency = 0.2, spin = 0 }, 1)
+		flatBurst(ground, { tex = "vortex", c = { "#fff2a8", "#ff4a10" }, size = { 26, 20 }, life = { 1.4, 1.4 },
+			transparency = 0.3, spin = 140 }, 1)
+		groundRing(root.Position, "#ff6a14", 22, 0.8)
+		groundRing(root.Position, "#fffbe6", 12, 0.5)
+		burst("Landing", "SigilCore", { tex = "flamespark", c = FIRE3, size = { 1.2, 0 }, life = { 0.6, 1.2 },
+			speed = { 14, 24 }, spread = 85, drag = 3, spin = 400 }, 60)
+	end
+end
+
 local rng = Random.new()
 local start = os.clock()
 local phase = rng:NextNumber(0, 10) -- so a group of the same animal doesn't move in sync
@@ -1440,6 +1516,7 @@ local action, actionStart = nil, 0
 local fired: { [number]: boolean } = {}
 local posed = false
 local air, lastFlap = 0, 0 -- flight (0 = on the ground, 1 = flying) and the last wing beat, for flyRun animals
+local flightClock, flightPhase = 0, 0
 
 local function identityAll()
 	for _, j in joints do
@@ -1501,6 +1578,24 @@ RunService.PreSimulation:Connect(function(dt)
 	-- Animals with flyRun take off when they move fast (or when the game sets State = "Fly").
 	local airTarget = if profile.flyRun and (run > 0.25 or state == "Fly") then 1 else 0
 	air += (airTarget - air) * math.min(1, dt * 2.5)
+	-- Flight rhythm: a few strong wing beats, then a glide on spread wings, then beats again.
+	flightClock = if air > 0.01 then flightClock + dt else 0
+	local flightCyc = flightClock % 4.2
+	local flapAmt = if flightCyc < 2.4 then 1 elseif flightCyc < 2.8 then 1 - (flightCyc - 2.4) / 0.4
+		elseif flightCyc < 3.9 then 0 else (flightCyc - 3.9) / 0.3
+	flapAmt = flapAmt * flapAmt * (3 - 2 * flapAmt)
+	flightPhase += dt * 7.5 * (0.3 + 0.7 * flapAmt)
+	if flight then
+		if not flight.up and air > 0.35 then
+			setFlying(true)
+		elseif flight.up and air < 0.25 then
+			setFlying(false)
+		end
+		flight.burn.Rate = if fxOn then 45 * air * (0.4 + 0.6 * flapAmt) else 0
+		for _, em in flight.embers do
+			em.e.Rate = em.rate * (1 + 3 * air)
+		end
+	end
 
 	local cycles = math.max(effSpeed, walk * walkSpeed * 0.3) / profile.stride
 	if profile.maxCycles then
@@ -1614,9 +1709,13 @@ RunService.PreSimulation:Connect(function(dt)
 	local hover = attribute("Hover", 0)
 	local hoverY = if hover > 0 then math.sin(t * attribute("HoverSpeed", 2)) * hover else 0
 	if joints.Root then
-		local flyLift = air * (profile.flyHeight or 4) + math.sin(t * 7.5 - 0.6) * 0.35 * air
+		-- In flight: lifted up, tipped forward so it lies flat in the air, rising with each beat, swaying in the
+		-- glide, and banking into turns.
+		local flyLift = air * (profile.flyHeight or 4) + math.sin(flightPhase - 0.6) * 0.5 * air * flapAmt
+			+ math.sin(t * 1.1) * 0.4 * air * (1 - flapAmt)
+		local bank = -math.clamp(turn * 0.35, -0.6, 0.6) * air + math.sin(t * 0.9) * R(4) * air * (1 - flapAmt)
 		joints.Root.Transform = CFrame.new(0, hoverY + bounce * (1 - air) + breathe + flyLift, 0)
-			* CFrame.Angles(-lean - R(profile.flyPitch or 0) * air, 0, roll) * actionRoot
+			* CFrame.Angles(-lean * (1 - air) - R(profile.flyPitch or 0) * air, 0, roll * (1 - air) + bank) * actionRoot
 	end
 
 	-- Head: looks around when idle, bobs when walking.
@@ -1665,11 +1764,16 @@ RunService.PreSimulation:Connect(function(dt)
 		local wingAngle = math.sin(beat) * flapAngle + R(8) * walk
 		local tipAngle = math.sin(beat - 0.9) * flapAngle * 0.9 - R(6) * walk
 		if air > 0.01 then
-			local f = t * 7.5
+			local f = flightPhase
 			local flap = math.sin(f)
-			wingAngle = wingAngle * (1 - air) + (flap * R(42) + R(12)) * air
-			tipAngle = tipAngle * (1 - air) + (math.sin(f - 1.1) * R(32) - R(4)) * air
-			if lastFlap > 0 and flap <= 0 and air > 0.6 and fxOn then
+			-- beating: big strokes with the tips whipping behind; gliding: wings spread flat, tips curled up a little
+			-- (the wings rest raised; in the air they come down level with the body)
+			local glideWing = -R(34) + math.sin(t * 1.3) * R(3)
+			local flyWing = (flap * R(48) - R(16)) * flapAmt + glideWing * (1 - flapAmt)
+			local flyTip = (math.sin(f - 1.1) * R(35) - R(4)) * flapAmt + R(12) * (1 - flapAmt)
+			wingAngle = wingAngle * (1 - air) + flyWing * air
+			tipAngle = tipAngle * (1 - air) + flyTip * air
+			if lastFlap > 0 and flap <= 0 and air > 0.6 and flapAmt > 0.5 and fxOn then
 				wingbeat()
 			end
 			lastFlap = flap
@@ -1678,8 +1782,8 @@ RunService.PreSimulation:Connect(function(dt)
 					pose[leg] = (pose[leg] or CFrame.identity):Lerp(CFrame.new(0, 0.6, 0.3) * CFrame.Angles(-R(65), 0, 0), air)
 				end
 			end
-			pose.Tail = (pose.Tail or CFrame.identity) * CFrame.Angles(R(12) * air, 0, 0)
-			pose.Head = (pose.Head or CFrame.identity) * CFrame.Angles(R(8) * air, 0, 0)
+			pose.Tail = (pose.Tail or CFrame.identity) * CFrame.Angles(R(profile.flyTail or 12) * air, 0, 0)
+			pose.Head = (pose.Head or CFrame.identity) * CFrame.Angles(R(profile.flyHead or 8) * air, 0, 0)
 		end
 		for _, side in { "R", "L" } do
 			local sgn = if side == "L" then -1 else 1
@@ -1691,7 +1795,7 @@ RunService.PreSimulation:Connect(function(dt)
 			end
 		end
 		if joints.TailTip then
-			pose.TailTip = CFrame.Angles(math.sin(t * 2.2 - 0.9) * R(7) * (1 + air),
+			pose.TailTip = CFrame.Angles(math.sin(t * 2.2 - 0.9) * R(7) * (1 + air) + R(15) * air,
 				math.sin(t * (1.6 + walk * 3) - 1.0) * R(14) * (1 + walk * 0.5), 0)
 		end
 		if joints.Crest then
