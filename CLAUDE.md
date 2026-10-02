@@ -23,7 +23,8 @@ glow/vortex, sparkles, smoke) so nothing has to be uploaded.
 - Invisible effect holders (transparency 1) count toward the hitbox size, so keep them within the animal's
   normal bounds.
 - `AnimalFX.lua` is embedded in every animal `.rbxm`. After changing it, rebuild all of them:
-  `build_dark_woods.py`, `build_horses.py`, `build_mountain.py`, `build_mounts.py` and `build_phoenix.py`
+  `build_dark_woods.py`, `build_horses.py`, `build_mountain.py`, `build_mounts.py`, `build_phoenix.py` and
+  `build_zoo_showpieces.py`
   (each with `--rbxm`, see the READMEs for the output paths).
 - Check Luau with the luau-analyze/luau-compile tools before committing script changes.
 - Develop on the branch the session names, commit with clear messages, and only open pull requests when asked.

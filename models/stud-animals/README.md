@@ -8,6 +8,10 @@ bij alle dieren even groot, zodat ze bij elkaar en bij je map passen. De vier ze
 Mythic en Secret) hebben ook delen die gloeien, vonken, vlammen en een lichtje, en alle dieren vanaf Rare krijgen
 glinsters in de kleur van hun zeldzaamheid.
 
+> De Phoenix, Voidwhisker en Gorilla King hebben nu ook een nieuwe, veel gedetailleerdere versie van gewone Parts,
+> met eigen effecten en idle-acties: zie `models/phoenix` en `models/zoo-showpieces`. Die hebben hetzelfde
+> `AnimalId`, dus je kunt kiezen welke je gebruikt.
+
 | Dier | Zeldzaamheid | Hoogte | Driehoekjes | Hoe hij eruitziet |
 |---|---|---|---|---|
 | Deer | Common | 5,6 studs (met gewei) | 1.884 | bruin met crème vlekjes op de rug, crème borst en buik, gewei van blokjes, donkere hoeven |

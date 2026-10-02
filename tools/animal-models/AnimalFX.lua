@@ -367,6 +367,32 @@ local P = {
 		stepRing = { color = "#ff6a14", radius = 4, time = 0.4 },
 		idle = { "rebirth", "flamecry", "wingstretch", "ascend" }, every = { 6, 10 },
 	},
+	Voidwhisker = {
+		-- A shadow cat: a light, quick trot that leaves void smoke and pink sparks behind every paw.
+		gait = "quad", pattern = TROT, runPattern = GALLOP, stride = 5, swing = 32, bounce = 0.35, headBob = 5,
+		walkSpeed = 12, breathe = 0.06, lean = 4, maxCycles = 3,
+		step = { tex = "smoke", c = { "#3a1f5c", "#0d0618" }, size = { 1.2, 2.8 }, life = { 0.6, 1 }, speed = { 1, 3 },
+			spread = 60, count = 8, light = 0, transparency = 0.35 },
+		stepSpark = { tex = "spark", c = { "#ffd6ff", "#b14dff" }, size = { 0.5, 0 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 70, count = 8 },
+		stepRing = { color = "#ff4fd8", radius = 3, time = 0.35 },
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#ff8ce6" }, size = { 0.5, 0 }, life = { 0.6, 1 },
+			speed = { 1, 3 }, rate = 18, spread = 180 },
+		idle = { "voiddive", "starstretch", "gemstorm" }, every = { 6, 10 },
+	},
+	GorillaKing = {
+		-- A heavy knuckle walk that rolls from side to side; every step kicks up dust and gold.
+		gait = "quad", pattern = WALK4, stride = 7, swing = 26, bounce = 0.45, roll = 5, headBob = 4, walkSpeed = 9,
+		breathe = 0.12, lean = 3,
+		step = { tex = "smoke", c = { "#d8c8a0", "#8a7a5a" }, size = { 1.6, 3.6 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 80, count = 7, light = 0, transparency = 0.45 },
+		stepSpark = { tex = "flamespark", c = { "#fffbe6", "#ffc93c", "#b8860b" }, size = { 0.8, 0 },
+			life = { 0.4, 0.8 }, speed = { 4, 9 }, spread = 70, count = 8, drag = 2, spin = 300 },
+		stepRing = { color = "#ffc93c", radius = 5, time = 0.4 },
+		aura = { at = "Body", tex = "spark", c = { "#fff1a8", "#ffc93c" }, size = { 0.6, 0 }, life = { 0.6, 1 },
+			speed = { 1, 3 }, rate = 16, spread = 180 },
+		idle = { "chestbeat", "kingslam", "crownflash" }, every = { 6, 10 },
+	},
 }
 
 local profile = P[model:GetAttribute("AnimalId") or model.Name] or P.MossbackToad
@@ -1618,6 +1644,288 @@ ACTIONS.ascend = {
 			groundRing(root.Position, "#fffbe6", 14, 0.6)
 			burst("LandSparks", "SigilCore", { tex = "flamespark", c = FIRE3, size = { 1.2, 0 }, life = { 0.6, 1.2 },
 				speed = { 14, 24 }, spread = 85, drag = 3, spin = 400 }, 70)
+		end,
+	},
+}
+
+local function smooth(x: number): number
+	x = math.clamp(x, 0, 1)
+	return x * x * (3 - 2 * x)
+end
+
+local VOID3 = { "#ffffff", "#ff8ce6", "#3a1466" }
+local GOLD3 = { "#fffbe6", "#ffc93c", "#a8740f" }
+
+local function groundAt(): Vector3
+	return Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+end
+
+-- Void dive (Voidwhisker): it crouches, a void portal opens under it and it sinks through, then it bursts back out
+-- of a second portal, spinning, in a storm of pink sparks.
+ACTIONS.voiddive = {
+	time = 3.0,
+	pose = function(p)
+		local crouch = ease(p, 0, 0.36)
+		local sink = smooth((p - 0.3) / 0.14) * (1 - smooth((p - 0.6) / 0.16))
+		local spin = smooth((p - 0.6) / 0.22)
+		local hop = ease(p, 0.68, 0.9)
+		return CFrame.new(0, -0.6 * crouch - 15 * sink + 1.2 * hop, 0) * CFrame.Angles(0, 2 * math.pi * spin, 0), {
+			LegFR = CFrame.Angles(R(20) * crouch - R(25) * hop, 0, 0),
+			LegFL = CFrame.Angles(R(20) * crouch - R(25) * hop, 0, 0),
+			LegBR = CFrame.Angles(-R(15) * crouch + R(20) * hop, 0, 0),
+			LegBL = CFrame.Angles(-R(15) * crouch + R(20) * hop, 0, 0),
+			Head = CFrame.Angles(-R(20) * crouch + R(20) * hop, 0, 0),
+			Tail = CFrame.Angles(-R(20) * hop, 0, 0),
+		}
+	end,
+	moments = {
+		[0.08] = function()
+			burst("DivePull", "Body", { tex = "implode", c = { "#ffd6ff", "#3a1466" }, size = { 12, 1 },
+				life = { 0.7, 0.7 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+		end,
+		[0.26] = function()
+			local ground = groundAt()
+			flatBurst(ground, { tex = "vortex", c = { "#ff8ce6", "#b14dff", "#0d0618" }, size = { 4, 18 },
+				life = { 2.4, 2.4 }, transparency = 0.15, spin = -220 }, 1)
+			flatBurst(ground, { tex = "glow", c = { "#ff4fd8", "#3a1466" }, size = { 16, 16 }, life = { 2.4, 2.4 },
+				transparency = 0.4, spin = 0 }, 1)
+			groundRing(root.Position, "#ff4fd8", 9, 0.5)
+		end,
+		[0.4] = function()
+			flash("Root", "#b14dff", 6, 30, 0.6)
+			burst("DiveSplash", "Root", { tex = "flamespark", c = VOID3, size = { 1.1, 0 }, life = { 0.5, 1 },
+				speed = { 8, 16 }, spread = 40, drag = 3, spin = 400 }, 40)
+		end,
+		[0.62] = function()
+			burst("RisePull", "Root", { tex = "implode", c = { "#ffd6ff", "#3a1466" }, size = { 14, 1 },
+				life = { 0.5, 0.5 }, speed = { 0, 0 }, transparency = 0.2, spin = -90 }, 2)
+		end,
+		[0.7] = function()
+			local ground = groundAt()
+			flash("Body", "#ff8ce6", 9, 40, 0.8)
+			burst("RiseSparks", "Body", { tex = "flamespark", c = VOID3, size = { 1.3, 0 }, life = { 0.6, 1.2 },
+				speed = { 10, 22 }, spread = 180, drag = 3, spin = 400 }, 70)
+			burst("RiseStars", "Body", { tex = "spark", c = { "#ffffff", "#ff8ce6" }, size = { 0.8, 0 }, life = { 1, 2 },
+				speed = { 4, 10 }, spread = 180, drag = 2 }, 50)
+			burst("RiseSmoke", "Body", { tex = "smoke", c = { "#3a1f5c", "#0d0618" }, size = { 3, 6 }, life = { 0.8, 1.4 },
+				speed = { 6, 12 }, spread = 180, drag = 3, light = 0, transparency = 0.3 }, 25)
+			flatBurst(ground, { tex = "shock", c = { "#ff8ce6", "#3a1466" }, size = { 4, 40 }, life = { 0.7, 0.7 },
+				transparency = 0.2, spin = 0 }, 1)
+			groundRing(root.Position, "#ff4fd8", 14, 0.6)
+			task.delay(0.15, function()
+				groundRing(root.Position, "#b14dff", 22, 0.7)
+			end)
+		end,
+	},
+}
+
+-- Star stretch (Voidwhisker): a long cat stretch, front paws far forward; the stars in its fur rise up out of its
+-- back and a constellation sigil flares on the ground.
+ACTIONS.starstretch = {
+	time = 3.2,
+	pose = function(p)
+		local k = ease(p, 0.02, 0.98)
+		local s = math.min(k * 1.5, 1)
+		return CFrame.new(0, -0.7 * s, 0) * CFrame.Angles(-R(14) * s, 0, 0), {
+			LegFR = CFrame.Angles(R(55) * s, 0, 0),
+			LegFL = CFrame.Angles(R(55) * s, 0, 0),
+			LegBR = CFrame.Angles(-R(8) * s, 0, 0),
+			LegBL = CFrame.Angles(-R(8) * s, 0, 0),
+			Head = CFrame.Angles(R(30) * s + math.sin(p * 9) * R(4) * s, 0, 0),
+			Tail = CFrame.Angles(-R(25) * s, 0, 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			stream("StretchStars", "Body", { tex = "spark", c = { "#ffffff", "#e3b8ff" }, size = { 0.7, 0 },
+				life = { 1.5, 2.5 }, speed = { 3, 6 }, spread = 35, rate = 40, drag = 0.8 }, 1.4)
+		end,
+		[0.5] = function()
+			local ground = groundAt()
+			flash("Body", "#e3b8ff", 6, 30, 1.0)
+			flatBurst(ground, { tex = "vortex", c = { "#ffffff", "#e3b8ff", "#b14dff" }, size = { 26, 20 },
+				life = { 1.6, 1.6 }, transparency = 0.3, spin = 90 }, 1)
+			flatBurst(ground, { tex = "shock", c = { "#ffffff", "#b14dff" }, size = { 4, 34 }, life = { 0.8, 0.8 },
+				transparency = 0.3, spin = 0 }, 1)
+			burst("StretchBurst", "Body", { tex = "spark", c = { "#ffffff", "#ff8ce6" }, size = { 0.9, 0 },
+				life = { 1, 1.8 }, speed = { 6, 12 }, spread = 60, drag = 2 }, 40)
+			groundRing(root.Position, "#e3b8ff", 16, 0.8)
+		end,
+	},
+}
+
+-- Gem storm (Voidwhisker): the floating diamonds whirl round it faster and faster, flaring with pink light, until
+-- the collar gem bursts with a ring of light and a shockwave.
+ACTIONS.gemstorm = {
+	time = 3.0,
+	orbitBoost = 7,
+	pose = function(p)
+		local up = ease(p, 0, 1)
+		return CFrame.new(0, 0.3 * up, 0), {
+			Head = CFrame.Angles(R(22) * up, 0, 0),
+			Tail = CFrame.Angles(-R(20) * up, 0, 0),
+		}
+	end,
+	moments = {
+		[0.12] = function()
+			burst("StormPull", "CollarGemUp", { tex = "implode", c = { "#ffd6ff", "#b14dff" }, size = { 8, 1 },
+				life = { 0.6, 0.6 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+		end,
+		[0.25] = function()
+			for _, side in { "R", "L" } do
+				stream("GemStorm" .. side, "FloatGem" .. side .. "Up", { tex = "spark", c = { "#ffffff", "#ff8ce6" },
+					size = { 0.8, 0 }, life = { 0.6, 1.1 }, speed = { 1, 3 }, spread = 180, rate = 60 }, 1.6)
+			end
+			stream("TailStorm", "TailCrystalUp", { tex = "glow", c = { "#e3b8ff", "#b14dff" }, size = { 3, 0 },
+				life = { 0.4, 0.6 }, speed = { 0, 0 }, rate = 10 }, 1.6)
+		end,
+		[0.66] = function()
+			local gem = part("CollarGemUp")
+			flash("CollarGemUp", "#ff8ce6", 10, 40, 0.8)
+			burst("StormBurst", "CollarGemUp", { tex = "flamespark", c = VOID3, size = { 1.2, 0 }, life = { 0.6, 1.2 },
+				speed = { 10, 20 }, spread = 180, drag = 3, spin = 400 }, 60)
+			ring(CFrame.new(gem.Position), "#ff4fd8", 10, 0.6)
+			ring(CFrame.new(gem.Position + Vector3.new(0, 2, 0)), "#e3b8ff", 7, 0.5)
+			flatBurst(groundAt(), { tex = "shock", c = { "#ff8ce6", "#3a1466" }, size = { 4, 36 }, life = { 0.7, 0.7 },
+				transparency = 0.2, spin = 0 }, 1)
+			groundRing(root.Position, "#b14dff", 18, 0.7)
+		end,
+	},
+}
+
+-- Chest beat (Gorilla King): it rears up on its hind legs and pounds its chest, left, right, left, right, every
+-- blow a flash of gold and a ring of light off its medallion, then it roars and drops back on its fists.
+local function rearUp(angle: number): CFrame
+	return CFrame.new(hindPivot) * CFrame.Angles(angle, 0, 0) * CFrame.new(-hindPivot)
+end
+
+local function beatFx()
+	local medal = part("MedallionDiamondCore")
+	flash("MedallionDiamondCore", "#fff1a8", 6, 24, 0.3)
+	ring(medal.CFrame * CFrame.new(0, 0, -1) * CFrame.Angles(R(90), 0, 0), "#ffc93c", 6, 0.4)
+	burst("BeatSparks", "MedallionDiamondCore", { tex = "flamespark", c = GOLD3, size = { 0.9, 0 }, life = { 0.4, 0.8 },
+		speed = { 8, 14 }, spread = 60, drag = 3, spin = 300, dir = Enum.NormalId.Front }, 25)
+end
+
+ACTIONS.chestbeat = {
+	time = 3.6,
+	pose = function(p)
+		local up = math.min(ease(p, 0.02, 0.98) * 1.6, 1)
+		local b = (p - 0.28) / 0.48 * 4
+		local hitR, hitL = 0, 0
+		if b >= 0 and b < 4 then
+			local hit = math.sin((b % 1) * math.pi)
+			if math.floor(b) % 2 == 0 then
+				hitR = hit
+			else
+				hitL = hit
+			end
+		end
+		local roar = ease(p, 0.74, 0.96)
+		return rearUp(R(50) * up), {
+			LegFR = CFrame.Angles(R(30) * up - R(12) * hitR, 0, -R(28) * up),
+			LegFL = CFrame.Angles(R(30) * up - R(12) * hitL, 0, R(28) * up),
+			ForearmR = CFrame.Angles(R(62) * up + R(18) * hitR, 0, 0),
+			ForearmL = CFrame.Angles(R(62) * up + R(18) * hitL, 0, 0),
+			LegBR = CFrame.Angles(-R(50) * up, 0, 0),
+			LegBL = CFrame.Angles(-R(50) * up, 0, 0),
+			Head = CFrame.Angles(-R(40) * up + R(18) * roar, 0, 0),
+		}
+	end,
+	moments = {
+		[0.34] = beatFx,
+		[0.46] = beatFx,
+		[0.58] = beatFx,
+		[0.7] = beatFx,
+		[0.8] = function()
+			local mouth = part("Mouth")
+			flash("Body", "#ffc93c", 8, 40, 0.8)
+			burst("RoarGold", "Mouth", { tex = "spark", c = { "#fff1a8", "#ffc93c" }, size = { 0.8, 0 }, life = { 0.5, 1 },
+				speed = { 10, 18 }, spread = 35, dir = Enum.NormalId.Front }, 40)
+			ring(mouth.CFrame * CFrame.new(0, 0, -2) * CFrame.Angles(R(90), 0, 0), "#ffc93c", 8, 0.5)
+			groundRing(root.Position, "#ffc93c", 18, 0.7)
+		end,
+		[0.94] = function()
+			frontHoovesLand(30)
+			groundRing(root.Position, "#fff1a8", 12, 0.5)
+		end,
+	},
+}
+
+-- King slam (Gorilla King): it rears up with both fists high over its head and hammers them into the ground: a
+-- golden shockwave, a fountain of gold coins and dust, and rings of gold rolling out over the ground.
+ACTIONS.kingslam = {
+	time = 2.8,
+	pose = function(p)
+		local r = if p < 0.48 then smooth(p / 0.4) else 1 - smooth((p - 0.48) / 0.07)
+		local impact = if p < 0.48 then 0 else smooth((p - 0.48) / 0.07) * (1 - smooth((p - 0.75) / 0.25))
+		return CFrame.new(0, -0.3 * impact, 0) * rearUp(R(30) * r - R(4) * impact), {
+			LegFR = CFrame.Angles(R(150) * r + R(12) * impact, 0, -R(10) * r),
+			LegFL = CFrame.Angles(R(150) * r + R(12) * impact, 0, R(10) * r),
+			ForearmR = CFrame.Angles(R(20) * r, 0, 0),
+			ForearmL = CFrame.Angles(R(20) * r, 0, 0),
+			LegBR = CFrame.Angles(-R(30) * r, 0, 0),
+			LegBL = CFrame.Angles(-R(30) * r, 0, 0),
+			Head = CFrame.Angles(-R(20) * r - R(10) * impact, 0, 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			burst("SlamCharge", "CrownOrb", { tex = "implode", c = { "#fffbe6", "#ffc93c" }, size = { 8, 1 },
+				life = { 0.5, 0.5 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+		end,
+		[0.55] = function()
+			local ground = groundAt() + root.CFrame.LookVector * 4
+			flash("Body", "#ffc93c", 12, 55, 0.9)
+			frontHoovesLand(45)
+			flatBurst(ground, { tex = "shock", c = { "#fff1a8", "#a8740f" }, size = { 6, 70 }, life = { 0.9, 0.9 },
+				transparency = 0.15, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#fffbe6", "#ffc93c", "#a8740f" }, size = { 34, 26 },
+				life = { 1.6, 1.6 }, transparency = 0.3, spin = 140 }, 1)
+			burst("SlamCoins", "SigilCore", { tex = "flamespark", c = GOLD3, size = { 1.2, 0.6 }, life = { 1.2, 1.8 },
+				speed = { 16, 28 }, spread = 35, accel = Vector3.new(0, -35, 0), spin = 500, squash = 0.5 }, 70)
+			burst("SlamGlints", "SigilCore", { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 1, 0 },
+				life = { 1, 1.6 }, speed = { 10, 20 }, spread = 50, accel = Vector3.new(0, -20, 0) }, 40)
+			for i, c in { "#fffbe6", "#ffc93c", "#e0a01f" } do
+				task.delay((i - 1) * 0.12, function()
+					groundRing(ground, c, 12 + i * 8, 0.8)
+				end)
+			end
+		end,
+	},
+}
+
+-- Crown flash (Gorilla King): it lifts its head, its crown rises off its head and spins in a blaze of gold, a
+-- pillar of light shoots up and coins rain down around it.
+ACTIONS.crownflash = {
+	time = 2.8,
+	pose = function(p)
+		local up = ease(p, 0, 1)
+		local lift = smooth((p - 0.12) / 0.2) * (1 - smooth((p - 0.75) / 0.15))
+		local spin = smooth((p - 0.28) / 0.45)
+		return rearUp(R(8) * up), {
+			Head = CFrame.Angles(R(25) * up, 0, 0),
+			Crown = CFrame.new(0, 1.8 * lift, 0) * CFrame.Angles(0, 2 * math.pi * spin, 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			local crown = part("CrownOrb")
+			flash("CrownOrb", "#fff1a8", 10, 40, 1.0)
+			stream("CrownBlaze", "CrownOrb", { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 0.7, 0 },
+				life = { 0.6, 1.2 }, speed = { 3, 8 }, spread = 180, rate = 80, drag = 2 }, 1.2)
+			ring(CFrame.new(crown.Position), "#ffc93c", 7, 0.6)
+		end,
+		[0.48] = function()
+			stream("CrownPillar", "CrownOrb", { tex = "glow", c = { "#fffbe6", "#ffc93c" }, size = { 3, 1 },
+				life = { 0.6, 0.9 }, speed = { 30, 40 }, spread = 2, rate = 60 }, 0.8)
+			burst("CoinRain", "CrownOrb", { tex = "flamespark", c = GOLD3, size = { 1.1, 0.6 }, life = { 1.4, 2 },
+				speed = { 10, 18 }, spread = 60, accel = Vector3.new(0, -25, 0), spin = 500, squash = 0.5 }, 50)
+		end,
+		[0.6] = function()
+			flatBurst(groundAt(), { tex = "vortex", c = { "#fffbe6", "#ffc93c", "#a8740f" }, size = { 30, 24 },
+				life = { 1.6, 1.6 }, transparency = 0.3, spin = -120 }, 1)
+			groundRing(root.Position, "#ffc93c", 20, 0.8)
 		end,
 	},
 }
