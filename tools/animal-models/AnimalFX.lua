@@ -137,7 +137,7 @@ local P = {
 		stepRing = { color = "#b44bff", radius = 4, time = 0.4 },
 		aura = { at = "Body", tex = "spark", c = { "#d05cff", "#3a1466" }, size = { 0.5, 0 }, life = { 0.4, 0.8 },
 			speed = { 1, 3 }, rate = 20, spread = 180 },
-		idle = "roar", every = { 6, 10 },
+		idle = { "roar", "shadowstep" }, every = { 6, 10 },
 	},
 	MosskingElk = {
 		gait = "quad", pattern = WALK4, stride = 10, swing = 22, bounce = 0.25, headBob = 4, walkSpeed = 10,
@@ -147,7 +147,7 @@ local P = {
 		stepRing = { color = "#8fe05a", radius = 6, time = 0.5 },
 		aura = { at = "Body", tex = "spark", c = { "#5ef0ff", "#b8ff6a" }, size = { 0.5, 0 }, life = { 2, 3 },
 			speed = { 0.5, 1.5 }, rate = 12, accel = Vector3.new(0, 1.5, 0), spread = 180 },
-		idle = "stomp", every = { 7, 11 },
+		idle = { "stomp", "bloom" }, every = { 6, 10 },
 	},
 	NightshadeDrake = {
 		gait = "quad", pattern = WALK4, stride = 8, swing = 24, bounce = 0.3, headBob = 5, walkSpeed = 10,
@@ -157,7 +157,7 @@ local P = {
 		stepRing = { color = "#5ef0b0", radius = 6, time = 0.45 },
 		aura = { at = "Body", tex = "spark", c = { "#7dffc4", "#5ef0b0" }, size = { 0.6, 0 }, life = { 0.8, 1.4 },
 			speed = { 1, 3 }, rate = 20, accel = Vector3.new(0, 3, 0), spread = 180 },
-		idle = "breath", every = { 7, 11 },
+		idle = { "breath", "soulstorm" }, every = { 6, 10 },
 	},
 	ThunderUnicorn = {
 		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11.5, swing = 27, bounce = 0.5, headBob = 5,
@@ -1234,6 +1234,123 @@ ACTIONS.thunder = {
 		groundRing(root.Position, "#fff7c2", 14, 0.6)
 		flash("Body", "#4fd6ff", 6, 30, 0.5)
 	end },
+}
+
+-- Shadow step (Umbra Panther): it crouches and the darkness is sucked into it, then it lunges forward in a burst
+-- of void with a shockwave and slides back to where it stood.
+ACTIONS.shadowstep = {
+	time = 2.6,
+	pose = function(p)
+		local crouch = ease(p, 0, 0.45)
+		local lunge = ease(p, 0.35, 0.9)
+		return CFrame.new(0, -0.6 * crouch, -4.5 * lunge) * CFrame.Angles(-R(8) * lunge, 0, 0), {
+			LegFR = CFrame.Angles(-R(35) * lunge, 0, 0),
+			LegFL = CFrame.Angles(-R(35) * lunge, 0, 0),
+			LegBR = CFrame.Angles(R(30) * lunge, 0, 0),
+			LegBL = CFrame.Angles(R(30) * lunge, 0, 0),
+			Head = CFrame.Angles(-R(15) * crouch + R(10) * lunge, 0, 0),
+			Tail = CFrame.Angles(R(25) * lunge, 0, 0),
+		}
+	end,
+	moments = {
+		[0.12] = function()
+			burst("VoidPull", "Body", { tex = "implode", c = { "#e3b8ff", "#3a1466" }, size = { 12, 1 },
+				life = { 0.7, 0.7 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+		end,
+		[0.45] = function()
+			flash("Body", "#b861ff", 8, 36, 0.6)
+			burst("VoidSmoke", "Body", { tex = "smoke", c = { "#2a1640", "#000000" }, size = { 3, 6 }, life = { 0.8, 1.4 },
+				speed = { 6, 12 }, spread = 180, drag = 3, light = 0, transparency = 0.25 }, 30)
+			burst("VoidSparks", "Body", { tex = "flamespark", c = { "#ffffff", "#b861ff", "#3a1466" }, size = { 1.1, 0 },
+				life = { 0.5, 1 }, speed = { 10, 20 }, spread = 180, drag = 3, spin = 400 }, 60)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#e3b8ff", "#3a1466" }, size = { 4, 36 }, life = { 0.7, 0.7 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#e3b8ff", "#b861ff", "#1d1a26" }, size = { 22, 16 },
+				life = { 1.2, 1.2 }, transparency = 0.3, spin = -160 }, 1)
+			groundRing(root.Position, "#b861ff", 14, 0.6)
+		end,
+	},
+}
+
+-- Bloom (Mossking Elk): it raises its head, its antlers flare, and a wave of blooming light rolls out over the
+-- ground with leaves and fireflies swirling up around it.
+ACTIONS.bloom = {
+	time = 3.0,
+	pose = function(p)
+		local up = ease(p, 0, 1)
+		return CFrame.new(0, 0.4 * up, 0) * CFrame.Angles(R(6) * up, 0, 0), {
+			Head = CFrame.Angles(R(28) * up, 0, 0),
+			LegFR = CFrame.Angles(-R(20) * ease(p, 0.1, 0.5), 0, 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			flash("Head", "#bdfbff", 8, 40, 1.0)
+			stream("BloomLeaves", "Body", { tex = "spark", c = { "#b8ff6a", "#58a84a" }, size = { 0.7, 0.4 },
+				life = { 1.5, 2.5 }, speed = { 4, 9 }, spread = 60, rate = 50, accel = Vector3.new(0, 2, 0), drag = 1,
+				squash = 1.4, spin = 200 }, 1.2)
+			burst("BloomFlies", "Body", { tex = "spark", c = { "#fff27a", "#b8ff6a" }, size = { 0.5, 0 },
+				life = { 2, 3 }, speed = { 3, 7 }, spread = 180, drag = 1.5 }, 50)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#bdfbff", "#3fa86a" }, size = { 6, 50 }, life = { 1.0, 1.0 },
+				transparency = 0.25, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#ffffff", "#5ef0ff", "#58a84a" }, size = { 30, 24 },
+				life = { 1.6, 1.6 }, transparency = 0.3, spin = 120 }, 1)
+			for i, c in { "#5ef0ff", "#b8ff6a", "#ff9ec4" } do
+				task.delay(i * 0.15, function()
+					groundRing(root.Position, c, 14 + i * 8, 0.9)
+				end)
+			end
+		end,
+	},
+}
+
+-- Soul storm (Nightshade Drake): it rears up with its wings spread, souls are drawn into it, then it unleashes a
+-- spinning storm of ghost fire with a shockwave and a necro sigil flaring on the ground.
+ACTIONS.soulstorm = {
+	time = 3.4,
+	flapBoost = 2,
+	pose = function(p)
+		local rootPose, legs = rearPose(p)
+		local open = math.min(ease(p, 0.05, 0.95) * 1.4, 1)
+		legs.WingR = CFrame.Angles(0, 0, R(45) * open)
+		legs.WingL = CFrame.Angles(0, 0, -R(45) * open)
+		legs.Head = (legs.Head or CFrame.identity) * CFrame.Angles(R(30) * open, 0, 0)
+		return rootPose, legs
+	end,
+	moments = {
+		[0.15] = function()
+			burst("SoulPull", "Heart", { tex = "implode", c = { "#e6fff6", "#1f8a6a" }, size = { 14, 1 },
+				life = { 0.8, 0.8 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+			stream("SoulsIn", "Body", { tex = "spark", c = { "#ffffff", "#7dffc4" }, size = { 0.8, 0 }, life = { 0.6, 1 },
+				speed = { 1, 3 }, spread = 180, rate = 40 }, 1.0)
+		end,
+		[0.45] = function()
+			flash("Heart", "#7dffc4", 12, 55, 1.0)
+			stream("SoulStorm", "Body", { tex = "fire", c = { "#e6fff6", "#7dffc4", "#0c3a2a" }, size = { 4, 0 },
+				life = { 0.6, 1.1 }, speed = { 14, 26 }, spread = 70, rate = 120, accel = Vector3.new(0, 8, 0),
+				spin = 300 }, 1.2)
+			burst("SoulSparks", "Body", { tex = "flamespark", c = { "#ffffff", "#7dffc4", "#0c3a2a" }, size = { 1.3, 0 },
+				life = { 1, 2 }, speed = { 12, 26 }, spread = 180, drag = 2, spin = 400 }, 100)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#7dffc4", "#0c3a2a" }, size = { 8, 64 }, life = { 0.9, 0.9 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#e6fff6", "#5ef0b0", "#0c3a2a" }, size = { 34, 26 },
+				life = { 1.8, 1.8 }, transparency = 0.25, spin = -150 }, 1)
+			local body = part("Body")
+			for i = 0, 2 do
+				task.delay(i * 0.14, function()
+					ring(CFrame.new(body.Position + Vector3.new(0, 3 + i * 4, 0)), if i == 1 then "#e6fff6" else "#5ef0b0",
+						14 + i * 6, 0.7)
+				end)
+			end
+			groundRing(root.Position, "#5ef0b0", 28, 0.9)
+		end,
+		[0.8] = function()
+			frontHoovesLand(40)
+		end,
+	},
 }
 
 -- The Aurora Dragon's star breath: it rears its head back, light gathers in its mouth, then it breathes a long
