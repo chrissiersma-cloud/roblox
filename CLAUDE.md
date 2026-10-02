@@ -17,6 +17,9 @@ cool effects that fit the animal, plus their own idle actions in `tools/animal-m
 built-in Roblox particle textures (fire, fire sparks, explosion core/shockwave/implosion, forcefield
 glow/vortex, sparkles, smoke) so nothing has to be uploaded.
 
+Do NOT put a ring under new animals (the user dislikes it): no `ground_ring` of neon parts on the ground around
+or under the animal. Put the effects on the animal itself instead.
+
 ## Conventions
 
 - Animals face -Z, +X is their right side, y = 0 is the ground.
