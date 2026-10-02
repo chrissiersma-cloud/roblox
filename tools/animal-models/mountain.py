@@ -614,7 +614,7 @@ def sky_griffin():
         root = (2.0 * s, 8.0, -1.4)
         arm = [root, (3.8 * s, 10.4, -1.0), (5.8 * s, 12.2, 0.2), (7.6 * s, 13.2, 1.8), (8.8 * s, 13.6, 3.4)]
         feather_wing(a, s, S, root, arm, [GOLD] + feather, [GOLD, GOLD_HOT], edge=GOLD_HOT, tip_glow=True,
-                     width=1.45, scale_k=1.15)
+                     width=1.45, scale_k=1.15, rows=(10, 8))
 
     for s, S in SIDES:
         with a.bone(f"LegF{S}", "Body", (1.5 * s, 4.2, -2.4)):
@@ -648,6 +648,156 @@ def sky_griffin():
             p = (math.cos(ang) * 5.6, 6.2 + 1.2 * math.sin(ang * 3), 0.6 + math.sin(ang) * 5.6)
             plate(a, f"OrbitFeather{i}", p, add(p, (0, 1.8, 0.4)), 0.6, 0.14, GOLD_HOT if i % 2 else GOLD,
                   up=(math.cos(ang), 0, math.sin(ang)), **GLOW)
+
+    # -- showpiece detail ---------------------------------------------------------------------------
+    cream = C("#fff1cc")
+    # Wing tip joints (at the wrist), so the outer wing trails behind every beat.
+    for s, S in SIDES:
+        a.bones[f"WingTip{S}"] = {"parent": f"Wing{S}", "pivot": (5.8 * s, 12.2, 0.2)}
+        for part in a.parts:
+            if part["name"].startswith((f"Wing{S}Primary", f"Wing{S}Arm2", f"Wing{S}Arm3", f"Wing{S}Edge2",
+                                        f"Wing{S}Edge3")):
+                part["bone"] = f"WingTip{S}"
+        # A second, smaller layer of feathers over the coverts, a light vane down each primary, and gold
+        # bands on the wing bones.
+        with in_bone(a, f"Wing{S}"):
+            for i in range(10):
+                cv = find(a, f"Wing{S}Covert{i}")
+                plate(a, f"Wing{S}Marginal{i}", add(cv["p"], (0, 0.18, -0.1)),
+                      add(cv["p"], (0.1 * s, 0.05, 0.75)), 0.7, 0.14, cream if i % 2 else WHITE,
+                      up=(0, 1, 0), role="Secondary", shadow=False)
+            for i in range(3):
+                q = find(a, f"Wing{S}Arm{i}")["p"]
+                a.box(f"Wing{S}Band{i}", (0.75, 0.75, 0.75), q, GOLD, role="Accent", reflectance=0.25)
+        with in_bone(a, f"WingTip{S}"):
+            for i in range(8):
+                pr = find(a, f"Wing{S}Primary{i}")
+                a.box(f"Wing{S}Vane{i}", (pr["size"][0] * 0.8, pr["size"][1] + 0.04, 0.12), pr["p"], GOLD_HOT,
+                      R=pr["R"], **DETAIL)
+    with in_bone(a, "Body"):
+        # Feather scales over the chest under the golden peytral, white to gold.
+        for r in range(3):
+            n = 5 if r % 2 == 0 else 4
+            for c in range(n):
+                x = -1.7 + (c + 0.5) * 3.4 / n
+                a.tri(f"ChestScale{r}_{c}", (x, 5.7 - r * 0.7, -4.22), 0.75, 0.8, 0.14,
+                      (WHITE, cream, GOLD_HOT)[r], R=angles(0, 0, 180), role="Secondary", shadow=False)
+        # Rows of flank feathers in front of and behind the drape.
+        for s, S in SIDES:
+            for r in range(3):
+                for j, z in enumerate((-3.0, -1.6, 3.0, 4.2)):
+                    p0 = (2.33 * s, 7.2 - r * 0.95, z)
+                    plate(a, f"FlankRow{S}{r}_{j}", p0, add(p0, (0.12 * s, -1.0, 0.8)), 0.8, 0.14,
+                          (WHITE, cream, C("#ffe39a"))[r], up=(s, 0, 0), role="Secondary", shadow=False)
+            # A fringe of golden fur along the belly.
+            for j in range(7):
+                a.wedge(f"BellyFringe{S}{j}", (0.35, 0.9, 0.9), (2.0 * s, 3.4, -2.0 + j * 1.0), deep,
+                        rot=(0, 0, 180), role="Secondary")
+        for j in range(3):
+            a.oct(f"SpineTuft{j}", (1.0, 0.6, 1.0), (0, 7.85, 3.0 + j * 0.75), deep, b=0.25, role="Secondary")
+        # Saddle gear: stirrups, gold studs, a horn and tassels on the drapes, and a sun medallion behind.
+        a.box("SaddleHorn", (0.6, 0.9, 0.6), (0, 8.75, -0.4), C("#8a2a1e"), role="Accent")
+        a.box("SaddleHornCap", (0.8, 0.25, 0.8), (0, 9.25, -0.4), GOLD, role="Accent", reflectance=0.3)
+        for j in range(6):
+            a.box(f"SaddleStud{j}", (0.3, 0.3, 0.3), ((-1.5 + j * 0.6), 8.42, 2.55), GOLD, **DETAIL)
+        for s, S in SIDES:
+            a.rod(f"StirrupStrap{S}", (2.1 * s, 7.9, 0.6), (2.6 * s, 5.4, 0.6), 0.2, C("#5a3418"), **DETAIL)
+            a.box(f"Stirrup{S}", (0.7, 0.25, 0.9), (2.65 * s, 5.2, 0.6), GOLD, role="Accent", reflectance=0.3)
+            for j in range(4):
+                a.wedge(f"Tassel{S}{j}", (0.14, 0.7, 0.35), (2.42 * s, 5.35, -0.2 + j * 0.65), GOLD_HOT,
+                        rot=(0, 90, 180), **DETAIL)
+        a.cyl("SunMedallion", 0.25, 1.6, (0, 8.1, 2.75), GOLD, R=angles(0, 90, 0), role="Accent", reflectance=0.3)
+        a.box("SunMedallionGem", (0.6, 0.6, 0.2), (0, 8.1, 2.92), C("#4fe3ff"), rot=(0, 0, 45), **GLOW)
+        for j in range(8):
+            ang = j * 45
+            R = angles(0, 0, ang)
+            a.box(f"SunRay{j}", (0.18, 0.6, 0.12), add((0, 8.1, 2.9), apply(R, (0, 1.05, 0))), GOLD_HOT, R=R,
+                  **GLOW)
+    with in_bone(a, "Head"):
+        # A ruff of feathers round the neck.
+        for k in range(14):
+            ang = 2 * math.pi * k / 14
+            c, s_ = math.cos(ang), math.sin(ang)
+            p0 = (c * 1.5, 8.9, -3.6 + s_ * 1.5)
+            p1 = (c * 2.4, 7.9, -3.5 + s_ * 2.4)
+            plate(a, f"Ruff{k}", p0, p1, 0.75, 0.14, WHITE if k % 2 else cream, up=(c * 0.4, 1, s_ * 0.4),
+                  role="Secondary", shadow=False)
+            plate(a, f"RuffTip{k}", p1, add(p1, (c * 0.5, -0.35, s_ * 0.5)), 0.45, 0.12, GOLD_HOT,
+                  up=(c * 0.4, 1, s_ * 0.4), role="Accent", shadow=False)
+        for s, S in SIDES:
+            for j in range(3):
+                p0 = (2.05 * s, 10.4 - j * 0.5, -5.2 + j * 0.25)
+                plate(a, f"Cheek{S}{j}", p0, add(p0, (0.3 * s, 0.15, 1.5)), 0.5, 0.12, (WHITE, cream, GOLD_HOT)[j],
+                      up=(s, 0, 0), role="Secondary", shadow=False)
+            for j in range(2):
+                p0 = (1.7 * s, 11.6, -3.9 + j * 0.6)
+                plate(a, f"EarTuft{S}{j}", p0, add(p0, (0.5 * s, 1.4 - 0.3 * j, 0.6)), 0.5, 0.14, GOLD if j else GOLD_HOT,
+                      up=(s, 0, 0), role="Accent", shadow=False)
+            a.box(f"Nostril{S}", (0.22, 0.18, 0.1), (0.45 * s, 9.75, -8.5), C("#7a4a1a"), **DETAIL)
+        for j in range(5):
+            x = (j - 2) * 0.8
+            a.wedge(f"CircletSpike{j}", (0.3, 0.7 - 0.12 * abs(j - 2), 0.3), (x, 11.7, -6.45), GOLD, role="Accent",
+                    reflectance=0.25)
+    for s, S in SIDES:
+        with in_bone(a, f"LegF{S}"):
+            for j in range(3):
+                a.box(f"ShinScale{S}{j}", (1.18, 0.16, 1.18), (1.5 * s, 0.9 + j * 0.55, -2.4), C("#e89a1e"), **DETAIL)
+            for j in range(4):
+                ang = j * math.pi / 2
+                p0 = (1.5 * s + math.cos(ang) * 0.75, 4.1, -2.4 + math.sin(ang) * 0.75)
+                plate(a, f"Pants{S}{j}", p0, add(p0, (math.cos(ang) * 0.3, -1.3, math.sin(ang) * 0.3)), 0.8, 0.14,
+                      WHITE, up=(math.cos(ang), 0, math.sin(ang)), role="Secondary", shadow=False)
+        with in_bone(a, f"LegB{S}"):
+            for j, dx in enumerate((-0.6, 0.0, 0.6)):
+                a.box(f"Toe{S}{j}", (0.55, 0.5, 0.7), (1.7 * s + dx, 0.3, 2.05), gold)
+                a.wedge(f"PawClaw{S}{j}", (0.3, 0.3, 0.45), (1.7 * s + dx, 0.2, 1.55), C("#3a2a1a"), **DETAIL)
+            for j in range(2):
+                a.wedge(f"HockTuft{S}{j}", (0.3, 0.8, 0.7), (1.7 * s + (0.6 if j else -0.6), 2.0, 4.65), deep,
+                        rot=(0, 0, 180), role="Secondary")
+    with in_bone(a, "Tail"):
+        for j in range(5):
+            ang = (j - 2) * 22
+            R = angles(0, 0, ang)
+            base = (0, 7.6, 9.9)
+            tip = add(base, apply(R, (0, 1.8, 0.6)))
+            plate(a, f"TailPlume{j}", base, tip, 0.55, 0.14, GOLD_HOT if j % 2 else GOLD, up=(0, 0, 1),
+                  role="Accent", shadow=False)
+        a.box("TailRing2", (0.8, 0.8, 0.5), (0, 5.85, 7.0), GOLD, role="Accent", reflectance=0.3)
+    with in_bone(a, "Head"):
+        for j, (x, h) in enumerate(((0.45, 2.1), (-0.45, 2.1), (1.25, 1.5), (-1.25, 1.5))):
+            plate(a, f"CrestBack{j}", (x, 11.3, -2.9), (x * 1.4, 11.3 + h, -1.6), 0.6, 0.26, cream if j % 2 else WHITE,
+                  up=(1, 0, 0), role="Secondary", shadow=False)
+    with in_bone(a, "Body"):
+        # A golden chain hanging across the chest from shoulder to shoulder.
+        for j in range(9):
+            t = j / 8
+            x = -2.0 + 4.0 * t
+            y = 7.4 - 1.3 * math.sin(math.pi * t)
+            a.box(f"ChestChain{j}", (0.36, 0.24, 0.2), (x, y, -4.48), GOLD if j % 2 else GOLD_HOT,
+                  rot=(0, 0, (0.5 - t) * 70), role="Accent", reflectance=0.3)
+        for s, S in SIDES:
+            for j in range(7):
+                a.wedge(f"BellyFringeB{S}{j}", (0.3, 0.7, 0.8), (1.4 * s, 3.45, -1.5 + j * 1.0), gold,
+                        rot=(0, 0, 180), role="Secondary")
+    for s, S in SIDES:
+        with in_bone(a, f"LegF{S}"):
+            for i, dx in enumerate((-0.5, 0.0, 0.5)):
+                a.box(f"ClawGlow{S}{i}", (0.22, 0.22, 0.22), (1.5 * s + dx, 0.15, -4.3), GOLD_HOT, **GLOW)
+            a.box(f"BracerGem{S}", (0.35, 0.35, 0.2), (1.5 * s, 2.3, -3.06), C("#4fe3ff"), rot=(0, 0, 45), **GLOW)
+    with in_bone(a, "Orbit"):
+        for i in range(4):
+            ang = 2 * math.pi * i / 4 + 0.6
+            p0 = (math.cos(ang) * 7.0, 8.4 + 0.8 * math.sin(ang * 2), 0.6 + math.sin(ang) * 7.0)
+            plate(a, f"OrbitFeatherHigh{i}", p0, add(p0, (0, 1.6, 0.4)), 0.55, 0.14, GOLD_HOT if i % 2 else WHITE,
+                  up=(math.cos(ang), 0, math.sin(ang)), **GLOW)
+        n = 20
+        for i in range(n):
+            if i % 3 == 1:
+                continue
+            ang = 2 * math.pi * i / n + 0.15
+            p0 = (math.cos(ang) * 9.2, 6.0 + 0.8 * math.sin(ang * 3), 0.6 + math.sin(ang) * 9.2)
+            a.box(f"WindRing2_{i}", (0.22, 0.22, 2 * math.pi * 9.2 / n * 0.8), p0, GOLD_HOT,
+                  R=angles(0, -math.degrees(ang), 0), **GLOW_T)
 
     a.ride_height, a.ride_z = 8.6, 1.0
     scale_animal(a, 1.25)
@@ -757,6 +907,107 @@ def glacier_mammoth():
         ground_ring(a, "FrostRing", (0, 0.12, 0.6), 9.0, ICE, n=26, size=(0.4, 0.08, 1.6), transparency=0.2)
         ground_ring(a, "FrostRingIn", (0, 0.12, 0.6), 7.4, ICE_HOT, n=18, size=(0.3, 0.08, 1.2), transparency=0.35)
 
+    # -- showpiece detail ---------------------------------------------------------------------------
+    blanket, blanket2 = C("#2f5f9a"), C("#3f78b8")
+    with in_bone(a, "Body"):
+        for s, S in SIDES:
+            # A second, higher layer of shaggy fur behind the ice plate.
+            for j in range(5):
+                z = 0.25 + j * 1.15
+                a.wedge(f"ShagHigh{j}{S}", (0.45, 1.9, 1.2), (3.24 * s, 6.3, z), fur if j % 2 else shag,
+                        rot=(0, 0, 180), role="Secondary")
+            # More ice armour along the flanks, each with a glowing rune.
+            for j, (y, z) in enumerate(((5.6, -2.0), (6.0, 3.8))):
+                a.bevel(f"FlankPlate{S}{j}", (0.36, 1.8, 2.0), (3.28 * s, y, z), plate_c, b=0.15, material="Glass",
+                        transparency=0.15, reflectance=0.3, role="Glow")
+                a.box(f"FlankRune{S}{j}", (0.4, 0.9, 0.2), (3.3 * s, y, z), ICE, **GLOW)
+            # Icicles hanging under the belly.
+            for j in range(8):
+                h = 0.6 + 0.5 * ((j * 7) % 3) / 2
+                a.wedge(f"BellyIcicle{S}{j}", (0.3, h, 0.25), (2.3 * s, 4.15 - h / 2, -3.0 + j * 1.0), ICE,
+                        rot=(180, 0, 0), material="Glass", transparency=0.2, role="Glow", shadow=False)
+        # A shaggy beard on the chest and a fringe over the rump.
+        for j in range(6):
+            a.wedge(f"ChestBeard{j}", (0.8, 2.0, 0.45), (-2.0 + j * 0.8, 4.9, -3.95), shag if j % 2 else fur,
+                    rot=(0, 90, 180), role="Secondary")
+        for j in range(5):
+            a.wedge(f"ChestBeardHigh{j}", (0.8, 1.6, 0.4), (-1.6 + j * 0.8, 6.2, -4.0), fur if j % 2 else shag,
+                    rot=(0, 90, 180), role="Secondary")
+        for j in range(7):
+            a.wedge(f"RumpShag{j}", (0.8, 2.0, 0.45), (-2.4 + j * 0.8, 5.2, 5.15), shag if j % 2 else fur,
+                    rot=(0, 90, 180), role="Secondary")
+        # A woven blanket draped over its back behind the glacier, with tassels and glowing frost stitching.
+        a.box("Blanket", (5.8, 0.3, 3.2), (0, 10.3, 2.1), blanket, role="Accent")
+        for s, S in SIDES:
+            a.box(f"BlanketSide{S}", (0.3, 2.4, 3.2), (3.3 * s, 9.1, 2.1), blanket, role="Accent")
+            a.box(f"BlanketTrim{S}", (0.34, 0.3, 3.24), (3.31 * s, 7.95, 2.1), ICE, **GLOW)
+            for j in range(4):
+                a.wedge(f"BlanketTassel{S}{j}", (0.16, 0.7, 0.3), (3.33 * s, 7.45, 0.85 + j * 0.85), blanket2,
+                        rot=(0, 90, 180), **DETAIL)
+            for j in range(3):
+                a.box(f"BlanketStitch{S}{j}", (0.33, 0.25, 0.6), (3.32 * s, 9.2 + (j - 1) * 0.6, 2.1),
+                      ICE_HOT, rot=(45, 0, 0), **GLOW)
+        for j, (x, z) in enumerate(((-1.8, -2.4), (1.8, -2.4), (-1.6, 3.6), (1.6, 3.4))):
+            ice_shard(a, f"BackShard{j}", (x, 10.0, z), 1.4, 0.6, R=angles(0, 0, 18 if x < 0 else -18), glow=j < 2)
+    with in_bone(a, "Head"):
+        # A snowflake rune glowing on the forehead, a tuft of fur on top, fringed ears and an ice crown.
+        for k in range(3):
+            a.box(f"BrowRune{k}", (0.18, 1.4, 0.12), (0, 10.25, -7.5), ICE_HOT, rot=(0, 0, 60 * k), **GLOW)
+        for j in range(5):
+            a.wedge(f"HeadTuft{j}", (0.5, 1.1 + 0.2 * (j % 2), 0.9), (-1.2 + j * 0.6, 12.0, -4.6), shag,
+                    rot=(0, 0, (j - 2) * 12), role="Secondary")
+        for s, S in SIDES:
+            for j in range(3):
+                a.wedge(f"EarFringe{S}{j}", (0.35, 0.8, 0.7), (2.75 * s, 7.4, -5.6 + j * 0.85), shag, rot=(0, 0, 180),
+                        role="Secondary")
+            pts_t = [(1.2 * s, 7.6, -7.0), (1.6 * s, 6.6, -8.2), (2.0 * s, 6.6, -9.6), (2.1 * s, 7.6, -10.6)]
+            for j in (2, 3):
+                a.box(f"TuskBand{S}{j}", (0.8, 0.25, 0.8), pts_t[j], C("#8fd8ff"), R=aim(sub(pts_t[j], pts_t[j - 1])),
+                      **GLOW)
+            for j in range(2):
+                a.box(f"TuskRune{S}{j}", (0.12, 0.35, 0.35), add(pts_t[1 + j], (0.38 * s, 0.25, -0.5)), ICE,
+                      rot=(45, 0, 0), **GLOW)
+        for j, (x, z, h) in enumerate(((-1.0, -5.6, 1.6), (1.0, -5.6, 1.6), (-0.6, -4.2, 1.2), (0.6, -4.2, 1.2))):
+            ice_shard(a, f"CrownShard{j}", (x, 11.8, z), h, 0.55, R=angles(0, 0, 14 if x > 0 else -14), glow=j < 2)
+        for s, S in SIDES:
+            a.box(f"TrunkFinger{S}", (0.35, 0.45, 0.5), (0.35 * s, 3.55, -9.75), fur)
+    for s, S in SIDES:
+        for z, F in ((-2.6, "F"), (3.4, "B")):
+            with in_bone(a, f"Leg{F}{S}"):
+                # Fur cuffs round the top and the knee, and a fringe over the foot.
+                for ring, y in enumerate((4.2, 2.9)):
+                    for k in range(4):
+                        ang = k * math.pi / 2 + math.pi / 4
+                        c, s_ = math.cos(ang), math.sin(ang)
+                        a.wedge(f"LegCuff{F}{S}{ring}{k}", (0.9, 0.9, 0.35),
+                                (2.1 * s + c * 1.15, y, z + s_ * 1.15), shag if (k + ring) % 2 else fur,
+                                rot=(0, -math.degrees(ang) + 90, 180), role="Secondary")
+                for k in range(4):
+                    ang = k * math.pi / 2
+                    c, s_ = math.cos(ang), math.sin(ang)
+                    a.wedge(f"FootFringe{F}{S}{k}", (1.0, 0.7, 0.35), (2.1 * s + c * 1.2, 1.05, z + s_ * 1.2), shag,
+                            rot=(0, -math.degrees(ang) + 90, 180), role="Secondary")
+    with in_bone(a, "Tail"):
+        for j in range(4):
+            a.wedge(f"TailHair{j}", (0.3, 1.0, 0.5), ((j - 1.5) * 0.25, 5.8, 5.55), shag, rot=(0, 0, 180 + (j - 1.5) * 10),
+                    role="Secondary")
+    with in_bone(a, "Orbit"):
+        for i in range(6):
+            ang = 2 * math.pi * (i + 0.5) / 6
+            p0 = (math.cos(ang) * 10.5, 9.0 + 1.0 * math.sin(ang * 3), 0.6 + math.sin(ang) * 10.5)
+            ice_shard(a, f"OrbitIceHigh{i}", p0, 1.8, 0.7, R=angles(-20, -math.degrees(ang), 15), glow=i % 2 == 0)
+        # A snowflake rune on the ground inside the frost ring.
+        for k in range(6):
+            ang = k * math.pi / 3
+            c, s_ = math.cos(ang), math.sin(ang)
+            a.box(f"FlakeArm{k}", (6.0, 0.06, 0.35), (c * 3.2, 0.13, 0.6 + s_ * 3.2), ICE,
+                  rot=(0, -math.degrees(ang), 0), transparency=0.3, **GLOW)
+            for sgn in (-1, 1):
+                b = (c * 4.4, 0.13, 0.6 + s_ * 4.4)
+                a.box(f"FlakeTwig{k}{'a' if sgn > 0 else 'b'}", (1.6, 0.06, 0.3),
+                      add(b, (math.cos(ang + sgn * 0.8) * 0.6, 0, math.sin(ang + sgn * 0.8) * 0.6)), ICE_HOT,
+                      rot=(0, -math.degrees(ang + sgn * 0.8), 0), transparency=0.3, **GLOW)
+
     a.ride_height, a.ride_z = 11.2, 0.4
     scale_animal(a, 1.3)
     unfight(a, "Hump", "Brow", d=0.04)
@@ -833,6 +1084,20 @@ def aurora_dragon():
         for sx in (-1, 1):
             a.box(f"Scale{i}{'R' if sx > 0 else 'L'}", (1.0, 0.3, 0.12), add(p, (sx * w * 0.53, w * 0.1, 0)),
                   _aurora(min(1, i / N + 0.15)), R=matmul(R, angles(0, 90, 0)), **GLOW)
+            S = "R" if sx > 0 else "L"
+            # Two more rows of scales, a fin of light on each side, and a star speck on alternate sides.
+            a.box(f"ScaleHigh{i}{S}", (0.8, 0.24, 0.1), add(p, (sx * w * 0.5, w * 0.36, 0.3)),
+                  _aurora(min(1, i / N + 0.25)), R=matmul(R, angles(0, 90, 0)), role="Secondary", shadow=False)
+            a.box(f"ScaleLow{i}{S}", (0.8, 0.24, 0.1), add(p, (sx * w * 0.5, -w * 0.16, -0.3)),
+                  _aurora(max(0, i / N - 0.05)), R=matmul(R, angles(0, 90, 0)), role="Secondary", shadow=False)
+            plate(a, f"SideFin{i}{S}", add(p, (sx * w * 0.48, -w * 0.22, 0.1)),
+                  add(p, (sx * (w * 0.5 + 1.1 + 0.4 * math.sin(math.pi * i / N)), -w * 0.3 - 0.2, 0.9)), 0.8, 0.1,
+                  _aurora(min(1, i / N + 0.1)), up=(0, 1, 0), **GLOW_T)
+            if (i + (sx > 0)) % 2 == 0:
+                a.box(f"StarSpeck{i}{S}", (0.2, 0.2, 0.2), add(p, (sx * w * 0.53, w * 0.24, -0.4)), WHITE, **GLOW)
+        a.box(f"BellyRidge{i}", (0.26, w * 0.34, w * 0.94), add(p, (0, -w * 0.38, 0)), C("#bfeee0"), R=R, **DETAIL)
+        a.wedge(f"Spike{i}", (0.3, 0.7, 0.55), add(p, (0, w / 2 + 0.25, -0.75)), C("#ffe9a8"),
+                R=matmul(R, angles(0, 90, 0)), role="Accent")
 
     # Body = the first segment behind the head; every later segment is its own joint, so the body can ripple.
     segment(0)
@@ -886,6 +1151,75 @@ def aurora_dragon():
                       _aurora(0.1 + 0.25 * j), up=(1, 0, 0), **GLOW_T)
         a.box("BrowGem", (0.5, 0.5, 0.2), (0, 8.45, -5.0), C("#ffffff"), rot=(0, 0, 45), **GLOW)
 
+    # -- showpiece detail ---------------------------------------------------------------------------
+    gold = C("#ffe9a8")
+    with in_bone(a, "Head"):
+        beard = [(0, 5.6, -5.2), (0, 4.8, -5.0), (0, 4.0, -4.4), (0, 3.4, -3.6)]
+        chain(a, "Beard", beard, [0.55, 0.42, 0.3], belly, role="Secondary")
+        for j, x in enumerate((-0.35, 0.0, 0.35)):
+            plate(a, f"BeardTip{j}", beard[-1], add(beard[-1], (x * 2, -0.9, 0.7)), 0.4, 0.1, _aurora(0.2 + 0.2 * j),
+                  up=(1, 0, 0), **GLOW_T)
+        for s, S in SIDES:
+            for j, x in enumerate((0.25, 0.85)):
+                a.tri(f"Tooth{S}{j}", (x * s, 6.15, -6.65), 0.2, 0.28, 0.08, WHITE, R=angles(0, 0, 180), **DETAIL)
+            ant = [(0.8 * s, 8.4, -3.0), (1.3 * s, 9.8, -2.6), (2.0 * s, 10.9, -2.0), (2.1 * s, 12.0, -1.4)]
+            seg(a, f"AntlerTine{S}", ant[2], (2.9 * s, 11.6, -1.4), 0.22, gold, role="Accent")
+            seg(a, f"AntlerTine2{S}", ant[3], (1.6 * s, 12.8, -0.8), 0.2, gold, role="Accent")
+            for j in range(2):
+                p0 = (1.6 * s, 7.2 - 0.5 * j, -4.4 + 0.3 * j)
+                plate(a, f"CheekFin{S}{j}", p0, add(p0, (1.1 * s, 0.7 - 0.3 * j, 1.4)), 0.55, 0.1,
+                      _aurora(0.15 + 0.2 * j), up=(s, 0, 0), **GLOW_T)
+            a.box(f"BrowRidge{S}", (1.1, 0.3, 0.4), (0.95 * s, 8.45, -4.85), C("#2a6f88"), rot=(0, 0, 12 * s), **DETAIL)
+            a.wedge(f"Ear{S}", (0.25, 1.0, 0.8), (1.75 * s, 8.3, -2.8), _aurora(0.3), rot=(0, 0, -25 * s),
+                    role="Secondary")
+        for j in range(3):
+            a.box(f"ForeheadRune{j}", (0.18, 0.18, 0.12), ((j - 1) * 0.4, 8.85 + 0.2 * (j == 1), -5.0), _aurora(0.5),
+                  **GLOW)
+        for j, (y, z, h) in enumerate(((9.0, -3.2, 1.8), (8.9, -2.6, 2.0), (7.0, 0.6, 1.9))):
+            for sx in (-1, 1):
+                plate(a, f"ManeB{j}{'R' if sx > 0 else 'L'}", (0.3 * sx, y, z), (1.0 * sx, y + h, z + 1.3), 0.7, 0.12,
+                      _aurora(0.25 + 0.2 * j), up=(1, 0, 0), **GLOW_T)
+    for i_seg, F in ((2, "F"), (9, "B")):
+        for s, S in SIDES:
+            p = pts[i_seg]
+            with in_bone(a, f"Leg{F}{S}"):
+                a.bevel(f"Shoulder{F}{S}", (0.9, 1.0, 1.2), add(p, (1.15 * s, -0.7, 0.1)), _aurora(i_seg / N + 0.1),
+                        b=0.2, role="Secondary")
+                a.box(f"Wrist{F}{S}", (0.85, 0.25, 0.85), add(p, (1.3 * s, -1.95, 0.1)), gold, role="Accent",
+                      reflectance=0.25)
+                for j in range(2):
+                    plate(a, f"ElbowFlame{F}{S}{j}", add(p, (1.5 * s, -1.2, 0.5)),
+                          add(p, (1.8 * s + 0.2 * j * s, -0.6 - 0.3 * j, 1.6)), 0.4, 0.1, _aurora(0.3 + 0.3 * j),
+                          up=(s, 0, 0), **GLOW_T)
+                for j in (-0.45, 0.45):
+                    a.wedge(f"TalonSide{F}{S}{j > 0}", (0.22, 0.28, 0.45), add(p, (1.35 * s + j * 1.3, -2.45, -0.75)),
+                            gold, **DETAIL)
+    with in_bone(a, "LegFR"):
+        p = pts[2]
+        c = add(p, (1.4, -1.7, -1.3))
+        a.ball("Pearl", 1.1, c, C("#f2fffa"), **GLOW)
+        for j in range(6):
+            ang = j * math.pi / 3
+            a.box(f"PearlGlint{j}", (0.18, 0.18, 0.18), add(c, (math.cos(ang) * 0.75, math.sin(ang) * 0.75, 0)),
+                  _aurora(j / 6), **GLOW)
+    with in_bone(a, f"SegJoint{N}"):
+        end = pts[N]
+        for j, t in enumerate((-55, -15, 15, 55)):
+            R = angles(0, t, 0)
+            a.wedge(f"TailFanB{j}", (0.18, 2.0, 2.4), add(end, apply(R, (0, 0.2, 1.4))), _aurora(0.75 + 0.05 * j),
+                    R=matmul(R, angles(0, 90, 0)), **GLOW_T)
+        for j in range(3):
+            plate(a, f"TailFlame{j}", add(end, (0, 0.6, 0.4)), add(end, ((j - 1) * 0.8, 2.0 + 0.4 * (j == 1), 1.2)),
+                  0.5, 0.1, _aurora(0.9), up=(0, 0, 1), **GLOW_T)
+    # Little clouds drifting under its body.
+    for k, i_seg in enumerate((3, 8, 13)):
+        p = pts[i_seg]
+        with in_bone(a, f"SegJoint{i_seg}"):
+            for j, (dx, dy, dz, d) in enumerate(((0, 0, 0, 1.6), (1.0, -0.2, 0.3, 1.2), (-1.0, -0.2, -0.2, 1.3),
+                                                 (0.4, 0.4, -0.6, 1.1), (-0.5, 0.3, 0.7, 1.0))):
+                a.ball(f"Cloud{k}_{j}", d, add(p, (dx, -widths[i_seg] / 2 - 1.6 + dy, dz)), WHITE, transparency=0.25,
+                       role="Secondary", shadow=False)
+
     # Orbit: a ring of stars and a halo of light around it.
     with a.bone("Orbit", "Body", (0, 6.4, 14.0)):
         for i in range(12):
@@ -893,6 +1227,11 @@ def aurora_dragon():
             p = (math.cos(ang) * 13.0, 6.4 + 2.0 * math.sin(ang * 3), 14.0 + math.sin(ang) * 18.0)
             pixel_star(a, f"OrbitStar{i}", p, 1.2 if i % 2 else 0.8, C("#ffffff") if i % 3 else _aurora(i / 12),
                        R=angles(0, -math.degrees(ang), 0))
+        # A slow ring of aurora light below the stars.
+        for i in range(16):
+            ang = 2 * math.pi * (i + 0.5) / 16
+            p = (math.cos(ang) * 11.0, 3.2 + 0.6 * math.sin(ang * 2), 14.0 + math.sin(ang) * 16.0)
+            a.box(f"AuroraRing{i}", (0.3, 0.3, 4.0), p, _aurora(i / 16), R=angles(0, -math.degrees(ang), 0), **GLOW_T)
 
     a.ride_height, a.ride_z = 9.4, 2.0
     a.overhead = 13.5
