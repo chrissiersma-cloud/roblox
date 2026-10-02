@@ -41,7 +41,6 @@ De drie topdieren zijn extra gedetailleerd: elk heeft **500 tot 600 parts**.
 | Glacier Mammoth | 589 | een dubbele laag ruige vacht, een baard op de borst en een franje over het achterwerk. Bontmanchetten om de poten en voeten, ijspegels onder de buik, extra ijspantser met runen en ijskristallen langs de rug. Een geweven deken met kwastjes en gloeiend vorststiksel. Een sneeuwvlokrune op het voorhoofd, een plukje haar, rafelige oren, een ijskroon, gloeiende banden en runen op de slagtanden, zes extra zwevende ijskristallen en een sneeuwvlok van licht op de grond |
 | Aurora Dragon | 551 | op elk van de 17 delen twee extra rijen schubben, lichtvinnen aan beide kanten, een buikribbel, een gouden stekel en sterretjes. Op de kop een baard, extra tanden, geweitakken, wangvinnen, wenkbrauwen, oren, runen en een langere manen. Schouders, polsbanden, vlammetjes bij de ellebogen en extra klauwen aan de poten, een drakenparel in zijn klauw, een grotere staartwaaier met vlammen, wolkjes onder zijn lijf en een ring van noorderlicht |
 
-![De topdieren](../../previews/mountain_mythic_secret.png)
 
 **Sky Griffin (Mythic)**
 - **Altijd:** een gouden aura, vallende veren, twee ringen van wind en acht gouden veren die om hem heen draaien (met lichtsporen), windzuilen die uit zijn vleugels omhoog wervelen, lampjes en een gouden randje.
