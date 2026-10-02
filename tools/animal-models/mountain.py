@@ -1062,6 +1062,27 @@ def _aurora(t):
     return tuple(p + (q - p) * f for p, q in zip(c0, c1))
 
 
+VORTEX_TEXTURE = "rbxasset://textures/particles/forcefield_vortex_main.dds"
+GLOW_TEXTURE = "rbxasset://textures/particles/forcefield_glow_main.dds"
+SHOCK_TEXTURE = "rbxasset://textures/particles/explosion01_shockwave_main.dds"
+FLAMESPARK_TEXTURE = "rbxasset://textures/particles/fire_sparks_main.dds"
+
+
+def _grad(e, *stops):
+    """Gives an emitter a colour gradient with several stops: (t, colour), ..."""
+    e["props"]["Color"] = [[t, *c] for t, c in stops]
+    return e
+
+
+def _grad_stops(i, n=16):
+    return (0, _aurora(i / n)), (0.5, _aurora(min(1, i / n + 0.15))), (1, _aurora(min(1, i / n + 0.3)))
+
+
+def _orient(e, how):
+    e["props"]["Orientation"] = how
+    return e
+
+
 def aurora_dragon():
     a = Animal("AuroraDragon", "Aurora Dragon", "Secret")
     N = 16
@@ -1096,6 +1117,23 @@ def aurora_dragon():
             if (i + (sx > 0)) % 2 == 0:
                 a.box(f"StarSpeck{i}{S}", (0.2, 0.2, 0.2), add(p, (sx * w * 0.53, w * 0.24, -0.4)), WHITE, **GLOW)
         a.box(f"BellyRidge{i}", (0.26, w * 0.34, w * 0.94), add(p, (0, -w * 0.38, 0)), C("#bfeee0"), R=R, **DETAIL)
+        # Flame tufts of aurora along the spine, a second smaller row of fins, belly plates, a golden bead
+        # behind the fin, a golden band on every other segment and a second star.
+        for sx in (-1, 1):
+            S = "R" if sx > 0 else "L"
+            plate(a, f"SpineTuft{i}{S}", add(p, (sx * 0.35, w / 2, 0.3)),
+                  add(p, (sx * 0.95, w / 2 + 0.9 + 0.4 * math.sin(math.pi * i / N), 1.2)), 0.45, 0.1,
+                  _aurora(min(1, i / N + 0.2)), up=(sx, 0, 0), **GLOW_T)
+            plate(a, f"LowFin{i}{S}", add(p, (sx * w * 0.45, -w * 0.34, -0.3)),
+                  add(p, (sx * (w * 0.5 + 0.75), -w * 0.45 - 0.35, 0.45)), 0.5, 0.08, _aurora(max(0, i / N - 0.1)),
+                  up=(0, 1, 0), **GLOW_T)
+            a.box(f"BellyPlate{i}{S}", (0.8, 0.1, w * 0.7), add(add(p, apply(R, (0.5 * sx, 0, 0))), (0, -w * 0.55, 0)),
+                  C("#d6fff0"), R=R, role="Secondary", shadow=False)
+            if (i + (sx < 0)) % 2 == 0:
+                a.box(f"StarSpeckB{i}{S}", (0.16, 0.16, 0.16), add(p, (sx * w * 0.53, -w * 0.02, 0.5)), WHITE, **GLOW)
+        a.ball(f"SpineBead{i}", 0.35, add(p, (0, w / 2 + 0.08, 0.75)), C("#ffe9a8"), role="Accent")
+        if i % 2 == 0:
+            a.box(f"GoldBand{i}", (0.26, w * 1.06, w * 1.12), p, C("#ffe9a8"), R=R, role="Accent", reflectance=0.2)
         a.wedge(f"Spike{i}", (0.3, 0.7, 0.55), add(p, (0, w / 2 + 0.25, -0.75)), C("#ffe9a8"),
                 R=matmul(R, angles(0, 90, 0)), role="Accent")
 
@@ -1211,8 +1249,47 @@ def aurora_dragon():
         for j in range(3):
             plate(a, f"TailFlame{j}", add(end, (0, 0.6, 0.4)), add(end, ((j - 1) * 0.8, 2.0 + 0.4 * (j == 1), 1.2)),
                   0.5, 0.1, _aurora(0.9), up=(0, 0, 1), **GLOW_T)
+    with in_bone(a, "Head"):
+        # A crown of little horns along the brow, trailing mane ribbons, jaw scales and a chin pearl.
+        for s, S in SIDES:
+            for j in range(3):
+                a.wedge(f"BrowHorn{S}{j}", (0.22, 0.6 - 0.1 * j, 0.4), (1.2 * s, 8.75 - 0.15 * j, -4.6 + j * 0.7), gold,
+                        rot=(-20, 0, -15 * s), role="Accent")
+            for j in range(2):
+                p0 = (0.9 * s, 8.2 - 0.6 * j, -1.8)
+                plate(a, f"ManeRibbon{S}{j}", p0, add(p0, (0.8 * s, 0.8 - 0.4 * j, 3.2)), 0.55, 0.1,
+                      _aurora(0.35 + 0.25 * j), up=(s, 0, 0), **GLOW_T)
+            for j in range(2):
+                a.box(f"JawScale{S}{j}", (0.12, 0.35, 0.6), (1.12 * s, 5.95, -5.9 + j * 0.8), C("#2a8aa0"), **DETAIL)
+            a.box(f"NostrilGlow{S}", (0.18, 0.18, 0.08), (0.5 * s, 7.15, -6.78), _aurora(0.2), **GLOW)
+        a.ball("ChinPearl", 0.5, (0, 3.2, -3.4), C("#f2fffa"), **GLOW)
+    for i_seg, F in ((2, "F"), (9, "B")):
+        for s, S in SIDES:
+            p = pts[i_seg]
+            with in_bone(a, f"Leg{F}{S}"):
+                for j in range(2):
+                    a.wedge(f"ArmSpike{F}{S}{j}", (0.18, 0.55, 0.4), add(p, (1.62 * s, -1.2 - 0.4 * j, 0.45)), gold,
+                            rot=(-30, 0, 0), role="Accent")
+                    a.box(f"ToePad{F}{S}{j}", (0.3, 0.12, 0.3), add(p, (1.35 * s + (j - 0.5) * 0.5, -2.62, -0.6)),
+                          C("#8cf0ff"), **DETAIL)
+    with in_bone(a, "LegFR"):
+        c = add(pts[2], (1.4, -1.7, -1.3))
+        for ring_i, (r, tilt) in enumerate(((1.05, 30), (1.25, -40))):
+            for j in range(8):
+                ang = j * math.pi / 4
+                R = angles(tilt, 0, 0)
+                q = add(c, apply(R, (math.cos(ang) * r, 0, math.sin(ang) * r)))
+                a.box(f"PearlRing{ring_i}_{j}", (0.12, 0.12, 0.5), q, _aurora((j + 4 * ring_i) / 8 % 1),
+                      R=matmul(R, angles(0, -math.degrees(ang), 0)), **GLOW)
+        a.box("PearlCore", (0.3, 0.3, 0.3), c, WHITE, transparency=1, **DETAIL)
+    with in_bone(a, f"SegJoint{N}"):
+        end = pts[N]
+        for s, S in SIDES:
+            wk = [add(end, (0.3 * s, 0.2, 0.2)), add(end, (1.4 * s, -0.3, 1.4)), add(end, (2.4 * s, -1.0, 2.0)),
+                  add(end, (3.0 * s, -1.9, 1.8))]
+            chain(a, f"TailWhisker{S}", wk, [0.16, 0.13, 0.1], C("#e9fff6"), material="Neon", role="Glow", shadow=False)
     # Little clouds drifting under its body.
-    for k, i_seg in enumerate((3, 8, 13)):
+    for k, i_seg in enumerate((3, 5, 8, 11, 13)):
         p = pts[i_seg]
         with in_bone(a, f"SegJoint{i_seg}"):
             for j, (dx, dy, dz, d) in enumerate(((0, 0, 0, 1.6), (1.0, -0.2, 0.3, 1.2), (-1.0, -0.2, -0.2, 1.3),
@@ -1227,12 +1304,23 @@ def aurora_dragon():
             p = (math.cos(ang) * 13.0, 6.4 + 2.0 * math.sin(ang * 3), 14.0 + math.sin(ang) * 18.0)
             pixel_star(a, f"OrbitStar{i}", p, 1.2 if i % 2 else 0.8, C("#ffffff") if i % 3 else _aurora(i / 12),
                        R=angles(0, -math.degrees(ang), 0))
+        # Spirit orbs circling with the stars (the constellation lines between them are beams).
+        for i in range(8):
+            ang = 2 * math.pi * (i + 0.25) / 8
+            p = (math.cos(ang) * 9.5, 9.5 + 1.4 * math.sin(ang * 2), 14.0 + math.sin(ang) * 14.0)
+            a.ball(f"SpiritOrb{i}", 0.9, p, _aurora(i / 8), **GLOW)
+            for j, tilt in enumerate((0, 90)):
+                a.box(f"SpiritOrbRing{i}_{j}", (1.5, 0.1, 0.1), p, WHITE, rot=(0, -math.degrees(ang) + tilt, 45),
+                      **DETAIL)
+        a.box("SigilCore", (0.4, 0.2, 0.4), (0, 0.2, 14.0), WHITE, transparency=1, **DETAIL)
         # A slow ring of aurora light below the stars.
         for i in range(16):
             ang = 2 * math.pi * (i + 0.5) / 16
             p = (math.cos(ang) * 11.0, 3.2 + 0.6 * math.sin(ang * 2), 14.0 + math.sin(ang) * 16.0)
             a.box(f"AuroraRing{i}", (0.3, 0.3, 4.0), p, _aurora(i / 16), R=angles(0, -math.degrees(ang), 0), **GLOW_T)
 
+    with in_bone(a, "Body"):
+        a.box("StarfallSource", (6, 0.2, 6), (0, 12.0, 6.0), WHITE, transparency=1, **DETAIL)
     a.ride_height, a.ride_z = 9.4, 2.0
     a.overhead = 13.5
     K = 1.5
@@ -1277,6 +1365,75 @@ def aurora_dragon():
         sp = p(f"OrbitStar{i}A")
         trail(a, f"OrbitStar{i}A", add(sp, (0, 0.5, 0)), add(sp, (0, -0.5, 0)), C("#ffffff"), name=f"StarTrail{i}",
               lifetime=0.9, color2=_aurora(i / 12))
+    # A spirit glow along the whole body, shifting through the aurora colours.
+    for i in range(0, N + 1, 2):
+        w = widths[i] * K
+        fx(a, f"Seg{i}", _grad(emitter(f"SpiritGlow{i}", _aurora(i / N), texture=GLOW_TEXTURE, rate=1.2,
+                                       lifetime=(1.4, 1.6), speed=(0, 0), sizes=((0, w * 1.8), (0.5, w * 2.5), (1, w * 1.8)),
+                                       transparency=((0, 1), (0.5, 0.72), (1, 1)), lock=True, rot_speed=(-20, 20)),
+                                *_grad_stops(i)))
+    # The pearl: a little spinning galaxy.
+    fx(a, "PearlCore",
+       _grad(emitter("Galaxy", WHITE, texture=VORTEX_TEXTURE, rate=1.5, lifetime=(1.6, 1.6), speed=(0, 0),
+                     sizes=((0, 3.4), (0.5, 4.2), (1, 3.4)), transparency=((0, 1), (0.3, 0.2), (0.7, 0.2), (1, 1)),
+                     lock=True, rot_speed=(180, 240)), (0, WHITE), (0.4, _aurora(0.3)), (1, _aurora(0.8))),
+       _grad(emitter("PearlGlow", WHITE, texture=GLOW_TEXTURE, rate=1.2, lifetime=(1.2, 1.2), speed=(0, 0),
+                     sizes=((0, 4), (0.5, 5.5), (1, 4)), transparency=((0, 1), (0.5, 0.5), (1, 1)), lock=True),
+             (0, WHITE), (1, _aurora(0.5))),
+       emitter("PearlMotes", WHITE, rate=8, lifetime=(0.8, 1.4), speed=(1, 2.5), sizes=((0, 0.35), (1, 0)),
+               color2=_aurora(0.6), drag=2, **SPARK),
+       light("PearlLight", _aurora(0.4), brightness=1.8, range_=14, pulse=0.8))
+    # Spirit fire flickering from its mouth, sparks crackling off the antlers, light trails from its eyes.
+    fx(a, "Snout", _grad(emitter("SpiritFire", WHITE, texture=FIRE_TEXTURE, rate=12, lifetime=(0.3, 0.5),
+                                 speed=(2, 5), spread=20, sizes=((0, 0.6), (0.3, 1.5), (1, 0)),
+                                 transparency=((0, 0.2), (1, 1)), accel=(0, 3, 0), emit="Front"),
+                         (0, WHITE), (0.3, _aurora(0.3)), (1, _aurora(0.75))))
+    for s, S in SIDES:
+        fx(a, f"Antler{S}2", _grad(emitter("AntlerSparks", WHITE, texture=FLAMESPARK_TEXTURE, rate=8,
+                                           lifetime=(0.4, 0.8), speed=(2, 5), sizes=((0, 0.6), (1, 0)), spread=60,
+                                           drag=2, rot_speed=(-300, 300)), (0, WHITE), (0.5, _aurora(0.4)),
+                                   (1, _aurora(0.8))))
+        ep = p(f"Eye{S}Iris")
+        trail(a, f"Eye{S}Iris", add(ep, (0, 0.18, 0)), add(ep, (0, -0.18, 0)), C("#fff27a"), name=f"EyeTrail{S}",
+              lifetime=0.45, color2=_aurora(0.3), transparency=((0, 0.1), (1, 1)))
+    # Shooting stars falling around it.
+    starfall = _grad(emitter("Starfall", WHITE, rate=5, lifetime=(1.2, 1.8), speed=(16, 24), spread=35,
+                             sizes=((0, 0.7), (1, 0.25)), transparency=((0, 0), (0.8, 0.2), (1, 1)), emit="Bottom",
+                             accel=(0, -6, 0), rot_speed=(0, 0), rot=(0, 0), texture=SPARKLE_TEXTURE),
+                     (0, WHITE), (0.5, _aurora(0.2)), (1, _aurora(0.7)))
+    starfall["props"]["Squash"] = [[0, 2.5], [1, 2.5]]
+    fx(a, "StarfallSource", _orient(starfall, "VelocityParallel"))
+    # An aurora sigil turning on the ground under it, sending out rings of light.
+    fx(a, "SigilCore",
+       _orient(_grad(emitter("Sigil", WHITE, texture=VORTEX_TEXTURE, rate=0.6, lifetime=(3, 3), speed=(0.01, 0.01),
+                             spread=0, sizes=((0, 26), (1, 26)), transparency=((0, 1), (0.25, 0.4), (0.75, 0.4), (1, 1)),
+                             lock=True, rot_speed=(25, 25)), (0, _aurora(0.1)), (0.5, _aurora(0.45)), (1, _aurora(0.85))),
+               "VelocityPerpendicular"),
+       _orient(_grad(emitter("SigilGlow", WHITE, texture=GLOW_TEXTURE, rate=0.8, lifetime=(2, 2), speed=(0.01, 0.01),
+                             spread=0, sizes=((0, 28), (1, 28)), transparency=((0, 1), (0.5, 0.7), (1, 1)), lock=True),
+                     (0, _aurora(0.3)), (1, _aurora(0.7))), "VelocityPerpendicular"),
+       _orient(_grad(emitter("SigilRipple", WHITE, texture=SHOCK_TEXTURE, rate=0.5, lifetime=(2, 2), speed=(0.01, 0.01),
+                             spread=0, sizes=((0, 8), (1, 34)), transparency=((0, 0.4), (1, 1)), lock=True),
+                     (0, _aurora(0.2)), (1, _aurora(0.8))), "VelocityPerpendicular"))
+    # Spirit orbs glowing, joined by constellation lines.
+    for i in range(8):
+        fx(a, f"SpiritOrb{i}", _grad(emitter(f"OrbGlow{i}", WHITE, texture=GLOW_TEXTURE, rate=1, lifetime=(1.2, 1.2),
+                                             speed=(0, 0), sizes=((0, 2.4), (0.5, 3.2), (1, 2.4)),
+                                             transparency=((0, 1), (0.5, 0.55), (1, 1)), lock=True),
+                                     (0, WHITE), (1, _aurora(i / 8))))
+        q0, q1 = p(f"SpiritOrb{i}"), p(f"SpiritOrb{(i + 1) % 8}")
+        beam(a, f"SpiritOrb{i}", q0, f"SpiritOrb{(i + 1) % 8}", q1, _aurora(i / 8), name=f"Constellation{i}",
+             width=(0.25, 0.25), transparency=((0, 0.3), (0.5, 0.6), (1, 0.3)), segments=2,
+             color2=_aurora((i + 1) / 8), texture=SPARKLE_TEXTURE, texture_speed=1.5)
+    fx(a, "SpiritOrb0", light("OrbLight0", _aurora(0.0), brightness=1.0, range_=10, pulse=1.0))
+    fx(a, "SpiritOrb4", light("OrbLight4", _aurora(0.5), brightness=1.0, range_=10, pulse=1.2))
+    # The tail is a comet: a spinning swirl of light and a spray of stars.
+    fx(a, "TailFan1",
+       _grad(emitter("CometSwirl", WHITE, texture=VORTEX_TEXTURE, rate=1.5, lifetime=(1.2, 1.2), speed=(0, 0),
+                     sizes=((0, 4), (0.5, 5), (1, 4)), transparency=((0, 1), (0.4, 0.35), (1, 1)), lock=True,
+                     rot_speed=(-220, -160)), (0, WHITE), (1, _aurora(0.95))),
+       emitter("CometSpray", WHITE, rate=14, lifetime=(0.8, 1.4), speed=(2, 5), sizes=((0, 0.5), (1, 0)),
+               color2=_aurora(0.95), spread=50, drag=1.5, **SPARK))
     pulse(a, *[f"Fin{i}" for i in range(0, N + 1, 2)], seconds=1.2)
     pulse(a, *[f"Scale{i}L" for i in range(1, N + 1, 2)], *[f"Scale{i}R" for i in range(0, N + 1, 2)], seconds=0.9)
     extras(a, attrs={"WalkSpeed": 16, "OrbitSpeed": 0.3, "Hover": 1.4, "HoverSpeed": 1.3},

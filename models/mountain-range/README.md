@@ -33,13 +33,13 @@ uploaden.
 
 ## De topdieren: zware effecten
 
-De drie topdieren zijn extra gedetailleerd: elk heeft **500 tot 600 parts**.
+De drie topdieren zijn extra gedetailleerd: de Mythic-dieren hebben ongeveer **500 parts** en de Aurora Dragon (Secret) ongeveer **800**.
 
 | Dier | Parts | Wat er bij kwam |
 |---|---|---|
 | Sky Griffin | 534 | gelaagde veerschubben op de borst, een kraag van veren om de nek, rijen veren op de flanken, een franje onder de buik, wangveren, oorpluimen en een kroon met punten. Voller vleugels, met een extra laag veren, gouden banden en een gewricht in de vleugelpunt, zodat die bij elke slag naslaat. Verder stijgbeugels, een zadelknop, studs, kwastjes, een gouden ketting over de borst en een zonnemedaillon. Op de poten tenen, klauwen en gloeiende klauwpunten, op de staart een pluim van gouden veren, en een derde windring |
 | Glacier Mammoth | 589 | een dubbele laag ruige vacht, een baard op de borst en een franje over het achterwerk. Bontmanchetten om de poten en voeten, ijspegels onder de buik, extra ijspantser met runen en ijskristallen langs de rug. Een geweven deken met kwastjes en gloeiend vorststiksel. Een sneeuwvlokrune op het voorhoofd, een plukje haar, rafelige oren, een ijskroon, gloeiende banden en runen op de slagtanden, zes extra zwevende ijskristallen en een sneeuwvlok van licht op de grond |
-| Aurora Dragon | 551 | op elk van de 17 delen twee extra rijen schubben, lichtvinnen aan beide kanten, een buikribbel, een gouden stekel en sterretjes. Op de kop een baard, extra tanden, geweitakken, wangvinnen, wenkbrauwen, oren, runen en een langere manen. Schouders, polsbanden, vlammetjes bij de ellebogen en extra klauwen aan de poten, een drakenparel in zijn klauw, een grotere staartwaaier met vlammen, wolkjes onder zijn lijf en een ring van noorderlicht |
+| Aurora Dragon | 792 | op elk van de 17 delen twee extra rijen schubben, lichtvinnen aan beide kanten, een buikribbel, een gouden stekel en sterretjes. Op de kop een baard, extra tanden, geweitakken, wangvinnen, wenkbrauwen, oren, runen en een langere manen. Schouders, polsbanden, vlammetjes bij de ellebogen en extra klauwen aan de poten, een drakenparel in zijn klauw, een grotere staartwaaier met vlammen, wolkjes onder zijn lijf en een ring van noorderlicht. Verder vlammenplukjes van noorderlicht langs de rug, een tweede rij vinnen, buikplaten, gouden banden en kraaltjes, een kroon van hoorntjes, wapperende manenlinten, ringen om de parel, snorharen aan de staart en acht zwevende geestbollen |
 
 
 **Sky Griffin (Mythic)**
@@ -53,6 +53,25 @@ De drie topdieren zijn extra gedetailleerd: elk heeft **500 tot 600 parts**.
 - **Glacier Stomp:** hij steigert, trompettert en stampt. Twee kringen ijspieken (28 stuks) schieten uit de grond en smelten weer weg, met grote schokgolven en een flits.
 
 **Aurora Dragon (Secret)**
+
+![Aurora Dragon](../../previews/mountain_aurora_dragon.png)
+
+- **Nieuwe effecten:**
+  - Langs zijn hele lijf hangt een zachte gloed van geestlicht in de kleuren van het noorderlicht.
+  - De parel in zijn klauw is een draaiend sterrenstelsel met gloed, lichtpuntjes en een lampje.
+  - Uit zijn bek flakkert geestvuur, van zijn gewei springen vonken en zijn ogen trekken lichtsporen.
+  - Om hem heen vallen vallende sterren (lange strepen licht).
+  - Op de grond draait een sigil van noorderlicht die lichtringen uitzendt.
+  - Acht geestbollen gloeien en zijn met sterrenbeeldlijnen aan elkaar verbonden.
+  - Zijn staart is een komeet: een draaiende werveling met een sproeiregen van sterren.
+- **Star Breath (nieuw):**
+  1. Hij gooit zijn kop naar achter en licht verzamelt zich in zijn bek.
+  2. Dan blaast hij een lange straal noorderlicht-vuur vol sterren.
+  3. Ringen van licht rollen langs de straal mee.
+- **Constellation (nieuw):**
+  1. Hij rolt zich op en stijgt.
+  2. De sterren verzamelen zich om hem heen.
+  3. Dan ontrolt hij zich in een explosie van sterrenlicht: een flits, sterren uit zijn hele lijf, een draaiende sigil, ringen en een schokgolf over de grond.
 - **Altijd:** hij zweeft, en zijn hele lijf (16 delen) golft als een lint. Gordijnen van noorderlicht wapperen boven zijn rug. Lange noorderlicht-slingers en lichtsporen achter zijn snorharen volgen hem, sterrenstof en gloeiende mist komen uit zijn lijf, en een lichtzuil schiet uit zijn kop de lucht in. Twaalf sterren draaien om hem heen.
 - **Aurora:** hij stijgt op en krult zich. Er volgen een felle flits, 90 sterren en ringen in alle kleuren van het noorderlicht, in de lucht en op de grond.
 

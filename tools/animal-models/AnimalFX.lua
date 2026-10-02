@@ -354,7 +354,7 @@ local P = {
 		waveP = 4, waveY = 7, lean = 6,
 		aura = { at = "Seg4", tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 0.9, 0 }, life = { 0.8, 1.6 },
 			speed = { 2, 6 }, rate = 40, spread = 180 },
-		idle = { "aurora" }, every = { 7, 11 },
+		idle = { "aurora", "starbreath", "constellation" }, every = { 6, 10 },
 	},
 	Phoenix = {
 		-- Struts like a proud bird, and takes off and flies when it moves fast (flyRun).
@@ -1234,6 +1234,86 @@ ACTIONS.thunder = {
 		groundRing(root.Position, "#fff7c2", 14, 0.6)
 		flash("Body", "#4fd6ff", 6, 30, 0.5)
 	end },
+}
+
+-- The Aurora Dragon's star breath: it rears its head back, light gathers in its mouth, then it breathes a long
+-- stream of aurora fire full of stars, with rings of light rolling along the breath.
+local AURORA3 = { "#ffffff", "#3fd6ff", "#b45cff" }
+ACTIONS.starbreath = {
+	time = 3.2,
+	pose = function(p)
+		local back = ease(p, 0, 0.4)
+		local blow = ease(p, 0.3, 0.95)
+		local joints = { Head = CFrame.Angles(R(30) * back - R(12) * blow, math.sin(p * 9) * R(10) * blow, 0) }
+		for i = 1, 6 do
+			joints["SegJoint" .. i] = CFrame.Angles(R(6) * back - R(3) * blow, 0, 0)
+		end
+		return CFrame.new(0, 1.2 * back, 0), joints
+	end,
+	moments = {
+		[0.12] = function()
+			burst("BreathGather", "Snout", { tex = "implode", c = { "#ffffff", "#3fd6ff" }, size = { 8, 1 },
+				life = { 0.6, 0.6 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+			flash("Snout", "#bff6ff", 4, 18, 0.6)
+		end,
+		[0.36] = function()
+			flash("Head", "#e9fff6", 10, 50, 1.2)
+			stream("StarBreath", "Snout", { tex = "fire", c = AURORA3, size = { 3.5, 0 }, life = { 0.5, 0.9 },
+				speed = { 30, 46 }, spread = 10, rate = 120, dir = Enum.NormalId.Front }, 1.4)
+			stream("BreathStars", "Snout", { tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 1.2, 0 },
+				life = { 0.8, 1.4 }, speed = { 24, 40 }, spread = 16, rate = 60, dir = Enum.NormalId.Front }, 1.4)
+			local snout = part("Snout")
+			for i = 0, 3 do
+				task.delay(i * 0.18, function()
+					ring(snout.CFrame * CFrame.new(0, 0, -6 - i * 7) * CFrame.Angles(R(90), 0, 0),
+						if i % 2 == 0 then "#3fd6ff" else "#b45cff", 4 + i * 1.5, 0.5)
+				end)
+			end
+		end,
+	},
+}
+
+-- Constellation: it coils up tight around itself and rises, the stars gather, then it uncoils in a burst of
+-- starlight: a flash, stars from all along its body, a spinning sigil and a shockwave across the ground.
+ACTIONS.constellation = {
+	time = 4.2,
+	pose = function(p)
+		local coil = ease(p, 0, 0.75)
+		local rise = ease(p, 0.05, 0.95)
+		local joints = { Head = CFrame.Angles(R(25) * coil, 0, 0) }
+		for i = 1, 16 do
+			joints["SegJoint" .. i] = CFrame.Angles(math.sin(p * 6 + i) * R(4) * coil, R(14) * coil, 0)
+		end
+		return CFrame.new(0, 4 * rise, 0) * CFrame.Angles(0, R(140) * coil, 0), joints
+	end,
+	moments = {
+		[0.15] = function()
+			stream("StarGather", "Seg8", { tex = "spark", c = { "#ffffff", "#8a7bff" }, size = { 0.9, 0 },
+				life = { 0.8, 1.2 }, speed = { 1, 3 }, spread = 180, rate = 40 }, 1.6)
+		end,
+		[0.55] = function()
+			flash("Seg4", "#ffffff", 14, 70, 1.2)
+			for _, seg in { "Seg2", "Seg6", "Seg10", "Seg14" } do
+				burst("Burst" .. seg, seg, { tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 1.4, 0 },
+					life = { 1.4, 2.6 }, speed = { 10, 24 }, spread = 180, drag = 2 }, 40)
+			end
+			burst("ConstellationCore", "Seg8", { tex = "core", c = { "#ffffff", "#3fd6ff", "#b45cff" },
+				size = { 6, 30 }, life = { 0.8, 1.0 }, speed = { 0, 0 }, transparency = 0.15, spin = 60 }, 3)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#5effb0", "#b45cff" }, size = { 8, 80 }, life = { 1.0, 1.0 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#ffffff", "#3fd6ff", "#ff6bd6" }, size = { 44, 34 },
+				life = { 2.0, 2.0 }, transparency = 0.25, spin = 140 }, 1)
+			local colors = { "#5effb0", "#3fd6ff", "#8a7bff", "#ff6bd6" }
+			local body = part("Seg8")
+			for i, c in colors do
+				task.delay(i * 0.1, function()
+					ring(CFrame.new(body.Position) * CFrame.Angles(R(90 * (i % 2)), R(45 * i), 0), c, 14 + i * 6, 0.8)
+					groundRing(root.Position, c, 18 + i * 8, 0.9)
+				end)
+			end
+		end,
+	},
 }
 
 -- The Phoenix's idle actions. They use the wing tip, crest and tail tip joints when the model has them.
