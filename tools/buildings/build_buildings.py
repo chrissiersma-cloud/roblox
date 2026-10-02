@@ -8,6 +8,7 @@ old one stands (same spot, same turn, same size), so it replaces it 1:1.
 
     python3 tools/buildings/build_buildings.py                  -> build/buildings.json and build/world.json
     python3 tools/buildings/build_buildings.py --rbxm OUT.rbxm  -> also writes the .rbxm (needs cargo)
+    ... --frost-cart OUT.rbxm                                  -> also writes the Frost Peak Cart on its own
 """
 
 import json
@@ -845,16 +846,21 @@ def hanging_sign_stand(g, pos, text):
 
 # ----------------------------------------------------------- upgrade camp ---
 
-def add_asset(g, asset, pos, yaw=0.0, k=1.0):
-    """Copies a forest-kit model (trees, bushes, flowers) into a Group, turned by yaw and scaled by k."""
+def add_asset(g, asset, pos, yaw=0.0, k=1.0, fx=False):
+    """Copies a kit model (trees, bushes, lanterns) into a Group, turned by yaw and scaled by k. With fx=True its
+    effects (lights, particles) come along too, and invisible effect holders are kept."""
+    import copy
     Ry = angles(0, yaw, 0)
     for p in asset.parts:
-        if p["transparency"] >= 1:
+        if p["transparency"] >= 1 and not (fx and p["effects"]):
             continue
+        kids = copy.deepcopy(p["effects"]) if fx else []
+        if any("id" in e for e in kids):
+            kids = [e for e in kids if e["class"] in ("PointLight", "SpotLight", "ParticleEmitter")]
         g.parts.append({"shape": p["shape"], "name": p["name"], "size": tuple(v * k for v in p["size"]),
                         "R": matmul(Ry, p["R"]), "p": add(pos, apply(Ry, scale(p["p"], k))), "color": p["color"],
                         "material": p["material"], "collide": p["collide"], "shadow": p["shadow"],
-                        "transparency": p["transparency"], "reflectance": 0.0, "paint": None, "children": [],
+                        "transparency": p["transparency"], "reflectance": 0.0, "paint": None, "children": kids,
                         "id": None})
 
 
@@ -1171,6 +1177,179 @@ def dark_cart(rng):
     return g, ground
 
 
+ICE_GLOW = C("#7fe3ff")
+FROST_WOOD = {"WOOD": C("#8a6a52"), "WOOD_DARK": C("#5f4a3c"), "WOOD_LIGHT": C("#a58468"), "WOOD_DEEP": C("#3e3029"),
+              "CANVAS": C("#cfe2f5"), "CANVAS2": C("#bcd4ec")}
+SNOW_W, SNOW_S, ICE = C("#ffffff"), C("#e4ecf7"), C("#bff0ff")
+
+
+def frost_wagon(g, origin, yaw, rng):
+    """The forest-entrance wagon, dressed for Frost Peak: a frosted white-blue canvas with snow on top and a glowing
+    snowflake and mountain on both sides, weathered wood, icicles, ice-blue lanterns, and ice crystals and furs as
+    cargo."""
+    import build_entrance as be
+    old = {k: getattr(be, k) for k in FROST_WOOD}
+    first = len(g.parts)
+    for k, v in FROST_WOOD.items():
+        setattr(be, k, v)
+    try:
+        wagon(g, origin=origin, yaw=yaw)
+    finally:
+        for k, v in old.items():
+            setattr(be, k, v)
+    snow = []
+    for p in g.parts[first:]:
+        if p["name"].endswith("Glass"):
+            p["color"] = C("#d9f6ff")
+            for ch in p["children"]:
+                if ch["class"] == "PointLight":
+                    ch["props"]["Color"] = list(ICE_GLOW)
+        elif p["name"] == "Blanket":
+            p["color"] = C("#3f6fa8")
+        elif p["name"] == "Bedroll":
+            p["color"] = C("#e8e2d6")          # a white fur
+        elif p["name"] == "Canvas":
+            # Snow lies on the top strips of the canvas.
+            up = (p["R"][0][1], p["R"][1][1], p["R"][2][1])
+            if up[1] < 0:
+                up = scale(up, -1)          # the strip's local Y may point into the wagon
+            if up[1] > 0.75:
+                snow.append((p, up))
+    for p, up in snow:
+        w, _, d = p["size"]
+        g.box("CanvasSnow", (w * 1.04, 0.45, d * 0.97), add(p["p"], scale(up, 0.27)), SNOW_W, R=p["R"], **DS)
+        g.box("CanvasSnowMound", (w * 0.9, 0.35, d * 0.6), add(p["p"], add(scale(up, 0.6), (0, 0, rng.uniform(-1, 1)))),
+              SNOW_S if rng.random() < 0.3 else SNOW_W, R=p["R"], **DS)
+    R = angles(0, yaw, 0)
+    P = lambda x, y, z: at(origin, R, (x, y, z))
+    # A glowing snowflake and a little snowy mountain painted on both sides of the canvas (x shrinks with height).
+    cx = lambda y: 2.35 * math.cos(math.asin(max(-1.0, min(1.0, (y - 4.35) / 3.0)))) + 0.08
+    for sx in (-1, 1):
+        c = P(sx * (cx(5.6) + 0.3), 5.6, -1.4)
+        for k in range(3):
+            g.box("FlakePaint", (0.08, 2.4, 0.24), c, ICE_GLOW, R=matmul(R, angles(60 * k, 0, 0)), material="Neon", **DS)
+            for sgn in (-1, 1):
+                tip = add(c, apply(matmul(R, angles(60 * k, 0, 0)), (0, 0.8 * sgn, 0)))
+                g.box("FlakeTwig", (0.08, 0.6, 0.16), tip, ICE_GLOW, R=matmul(R, angles(60 * k + 45, 0, 0)),
+                      material="Neon", **DS)
+        m = P(sx * (cx(5.4) + 0.3), 5.4, 1.3)
+        g.wedge("MountainPaint", (0.06, 1.4, 0.9), add(m, apply(R, (0, 0, -0.45))), C("#5f86b0"), R=R, **DS)
+        g.wedge("MountainPaint", (0.06, 1.4, 0.9), add(m, apply(R, (0, 0, 0.45))), C("#5f86b0"),
+                R=matmul(R, angles(0, 180, 0)), **DS)
+        g.wedge("MountainCap", (0.07, 0.5, 0.32), add(m, apply(R, (0, 0.45, -0.16))), SNOW_W, R=R, **DS)
+        g.wedge("MountainCap", (0.07, 0.5, 0.32), add(m, apply(R, (0, 0.45, 0.16))), SNOW_W,
+                R=matmul(R, angles(0, 180, 0)), **DS)
+        # Icicles along the sideboards and the canvas hem.
+        for j in range(12):
+            if rng.random() < 0.3:
+                continue
+            z = -4.2 + j * 0.75
+            h = rng.uniform(0.4, 1.0)
+            g.wedge("Icicle", (0.18, h, 0.16), P(sx * 2.42, 3.05 - h / 2, z), ICE, R=matmul(R, angles(180, 0, 0)),
+                    transparency=0.15, **DS)
+    # Cargo: glowing ice crystals, a crate with a snowflake mark, and snow on the bench and the wheels' tops.
+    for i, (x, z, col) in enumerate(((-1.0, 3.6, "#7fe3ff"), (1.0, 3.3, "#bff0ff"), (0.1, 2.5, "#e6fbff"))):
+        p = P(x, 2.8, z)
+        g.box("CargoIce", (0.6, 1.5 - 0.3 * i, 0.6), add(p, (0, 0.75, 0)), C(col), R=matmul(R, angles(8, 25 * i, -10)),
+              material="Neon", transparency=0.15, **D)
+    g.box("BenchSnow", (2.4, 0.2, 0.9), P(0, 3.95, -3.9), SNOW_W, R=R, **DS)
+    for sx in (-1, 1):
+        for z, r in ((2.9, 2.0), (-2.9, 1.7)):
+            g.box("WheelSnow", (0.5, 0.25, 1.2), P(2.75 * sx, 2 * r + 0.05, z), SNOW_W, R=R, **DS)
+
+
+def frost_pad(g, pos, text):
+    """An icy boarding pad with a sign: put your teleport script on BoardingPad."""
+    x, _, z = pos
+    g.cyl("BoardingPad", 0.3, 5.5, (x, 0.15, z), C("#4fa8e0"), R=angles(0, 0, 90), pid="FrostPeakCart.BoardingPad")
+    g.ring("PadGlow", (x, 0.32, z), IDENTITY, 2.5, 0.25, [ICE_GLOW, C("#e6fbff")], n=24, twist=False,
+           material="Neon", **DS)
+    g.ring("PadGlow", (x, 0.32, z), IDENTITY, 1.4, 0.2, [C("#e6fbff")], n=16, twist=False, material="Neon", **DS)
+    for k in range(3):
+        g.box("PadFlake", (3.6, 0.06, 0.25), (x, 0.33, z), C("#e6fbff"), rot=(0, 60 * k, 0), material="Neon", **DS)
+    flakes = {"class": "ParticleEmitter", "name": "Snowflakes", "props": {
+        "Texture": "rbxasset://textures/particles/sparkles_main.dds", "Rate": 10, "Lifetime": [1.5, 2.5],
+        "Speed": [1, 2.5], "SpreadAngle": [15, 15], "Size": [[0, 0.4], [1, 0]], "Transparency": [[0, 0], [1, 1]],
+        "Color": [[0, *C("#ffffff")], [1, *ICE_GLOW]], "LightEmission": 1, "LightInfluence": 0,
+        "RotSpeed": [-90, 90], "Rotation": [0, 360]}}
+    glow = {"class": "PointLight", "name": "PadLight", "props": {"Color": list(ICE_GLOW), "Brightness": 1.2,
+                                                                  "Range": 10, "Shadows": False}}
+    g.box("PadSparkles", (4.0, 0.1, 4.0), (x, 0.35, z), C("#ffffff"), transparency=1, children=[flakes, glow], **DS)
+    for sx in (-1, 1):
+        g.octagon("PadPost", 0.25, 3.8, (x + sx * 3.2, 1.9, z + 2.0), C("#5f4a3c"))
+        g.octagon("PadPostTop", 0.3, 0.3, (x + sx * 3.2, 3.95, z + 2.0), ICE_GLOW, material="Neon", collide=False)
+        g.box("PadPostSnow", (0.75, 0.2, 0.75), (x + sx * 3.2, 4.2, z + 2.0), SNOW_W, **DS)
+    g.box("PadSign", (5.4, 1.1, 0.25), (x, 3.4, z + 2.0), C("#3f6fa8"),
+          children=[surface_text(text, "Front", color="#f0faff", ppu=70, stroke="#1d3350"),
+                    surface_text(text, "Back", color="#f0faff", ppu=70, stroke="#1d3350")])
+    g.box("PadSignSnow", (5.5, 0.2, 0.35), (x, 4.05, z + 2.0), SNOW_W, **DS)
+    for j in range(6):
+        g.wedge("PadIcicle", (0.16, 0.5 + 0.15 * (j % 3), 0.14), (x - 2.3 + j * 0.92, 2.6, z + 2.0), ICE,
+                rot=(180, 0, 0), **DS)
+
+
+def frost_cart(rng):
+    sys.path.insert(0, str(HERE.parent / "frost-peak-kit"))
+    import build_frost_kit  # Frost Peak kit (tools/frost-peak-kit)
+    kit = {a.name: a for a in build_frost_kit.make_kit()}
+    g = Group("FrostPeakCart")
+    ground = Group("Ground")
+    # A patch of snow where the hub turns into the mountains, with a stone path to the arch.
+    ground.cyl("SnowGround", 0.2, 34, (0, 0.1, 4), C("#eef4fb"), R=angles(0, 0, 90))
+    ground.cyl("SnowGroundEdge", 0.18, 38, (0, 0.09, 4), C("#d6e2f0"), R=angles(0, 0, 90))
+    for i in range(14):
+        ang = rng.uniform(0, 2 * math.pi)
+        r = rng.uniform(8, 16)
+        ground.octagon("SnowPatch", rng.uniform(1.2, 2.4), 0.25, (math.cos(ang) * r, 0.25, 4 + math.sin(ang) * r),
+                       C("#ffffff"), yaw=rng.uniform(0, 45), collide=False)
+    for i in range(10):
+        ground.box("PathStone", (3.2 + (i % 2) * 0.6, 0.25, 2.2), (0.4 * math.sin(i), 0.2, -9 + i * 2.6),
+                   C("#9aa6b8") if i % 2 else C("#8794a6"), rot=(0, rng.uniform(-10, 10), 0))
+        if i % 3 == 1:
+            ground.box("PathSnow", (1.2, 0.15, 0.8), (0.4 * math.sin(i) + rng.uniform(-1, 1), 0.38, -9 + i * 2.6),
+                       C("#ffffff"), collide=False)
+    # The wagon, ready to leave through the stone arch towards the peak.
+    frost_wagon(g, (0, 0, 1.0), 180, rng)
+    add_asset(g, kit["StoneArch"], (0, 0, 13.5), 0, 1.0)
+    add_asset(g, kit["SnowfallZone"], (0, 6, 6), 0, 1.0, fx=True)
+    # Boarding pad, a hanging sign and a signpost.
+    frost_pad(g, (7.5, 0, -3.5), "TO FROST PEAK")
+    for sx in (-1, 1):
+        g.octagon("SignPost", 0.3, 5.2, (-8.0 + sx * 2.2, 2.6, -5.0), C("#5f4a3c"))
+        g.box("SignPostSnow", (0.75, 0.2, 0.75), (-8.0 + sx * 2.2, 5.25, -5.0), SNOW_W, **DS)
+    g.box("SignBeam", (5.2, 0.35, 0.4), (-8.0, 5.2, -5.0), C("#5f4a3c"))
+    g.box("SignBeamSnow", (5.0, 0.2, 0.45), (-8.0, 5.45, -5.0), SNOW_W, **DS)
+    hanging_sign(g, "Frost Peak Express", (-8.0, 3.8, -5.0), 4.2, 1.2, C("#3f6fa8"), frame=C("#3e3029"),
+                 text_color="#f0faff", stroke="#1d3350", back_text="Frost Peak Express")
+    x, z = 10.0, 5.0
+    g.octagon("ArrowPostBase", 0.55, 0.4, (x, 0.2, z), STONE[2])
+    g.box("ArrowPost", (0.45, 7.0, 0.45), (x, 3.7, z), C("#5f4a3c"))
+    g.box("ArrowPostSnow", (0.6, 0.25, 0.6), (x, 7.3, z), SNOW_W, **DS)
+    for text, y, yaw, color in (("Frost Peak", 6.3, 90, "#4f86c6"), ("Hub", 5.2, -90, "#d98b3a")):
+        R = angles(0, yaw, 0)
+        length = 3.4
+        g.box("ArrowBoard", (length, 0.8, 0.2), at((x, y, z), R, (-length / 2 - 0.1, 0, 0)), C(color), R=R,
+              children=[surface_text(text, "Front", ppu=70, stroke="#1d3350"),
+                        surface_text(text, "Back", ppu=70, stroke="#1d3350")])
+        tip = at((x, y, z), R, (-length - 0.1, 0, 0))
+        for sgn in (-1, 1):
+            g.wedge("ArrowTip", (0.2, 0.4, 0.7), at(tip, R, (-0.3, 0.2 * sgn, 0)), C(color),
+                    R=matmul(R, angles(0, 90, 0 if sgn > 0 else 180)), **D)
+    # Snowy pines, boulders, snow drifts and lanterns from the Frost Peak kit.
+    for name, pos, yaw, k in (("SnowPineLarge", (-11.0, 0, 11.0), 30, 1.0), ("SnowPine", (11.5, 0, 12.5), 200, 1.0),
+                              ("PineCluster", (-13.0, 0, 3.0), 60, 0.9), ("SnowPineSmall", (13.0, 0, 6.5), 0, 1.0),
+                              ("SnowPineSmall", (-6.0, 0, 13.0), 90, 0.9), ("PineSapling", (5.5, 0, 11.0), 0, 1.0),
+                              ("Boulder", (-6.5, 0, 6.0), 20, 1.0), ("BoulderLarge", (9.0, 0, 15.0), 140, 0.8),
+                              ("RockPile", (-12.5, 0, -6.0), 0, 1.0), ("SnowDrift", (4.0, 0, 7.5), 0, 1.0),
+                              ("SnowDrift", (-4.5, 0, -7.5), 90, 0.9), ("SnowyBush", (-5.0, 0, -1.5), 0, 1.0),
+                              ("SnowyBush", (5.5, 0, 3.0), 40, 0.9), ("SnowDrift", (12.0, 0, -6.0), 30, 0.8),
+                              ("Pebbles", (-9.5, 0, -9.0), 0, 1.0), ("IceFloes", (-9.5, 0, 7.0), 0, 0.7)):
+        add_asset(g, kit[name], pos, yaw, k)
+    for pos, yaw in (((-4.5, 0, 9.0), 180), ((4.5, 0, 9.5), 0), ((-4.0, 0, -8.5), 180)):
+        add_asset(g, kit["LanternPost"], pos, yaw, 0.9, fx=True)
+    return g, ground
+
+
 # ----------------------------------------------------------------- build ---
 
 SWAP_SOURCE = (HERE / "SwapIn.lua").read_text() if (HERE / "SwapIn.lua").exists() else ""
@@ -1204,11 +1383,13 @@ def build():
     camp_g, ground = camp(rng)
     upg, upg_ground = upgrade_camp(rng)
     cart, cart_ground = dark_cart(rng)
+    frost, frost_ground = frost_cart(random.Random(11))
     buildings = [("LassoShop", [lasso]), ("AnimalMarket", [market]), ("Worlds", [worlds]),
                  ("WranglerCamp", [camp_g, ground]), ("UpgradeCamp", [upg, upg_ground]),
-                 ("DarkWoodsCart", [cart, cart_ground])]
+                 ("DarkWoodsCart", [cart, cart_ground]), ("FrostPeakCart", [frost, frost_ground])]
     offsets = {"LassoShop": (-60, 0, 0), "AnimalMarket": (0, 0, 0), "Worlds": (60, 0, 0),
-               "WranglerCamp": (0, 0, 80), "UpgradeCamp": (80, 0, 80), "DarkWoodsCart": (-80, 0, 80)}
+               "WranglerCamp": (0, 0, 80), "UpgradeCamp": (80, 0, 80), "DarkWoodsCart": (-80, 0, 80),
+               "FrostPeakCart": (-80, 0, 160)}
     tree_models = []
     for name, groups in buildings:
         m = model(name, groups, ["HubBuilding"])
@@ -1293,6 +1474,13 @@ def main():
         cmd = ["cargo", "run", "--quiet", "--release", "--manifest-path",
                str(HERE.parent / "rbxm-writer" / "Cargo.toml"), "--", str(out / "buildings.json"), target]
         subprocess.run(cmd, check=True)
+    if "--frost-cart" in sys.argv:
+        target = sys.argv[sys.argv.index("--frost-cart") + 1]
+        m = model("FrostPeakCart", dict(buildings)["FrostPeakCart"], ["HubBuilding"])
+        (out / "frost_cart.json").write_text(json.dumps([m]))
+        subprocess.run(["cargo", "run", "--quiet", "--release", "--manifest-path",
+                        str(HERE.parent / "rbxm-writer" / "Cargo.toml"), "--", str(out / "frost_cart.json"), target],
+                       check=True)
 
 
 if __name__ == "__main__":

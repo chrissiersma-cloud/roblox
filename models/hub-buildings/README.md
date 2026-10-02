@@ -95,6 +95,28 @@ Zet je NPC op die plek, of verplaats de stand als je hem liever ergens anders he
 - een stuk donkere, mossige grond met een pad van stapstenen (in een apart model **Ground**), zodat je hub
   daar mooi overgaat in het donkere bos.
 
+**Frost Peak Cart** (de kar naar Frost Peak, voor in je hub):
+
+- de huifkar in **Frost Peak-stijl**: een ijsblauwe huif met **sneeuw erop**, een gloeiende **sneeuwvlok** en
+  een besneeuwd **bergje** aan beide kanten, verweerd hout, **ijspegels** langs de zijborden, **ijsblauwe
+  lantaarns**, sneeuw op de bok en de wielen, en als lading gloeiende **ijskristallen** en een witte vacht. De
+  dissel wijst naar de berg: de kar staat klaar om te vertrekken;
+- de **stenen boog** uit de Frost Peak-set boven het pad, met **vallende sneeuw** eromheen;
+- een ijsblauw gloeiend **BoardingPad** met een sneeuwvlok, vallende sneeuwvlokjes, een lampje en een bord
+  **TO FROST PEAK** met ijspegels (zet daar je teleport-script op);
+- een hangend bord **Frost Peak Express** en een wegwijzer met **Frost Peak** en **Hub**;
+- besneeuwde dennen, rotsen, sneeuwhopen, struikjes, ijsschotsen en lantaarnpalen uit de Frost Peak-set;
+- een stuk sneeuw met een pad van stenen (in een apart model **Ground**).
+
+Je vindt hem in `HubBuildings.rbxm`, en ook apart in **`FrostPeakCart.rbxm`**. Net als de Dark Woods Cart zet
+je hem zelf neer. De voorkant (-Z, met het bord en de pad) wijst naar je hub, de boog naar de berg. Zet je
+teleport-script op `FrostPeakCart > FrostPeakCart > BoardingPad` en laat het naar de `EntranceSpawn` van het
+Frost Peak-gebied wijzen.
+
+![De Frost Peak Cart](../../previews/hub_frostpeakcart.png)
+![De huifkar](../../previews/hub_frostpeakcart_wagon.png)
+![Van opzij](../../previews/hub_frostpeakcart_side.png)
+
 | Model | Parts |
 |---|---|
 | LassoShop | ~1350 |
@@ -103,6 +125,7 @@ Zet je NPC op die plek, of verplaats de stand als je hem liever ergens anders he
 | WranglerCamp | ~1400 |
 | UpgradeCamp | ~1410 |
 | DarkWoodsCart | ~1120 |
+| FrostPeakCart | ~1720 |
 
 Alleen muren, veranda's, meubels en grote spullen botsen. Kleine versieringen hebben CanCollide, CanTouch en
 CanQuery uit. Er zijn weinig lampjes, en die hebben geen schaduw.
@@ -156,5 +179,5 @@ iets mis? Kopieer de tekst uit het Output-venster en stuur die op.
 ## Opnieuw maken
 
 ```
-python3 tools/buildings/build_buildings.py --rbxm models/hub-buildings/HubBuildings.rbxm
+python3 tools/buildings/build_buildings.py --rbxm models/hub-buildings/HubBuildings.rbxm --frost-cart models/hub-buildings/FrostPeakCart.rbxm
 ```

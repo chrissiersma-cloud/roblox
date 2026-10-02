@@ -1,0 +1,43 @@
+#!/usr/bin/env python3
+"""Builds the five horses (Pony, Brown Horse, Paint Horse, Black Stallion, Golden Mustang).
+
+    python3 build_horses.py                  -> writes build/horses.json
+    python3 build_horses.py --rbxm OUT.rbxm  -> also writes the .rbxm (needs cargo)
+"""
+
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+from build_dark_woods import finish
+from horses import ALL
+
+HERE = Path(__file__).resolve().parent
+
+
+def main():
+    fx_source = (HERE / "AnimalFX.lua").read_text()
+    animals = [make() for make in ALL]
+    nodes = []
+    for a in animals:
+        node = finish(a, fx_source)
+        node["tags"] = [t for t in node["tags"] if t != "DarkWoodsAnimal"] + ["Mount", "Horse"]
+        node["attrs"]["Mount"] = True
+        nodes.append(node)
+    tree = [{"class": "Folder", "name": "Horses", "children": nodes}]
+    out = HERE / "build" / "horses.json"
+    out.parent.mkdir(exist_ok=True)
+    out.write_text(json.dumps(tree))
+    for a in animals:
+        top = max(p["p"][1] + max(p["size"]) / 2 for p in a.parts)
+        print(f"{a.id:14} {a.rarity:10} {len(a.parts):3} parts, {len(a.bones):2} joints, about {top:4.1f} studs tall")
+    if "--rbxm" in sys.argv:
+        target = sys.argv[sys.argv.index("--rbxm") + 1]
+        Path(target).parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(["cargo", "run", "--quiet", "--release", "--manifest-path",
+                        str(HERE.parent / "rbxm-writer" / "Cargo.toml"), "--", str(out), target], check=True)
+
+
+if __name__ == "__main__":
+    main()

@@ -83,3 +83,37 @@ python3 tools/lassos/build_lassos.py --rbxm models/lassos/Lassos.rbxm
 Dat schrijft ook `tools/lassos/build/world.json`. Kopieer het naar `tools/viewer/lassos_world.json`, start daar
 `python3 -m http.server 8123` en render met `node sceneshot.js lassos_world.json all uit.png` (of `sunburst`,
 `moonshard`, `wildfire`, en `_back` voor achteraanzicht).
+
+# Bergen-lasso's – Frostbite, Skyfeather en Aurora
+
+`MountainLassos.rbxm` bevat drie lasso's voor het **Mountain Range**-gebied. Ze zijn gebouwd op dezelfde manier
+als de lasso's hierboven: een handvat, een rol touw, een draaiende lus met effecten en dezelfde twee scripts.
+Alles hierboven over Studio, de scripts en de attributen geldt dus ook voor deze drie. Je krijgt een map
+**MountainLassos** met de drie Tools, die ook de tag `MountainLasso` hebben.
+
+![Alle drie](../../previews/lassos_mountain_all.png)
+
+| Lasso | Zeldzaamheid | Parts | Hoe hij eruitziet | Effecten |
+|---|---|---|---|---|
+| **Frostbite Lasso** | Epic | 244 | ijsblauw touw met ijspegels eronder en ijskristallen erop, een gloeiende sneeuwvlok, een sneeuwvlok-bedeltje en ijskristallen op het handvat | vallende sneeuw, koude mist, twinkelend ijs, een wit-blauw lichtspoor, ijsblauw licht |
+| **Skyfeather Lasso** | Legendary | 207 | wit-gouden touw met waaiers van gouden griffioenveren, een hemelsblauwe edelsteen met gouden vleugels, een veer-bedeltje en een gevleugelde knop op het handvat | dwarrelende veren, windstrepen, gouden schitteringen, een wit-blauw lichtspoor, warm licht |
+| **Aurora Lasso** | Mythic | 181 | nachtblauw touw met gloeiende draden in noorderlichtkleuren (groen, blauw, paars), sterrenkristallen, sterrenkralen, een vierpuntige ster van licht, een sterren-bedeltje en kristallen op het handvat | drie linten van noorderlicht die over de lus golven, vallende sterren, een zachte gloed, een groen-paars lichtspoor |
+
+![Frostbite](../../previews/lasso_frostbite.png)
+![Skyfeather](../../previews/lasso_skyfeather.png)
+![Aurora](../../previews/lasso_aurora.png)
+
+(In de plaatjes zijn de deeltjes en de noorderlichtlinten nagemaakt. In Roblox zijn het echte
+ParticleEmitters en Beams.)
+
+**Klik je**, dan draait de lus snel en komt er een explosie uit:
+
+- **Frostbite:** sneeuw en een wolk van vorst.
+- **Skyfeather:** veren en een windvlaag.
+- **Aurora:** sterren en een gloed van noorderlicht.
+
+Opnieuw maken:
+
+```
+python3 tools/lassos/mountain_lassos.py --rbxm models/lassos/MountainLassos.rbxm
+```

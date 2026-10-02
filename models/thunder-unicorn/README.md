@@ -1,27 +1,40 @@
 # Thunder Unicorn
 
-Het exclusieve rijdier van de game pass: een storm-blauwe eenhoorn met **manen en staart van onweerswolken vol
-bliksem**, een **gouden spiraalhoorn** die knettert van de elektriciteit, **gloeiende donderhoeven**, bliksemstralen
-op zijn flanken, een paars-gouden zadel en **drie geladen bollen** die om hem heen draaien, met elektrische bogen
-ertussen. Hij is gemaakt in dezelfde blokjesstijl als je andere dieren, van gewone Parts, dus je hoeft niets te
-uploaden.
+Het exclusieve rijdier van de game pass, gebouwd als het pronkstuk van de game. Een storm-blauwe **gevleugelde
+eenhoorn** met:
+
+- **Twee grote energievleugels** met platina botten, gouden gewrichten en gloeiende veren. Ze slaan rustig als hij
+  stilstaat en gaan **wijd open als hij galoppeert**.
+- **Gloeiende bliksemaders** onder zijn vacht, met een stormrune op elke flank.
+- **Platina en gouden harnas:** een borstplaat met een gloeiende stormsteen, nekplaten, een gezichtsplaat, wangplaten en
+  beenbeschermers met edelstenen.
+- **Een kristallen hoorn** met een gouden spiraal, drie zwevende runenringen en een **energiezuil** die uit de punt
+  omhoog schiet.
+- **Manen en staart van stormwolken en elektrische vlammen**, met bliksemschichten erin.
+- **Een runencirkel op de grond** die onder hem ronddraait, met **geladen bollen en kristalscherven** die om hem heen
+  zweven, verbonden door elektrische bogen (ook naar zijn hoorn).
+- **Gloeiende hoeven** met platina hoefijzers, wolkjes en vlammetjes.
+
+Alles is gemaakt van gewone Parts, dus je hoeft niets te uploaden.
 
 ![Thunder Unicorn](../../previews/thunder_unicorn.png)
 
-(De deeltjes, lichtsporen, bogen en het licht zie je niet in deze plaatjes, alleen in Roblox.)
+(De deeltjes, vlammen, lichtsporen, bogen, de energiezuil en het licht zie je niet in deze plaatjes, alleen in
+Roblox.)
 
 ## Animaties en effecten
 
-Het script **AnimalFX** (hetzelfde als bij de Dark Woods-dieren) laat hem bewegen. Het kijkt hoe snel het model
-beweegt, dus je hoeft niets aan te zetten:
+Het script **AnimalFX** laat hem bewegen. Het kijkt hoe snel het model beweegt, dus je hoeft niets aan te zetten:
 
-- **Stilstaan:** hij ademt, kijkt rond, zijn hoorn knettert, de wolken in zijn manen en staart rommelen en de bollen
-  draaien rond.
-- **Lopen:** een rustige stap, met vonkjes en een kleine schokgolf onder elke hoef.
-- **Rennen:** hij gaat over in een **galop**. Bij 5x snelheid blijven zijn benen netjes galopperen (niet wazig
-  snel), en zijn achterhoeven en staart trekken **bliksemsporen** achter zich aan.
-- **Elke paar seconden stilstaan:** hij **steigert**, er slaat een **bliksemschicht** op zijn hoorn met een flits en
-  een regen van vonken, en als zijn voorhoeven neerkomen gaat er een grote schokgolf over de grond.
+- **Stilstaan:** hij ademt, zijn vleugels slaan langzaam, zijn hoorn knettert, zijn manen vlammen en rommelen, en de
+  runencirkel en de bollen draaien rond.
+- **Lopen:** vonken, wolkjes en een schokgolf onder elke hoef.
+- **Galopperen:** de vleugels gaan wijd open en slaan sneller, lichtsporen trekken achter zijn hoeven, staart en
+  vleugelpunten aan, en **naast zijn hoeven slaat af en toe de bliksem in**.
+- **Elke paar seconden stilstaan** doet hij een van twee acties:
+  - **Thunder:** hij steigert en er slaat een bliksemschicht op zijn hoorn.
+  - **Storm:** hij steigert met zijn vleugels gespreid, een enorme bliksemschicht raakt zijn hoorn, er slaan **zes
+    bliksems in een kring om hem heen** in, en hij landt met drie schokgolven en een lichtflits.
 
 ## In je game zetten
 
@@ -42,16 +55,19 @@ beweegt, dus je hoeft niets aan te zetten:
 | `Mount` | true | voor je scripts: dit is een rijdier |
 | `SpeedMultiplier` | 5 | voor je mount-script: 5x snelheid |
 | `WalkSpeed` | 16 | de snelheid (studs/s) van een gewone stap. Sneller = galop |
-| `OrbitSpeed` | 0.45 | hoe snel de bollen ronddraaien (0 = stil) |
+| `OrbitSpeed` | 0.5 | hoe snel de runencirkel, de bollen en de kristallen ronddraaien (0 = stil) |
+| `FlapSpeed`, `FlapAngle` | 1.6, 9 | hoe snel en hoe ver de vleugels slaan als hij stilstaat |
 | `State` | "" | "Idle", "Walk" of "Run" om een animatie te forceren |
 | `IdleActions` | (aan) | zet op false: geen steigeren met bliksem |
 | `FXDistance` | 160 | verder weg dan dit (studs) geen effecten |
 
 ## Gemaakt voor telefoons
 
-Ongeveer 320 Parts, 8 bewegende delen, een handvol ParticleEmitters, een paar lampjes zonder schaduw en 3 Trails.
+Ongeveer 690 Parts en 10 bewegende delen: meer dan je andere dieren, want dit is het pronkstuk. Dat gaat prima
+zolang er niet tientallen tegelijk rondlopen. Verder een flink aantal kleine ParticleEmitters, zeven lampjes
+zonder schaduw en negen Trails.
 Kleine onderdelen geven geen schaduw en botsen niet. Ver weg (buiten `FXDistance`) stopt hij met effecten, en nog
-verder weg ook met animeren. De bliksem bij het steigeren is maar een halve seconde te zien.
+verder weg ook met animeren. De bliksems zijn maar een halve seconde te zien en worden daarna opgeruimd.
 
 ## Let op
 
@@ -67,4 +83,4 @@ python3 build_mounts.py --rbxm ../../models/thunder-unicorn/ThunderUnicorn.rbxm
 ```
 
 Het model staat in `tools/animal-models/thunder_unicorn.py`, de animaties in `AnimalFX.lua` (profiel
-`ThunderUnicorn` en de actie `thunder`).
+`ThunderUnicorn` en de acties `thunder` en `storm`).

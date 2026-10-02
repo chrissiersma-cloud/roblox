@@ -17,6 +17,7 @@ tools/buildings/build/
 tools/music/build/
 tools/lassos/build/
 tools/icons/build/
+tools/frost-peak-kit/build/
 tools/statue/build/
 tools/rbxm-writer/target/
 __pycache__/
@@ -32,6 +33,12 @@ __pycache__/
 !audio/*.rbxm
 !models/lassos/*.rbxm
 !models/thunder-unicorn/*.rbxm
+!models/horses/*.rbxm
+!models/mountain-range/*.rbxm
+!models/frost-peak-kit/*.rbxm
+!models/frost-peak-area/*.rbxm
+!models/phoenix/*.rbxm
+!models/zoo-showpieces/*.rbxm
 !tools/rbxm-writer/Cargo.lock
 
 # Viewer dependencies and copied scene data

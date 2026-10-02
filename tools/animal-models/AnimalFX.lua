@@ -29,6 +29,12 @@ local TEX = {
 	spark = "rbxasset://textures/particles/sparkles_main.dds",
 	smoke = "rbxasset://textures/particles/smoke_main.dds",
 	fire = "rbxasset://textures/particles/fire_main.dds",
+	flamespark = "rbxasset://textures/particles/fire_sparks_main.dds",
+	glow = "rbxasset://textures/particles/forcefield_glow_main.dds",
+	vortex = "rbxasset://textures/particles/forcefield_vortex_main.dds",
+	core = "rbxasset://textures/particles/explosion01_core_main.dds",
+	shock = "rbxasset://textures/particles/explosion01_shockwave_main.dds",
+	implode = "rbxasset://textures/particles/explosion01_implosion_main.dds",
 }
 
 local function hex(h: string): Color3
@@ -131,7 +137,7 @@ local P = {
 		stepRing = { color = "#b44bff", radius = 4, time = 0.4 },
 		aura = { at = "Body", tex = "spark", c = { "#d05cff", "#3a1466" }, size = { 0.5, 0 }, life = { 0.4, 0.8 },
 			speed = { 1, 3 }, rate = 20, spread = 180 },
-		idle = "roar", every = { 6, 10 },
+		idle = { "roar", "shadowstep" }, every = { 6, 10 },
 	},
 	MosskingElk = {
 		gait = "quad", pattern = WALK4, stride = 10, swing = 22, bounce = 0.25, headBob = 4, walkSpeed = 10,
@@ -141,7 +147,7 @@ local P = {
 		stepRing = { color = "#8fe05a", radius = 6, time = 0.5 },
 		aura = { at = "Body", tex = "spark", c = { "#5ef0ff", "#b8ff6a" }, size = { 0.5, 0 }, life = { 2, 3 },
 			speed = { 0.5, 1.5 }, rate = 12, accel = Vector3.new(0, 1.5, 0), spread = 180 },
-		idle = "stomp", every = { 7, 11 },
+		idle = { "stomp", "bloom" }, every = { 6, 10 },
 	},
 	NightshadeDrake = {
 		gait = "quad", pattern = WALK4, stride = 8, swing = 24, bounce = 0.3, headBob = 5, walkSpeed = 10,
@@ -151,19 +157,241 @@ local P = {
 		stepRing = { color = "#5ef0b0", radius = 6, time = 0.45 },
 		aura = { at = "Body", tex = "spark", c = { "#7dffc4", "#5ef0b0" }, size = { 0.6, 0 }, life = { 0.8, 1.4 },
 			speed = { 1, 3 }, rate = 20, accel = Vector3.new(0, 3, 0), spread = 180 },
-		idle = "breath", every = { 7, 11 },
+		idle = { "breath", "soulstorm" }, every = { 6, 10 },
 	},
 	ThunderUnicorn = {
-		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 26, bounce = 0.45, headBob = 5,
-		walkSpeed = 16, breathe = 0.1, maxCycles = 2.4,
-		step = { tex = "spark", c = { "#fff7c2", "#4fd6ff" }, size = { 0.9, 0 }, life = { 0.3, 0.6 }, speed = { 6, 12 },
-			spread = 75, count = 14, drag = 2 },
-		stepSpark = { tex = "smoke", c = { "#c9d3f5", "#7f8cc0" }, size = { 1.6, 3.2 }, life = { 0.5, 0.9 },
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11.5, swing = 27, bounce = 0.5, headBob = 5,
+		walkSpeed = 16, breathe = 0.1, maxCycles = 2.4, flapBoost = 1.6, wingRun = 38,
+		step = { tex = "spark", c = { "#e9fdff", "#4fe3ff" }, size = { 1.0, 0 }, life = { 0.3, 0.6 }, speed = { 6, 12 },
+			spread = 75, count = 16, drag = 2 },
+		stepSpark = { tex = "smoke", c = { "#a9b3e8", "#3d4580" }, size = { 1.8, 3.6 }, life = { 0.5, 0.9 },
 			speed = { 2, 5 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
-		stepRing = { color = "#4fd6ff", radius = 5, time = 0.35 },
-		aura = { at = "HornTip", tex = "spark", c = { "#ffffff", "#4fd6ff" }, size = { 0.6, 0 }, life = { 0.3, 0.6 },
+		stepRing = { color = "#4fe3ff", radius = 6, time = 0.35 },
+		stepBolt = { chance = 0.3, color = "#e9fdff", glow = "#4fe3ff" },
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#4fe3ff" }, size = { 0.7, 0 }, life = { 0.3, 0.6 },
+			speed = { 3, 8 }, rate = 40, spread = 180 },
+		idle = { "storm", "thunder" }, every = { 6, 10 },
+	},
+	Pony = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 7, swing = 30, bounce = 0.4, headBob = 7,
+		walkSpeed = 10, breathe = 0.08, maxCycles = 3,
+		step = { tex = "smoke", c = { "#e8d2a8", "#b89a6a" }, size = { 1.2, 2.8 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		idle = "graze", every = { 5, 9 },
+	},
+	BrownHorse = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 10, swing = 26, bounce = 0.4, headBob = 5,
+		walkSpeed = 12, breathe = 0.1, maxCycles = 2.6,
+		step = { tex = "smoke", c = { "#e8d2a8", "#b89a6a" }, size = { 1.2, 2.8 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		idle = "paw", every = { 6, 10 },
+	},
+	PaintHorse = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 10, swing = 26, bounce = 0.4, headBob = 5,
+		walkSpeed = 12, breathe = 0.1, maxCycles = 2.6,
+		step = { tex = "smoke", c = { "#e8d2a8", "#b89a6a" }, size = { 1.2, 2.8 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		stepSpark = { tex = "spark", c = { "#ffffff", "#c99bff" }, size = { 0.6, 0 }, life = { 0.4, 0.8 },
+			speed = { 3, 6 }, spread = 70, count = 6 },
+		stepRing = { color = "#c99bff", radius = 3.5, time = 0.35 },
+		idle = "toss", every = { 6, 10 },
+		tossColor = { "#ffffff", "#c99bff" },
+	},
+	BlackStallion = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 26, bounce = 0.45, headBob = 5,
+		walkSpeed = 13, breathe = 0.12, maxCycles = 2.5,
+		step = { tex = "smoke", c = { "#6a6070", "#2a2430" }, size = { 1.4, 3.2 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 80, count = 6, light = 0, transparency = 0.45 },
+		stepSpark = { tex = "spark", c = { "#fff2a8", "#ff9a1a" }, size = { 0.7, 0 }, life = { 0.3, 0.6 },
+			speed = { 5, 10 }, spread = 70, count = 8, drag = 2 },
+		stepRing = { color = "#ffcf3f", radius = 4.5, time = 0.35 },
+		idle = "rear", every = { 7, 11 },
+		rearRing = "#ffcf3f",
+		rearBurst = { tex = "spark", c = { "#fff2a8", "#ff9a1a" }, size = { 0.9, 0 }, life = { 0.5, 1 },
+			speed = { 6, 12 }, spread = 180, drag = 2 },
+	},
+	GoldenMustang = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 27, bounce = 0.45, headBob = 5,
+		walkSpeed = 14, breathe = 0.1, maxCycles = 2.5,
+		step = { tex = "spark", c = { "#fffbe6", "#ffc93c" }, size = { 0.9, 0 }, life = { 0.6, 1.2 },
+			speed = { 3, 7 }, spread = 75, count = 12, accel = Vector3.new(0, 2, 0) },
+		stepSpark = { tex = "smoke", c = { "#ffe8a8", "#d9a84c" }, size = { 1.2, 2.6 }, life = { 0.4, 0.8 },
+			speed = { 2, 4 }, spread = 80, count = 4, light = 0, transparency = 0.55 },
+		stepRing = { color = "#ffe27a", radius = 5, time = 0.4 },
+		aura = { at = "Body", tex = "spark", c = { "#fffbe6", "#ffc93c" }, size = { 0.5, 0 }, life = { 0.8, 1.4 },
+			speed = { 1, 3 }, rate = 10, spread = 180, accel = Vector3.new(0, 1.5, 0) },
+		idle = "rear", every = { 7, 11 },
+		rearRing = "#ffe27a",
+		rearBurst = { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 1.1, 0 }, life = { 0.8, 1.4 },
+			speed = { 8, 16 }, spread = 180, drag = 2, accel = Vector3.new(0, 2, 0) },
+	},
+	PebbleMarmot = {
+		gait = "hop", stride = 2.6, swing = 30, bounce = 0.9, headBob = 6, walkSpeed = 7, breathe = 0.08,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "graze", every = { 5, 9 },
+	},
+	PikaPuff = {
+		gait = "hop", stride = 2.2, swing = 30, bounce = 1.0, headBob = 6, walkSpeed = 6, breathe = 0.1,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "toss", every = { 5, 8 }, tossColor = { "#ffffff", "#ffe08a" },
+	},
+	CliffKid = {
+		gait = "quad", pattern = TROT, runPattern = GALLOP, stride = 4, swing = 32, bounce = 0.6, headBob = 6,
+		walkSpeed = 9, breathe = 0.08, maxCycles = 3.2,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "toss", every = { 5, 9 }, tossColor = { "#ffffff", "#ffd23f" },
+	},
+	SnowshoeHare = {
+		gait = "hop", stride = 4, swing = 34, bounce = 1.4, headBob = 6, walkSpeed = 9, breathe = 0.08,
+		step = { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1.0, 2.4 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3.5 }, spread = 80, count = 5, light = 0, transparency = 0.45 },
+		idle = "graze", every = { 5, 9 },
+	},
+	BighornRam = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 8, swing = 26, bounce = 0.4, headBob = 5,
+		walkSpeed = 11, breathe = 0.1, maxCycles = 2.8,
+		step = { tex = "smoke", c = { "#e8a070", "#b85532" }, size = { 1.2, 2.8 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 80, count = 5, light = 0, transparency = 0.45 },
+		idle = "headbutt", every = { 6, 10 }, impactColor = "#ffb35a",
+	},
+	AlpineIbex = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 8, swing = 26, bounce = 0.4, headBob = 5,
+		walkSpeed = 11, breathe = 0.1, maxCycles = 2.8,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "graze", every = { 6, 10 },
+	},
+	RedPanda = {
+		gait = "quad", pattern = TROT, stride = 3.4, swing = 30, bounce = 0.3, headBob = 5, walkSpeed = 8,
+		breathe = 0.08,
+		step = { tex = "smoke", c = { "#e8d8bc", "#b8a07a" }, size = { 0.9, 2.2 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3 }, spread = 80, count = 4, light = 0, transparency = 0.5 },
+		idle = "graze", every = { 5, 9 },
+	},
+	PeakEagle = {
+		gait = "bird", stride = 2.2, swing = 30, bounce = 0.35, headBob = 14, walkSpeed = 6, breathe = 0.06,
+		step = { tex = "spark", c = { "#fff3b0", "#ffc93c" }, size = { 0.5, 0 }, life = { 0.5, 1 },
+			speed = { 1, 3 }, spread = 60, count = 6 },
+		aura = { at = "Body", tex = "spark", c = { "#fff3b0", "#ffc93c" }, size = { 0.4, 0 }, life = { 1, 1.8 },
+			speed = { 0.4, 1.2 }, rate = 10, spread = 180 },
+		idle = "wingspread", every = { 6, 9 },
+	},
+	MountainYak = {
+		gait = "quad", pattern = WALK4, stride = 9, swing = 22, bounce = 0.3, headBob = 4, walkSpeed = 8,
+		breathe = 0.12, maxCycles = 2.2,
+		step = { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1.0, 2.4 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3.5 }, spread = 80, count = 5, light = 0, transparency = 0.45 },
+		stepRing = { color = "#ffd23f", radius = 4, time = 0.4 },
+		idle = "paw", every = { 6, 10 },
+	},
+	GeodeTortoise = {
+		gait = "quad", pattern = WALK4, stride = 3, swing = 22, bounce = 0.1, headBob = 6, walkSpeed = 4,
+		breathe = 0.05,
+		step = { tex = "spark", c = { "#e9d6ff", "#b46bff" }, size = { 0.6, 0 }, life = { 0.5, 1 },
+			speed = { 1, 3 }, spread = 70, count = 6 },
+		idle = "graze", every = { 6, 10 },
+	},
+	SnowLeopard = {
+		gait = "quad", pattern = TROT, runPattern = GALLOP, stride = 6.5, swing = 34, bounce = 0.3, headBob = 4,
+		walkSpeed = 13, breathe = 0.07, lean = 4, maxCycles = 2.8,
+		step = { tex = "spark", c = { "#e6fbff", "#7fe3ff" }, size = { 0.7, 0 }, life = { 0.4, 0.8 },
+			speed = { 2, 5 }, spread = 70, count = 8 },
+		stepSpark = { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1, 2.2 }, life = { 0.4, 0.7 },
+			speed = { 1, 3 }, spread = 80, count = 3, light = 0, transparency = 0.5 },
+		aura = { at = "Body", tex = "spark", c = { "#e6fbff", "#7fe3ff" }, size = { 0.45, 0 }, life = { 0.5, 1 },
+			speed = { 1, 3 }, rate = 16, spread = 180 },
+		idle = "howl", every = { 6, 10 }, howlColor = { "#e6fbff", "#7fe3ff" },
+	},
+	FrostfangAlpha = {
+		gait = "quad", pattern = TROT, runPattern = GALLOP, stride = 7, swing = 34, bounce = 0.3, headBob = 4,
+		walkSpeed = 14, breathe = 0.08, maxCycles = 2.8,
+		step = { tex = "spark", c = { "#e6fbff", "#7fe3ff" }, size = { 0.8, 0 }, life = { 0.4, 0.8 },
+			speed = { 3, 6 }, spread = 70, count = 10 },
+		stepSpark = { tex = "smoke", c = { "#ffffff", "#bfe6ff" }, size = { 1.2, 2.6 }, life = { 0.4, 0.8 },
+			speed = { 1, 3 }, spread = 80, count = 4, light = 0, transparency = 0.45 },
+		stepRing = { color = "#7fe3ff", radius = 4, time = 0.35 },
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#7fe3ff" }, size = { 0.5, 0 }, life = { 0.4, 0.8 },
+			speed = { 2, 5 }, rate = 20, spread = 180 },
+		idle = "howl", every = { 6, 10 }, howlColor = { "#ffffff", "#7fe3ff" },
+	},
+	LittleYeti = {
+		gait = "biped", pattern = { LegR = 0, LegL = 0.5 }, stride = 3.2, swing = 30, bounce = 0.5, headBob = 6,
+		walkSpeed = 8, breathe = 0.1, armSwing = 30,
+		step = { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1.0, 2.4 }, life = { 0.4, 0.8 },
+			speed = { 1.5, 3.5 }, spread = 80, count = 5, light = 0, transparency = 0.45 },
+		idle = "snowball", every = { 5, 9 },
+	},
+	SkyGriffin = {
+		gait = "quad", pattern = WALK4, runPattern = GALLOP, stride = 11, swing = 26, bounce = 0.45, headBob = 5,
+		walkSpeed = 15, breathe = 0.1, maxCycles = 2.5, flapBoost = 1.6, wingRun = 40,
+		step = { tex = "spark", c = { "#fff3b0", "#ffc93c" }, size = { 1.0, 0 }, life = { 0.5, 1 },
+			speed = { 4, 9 }, spread = 75, count = 14, drag = 2 },
+		stepSpark = { tex = "smoke", c = { "#ffffff", "#f2e6c8" }, size = { 1.6, 3.4 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 80, count = 5, light = 0, transparency = 0.5 },
+		stepRing = { color = "#ffc93c", radius = 6, time = 0.4 },
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 0.7, 0 }, life = { 0.6, 1.2 },
+			speed = { 3, 7 }, rate = 36, spread = 180 },
+		idle = { "skyroar", "toss" }, every = { 6, 10 }, tossColor = { "#fff3b0", "#ffc93c" },
+	},
+	GlacierMammoth = {
+		gait = "quad", pattern = WALK4, stride = 10, swing = 22, bounce = 0.35, headBob = 4, walkSpeed = 9,
+		breathe = 0.12, maxCycles = 2.2,
+		step = { tex = "spark", c = { "#e6fbff", "#7fe3ff" }, size = { 1.0, 0 }, life = { 0.5, 1 },
+			speed = { 3, 7 }, spread = 75, count = 14 },
+		stepSpark = { tex = "smoke", c = { "#ffffff", "#bfe6ff" }, size = { 2, 4.5 }, life = { 0.6, 1.1 },
+			speed = { 2, 5 }, spread = 80, count = 6, light = 0, transparency = 0.45 },
+		stepRing = { color = "#7fe3ff", radius = 7, time = 0.45 },
+		stepIce = 3,
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#7fe3ff" }, size = { 0.7, 0 }, life = { 0.6, 1.2 },
 			speed = { 2, 6 }, rate = 30, spread = 180 },
-		idle = "thunder", every = { 7, 11 },
+		idle = { "glacierstomp", "paw" }, every = { 6, 10 },
+	},
+	AuroraDragon = {
+		gait = "serpent", stride = 10, swing = 20, bounce = 0, headBob = 4, walkSpeed = 16, breathe = 0.06,
+		waveP = 4, waveY = 7, lean = 6,
+		aura = { at = "Seg4", tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 0.9, 0 }, life = { 0.8, 1.6 },
+			speed = { 2, 6 }, rate = 40, spread = 180 },
+		idle = { "aurora", "starbreath", "constellation" }, every = { 6, 10 },
+	},
+	Phoenix = {
+		-- Struts like a proud bird, and takes off and flies when it moves fast (flyRun).
+		gait = "bird", stride = 2.6, swing = 30, bounce = 0.35, headBob = 12, walkSpeed = 7, breathe = 0.08,
+		flapBoost = 1.4, flyRun = true, flyHeight = 7, flyPitch = 42, flyHead = 32, flyTail = 45,
+		step = { tex = "fire", c = { "#fffbe6", "#ff8a1f", "#8f1610" }, size = { 1.6, 0 }, life = { 0.4, 0.7 },
+			speed = { 1, 3 }, spread = 40, count = 10, accel = Vector3.new(0, 6, 0) },
+		stepSpark = { tex = "flamespark", c = { "#fffbe6", "#ffd23a", "#ff4a10" }, size = { 0.9, 0 },
+			life = { 0.5, 1 }, speed = { 4, 8 }, spread = 70, count = 10, drag = 2, spin = 300 },
+		stepRing = { color = "#ff6a14", radius = 4, time = 0.4 },
+		idle = { "rebirth", "flamecry", "wingstretch", "ascend" }, every = { 6, 10 },
+	},
+	Voidwhisker = {
+		-- A shadow cat: a light, quick trot that leaves void smoke and pink sparks behind every paw.
+		gait = "quad", pattern = TROT, runPattern = GALLOP, stride = 5, swing = 32, bounce = 0.35, headBob = 5,
+		walkSpeed = 12, breathe = 0.06, lean = 4, maxCycles = 3,
+		step = { tex = "smoke", c = { "#3a1f5c", "#0d0618" }, size = { 1.2, 2.8 }, life = { 0.6, 1 }, speed = { 1, 3 },
+			spread = 60, count = 8, light = 0, transparency = 0.35 },
+		stepSpark = { tex = "spark", c = { "#ffd6ff", "#b14dff" }, size = { 0.5, 0 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 70, count = 8 },
+		stepRing = { color = "#ff4fd8", radius = 3, time = 0.35 },
+		aura = { at = "Body", tex = "spark", c = { "#ffffff", "#ff8ce6" }, size = { 0.5, 0 }, life = { 0.6, 1 },
+			speed = { 1, 3 }, rate = 18, spread = 180 },
+		idle = { "voiddive", "starstretch", "gemstorm" }, every = { 6, 10 },
+	},
+	GorillaKing = {
+		-- A heavy knuckle walk that rolls from side to side; every step kicks up dust and gold.
+		gait = "quad", pattern = WALK4, stride = 7, swing = 26, bounce = 0.45, roll = 5, headBob = 4, walkSpeed = 9,
+		breathe = 0.12, lean = 3,
+		step = { tex = "smoke", c = { "#d8c8a0", "#8a7a5a" }, size = { 1.6, 3.6 }, life = { 0.5, 0.9 },
+			speed = { 2, 5 }, spread = 80, count = 7, light = 0, transparency = 0.45 },
+		stepSpark = { tex = "flamespark", c = { "#fffbe6", "#ffc93c", "#b8860b" }, size = { 0.8, 0 },
+			life = { 0.4, 0.8 }, speed = { 4, 9 }, spread = 70, count = 8, drag = 2, spin = 300 },
+		stepRing = { color = "#ffc93c", radius = 5, time = 0.4 },
+		aura = { at = "Body", tex = "spark", c = { "#fff1a8", "#ffc93c" }, size = { 0.6, 0 }, life = { 0.6, 1 },
+			speed = { 1, 3 }, rate = 16, spread = 180 },
+		idle = { "chestbeat", "kingslam", "crownflash" }, every = { 6, 10 },
 	},
 }
 
@@ -215,7 +443,13 @@ local function makeEmitter(spec, parent: Instance): ParticleEmitter
 	local e = Instance.new("ParticleEmitter")
 	e.Enabled = false
 	e.Texture = TEX[spec.tex or "spark"]
-	e.Color = ColorSequence.new(hex(spec.c[1]), hex(spec.c[2] or spec.c[1]))
+	if spec.c[3] then
+		-- three colours: start, middle, end (white-hot -> orange -> deep red for fire)
+		e.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex(spec.c[1])),
+			ColorSequenceKeypoint.new(0.4, hex(spec.c[2])), ColorSequenceKeypoint.new(1, hex(spec.c[3])) })
+	else
+		e.Color = ColorSequence.new(hex(spec.c[1]), hex(spec.c[2] or spec.c[1]))
+	end
 	e.Size = seq(spec.size[1], spec.size[2])
 	e.Transparency = seq(spec.transparency or 0.1, 1)
 	e.Lifetime = NumberRange.new(spec.life[1], spec.life[2])
@@ -226,8 +460,14 @@ local function makeEmitter(spec, parent: Instance): ParticleEmitter
 	e.LightEmission = spec.light or 1
 	e.LightInfluence = if (spec.light or 1) > 0 then 0 else 1
 	e.Rotation = NumberRange.new(0, 360)
-	e.RotSpeed = NumberRange.new(-90, 90)
+	e.RotSpeed = NumberRange.new(-(spec.spin or 90), spec.spin or 90)
 	e.EmissionDirection = spec.dir or Enum.NormalId.Top
+	if spec.squash then
+		e.Squash = seq(spec.squash, spec.squash)
+	end
+	if spec.orient then
+		e.Orientation = Enum.ParticleOrientation[spec.orient]
+	end
 	e.Rate = spec.rate or 10
 	e.Parent = parent
 	return e
@@ -313,6 +553,9 @@ local function stream(key: string, at: string, spec, seconds: number)
 end
 
 local fxOn = true
+local running = 0 -- 0..1, how much the animal is running (set every frame)
+local lightning: (Vector3, Vector3, string, number) -> () -- defined further down
+local iceSpikes: (Vector3, number, number, number) -> () -- defined further down
 
 local function footstep(pos: Vector3)
 	if not fxOn then
@@ -329,10 +572,19 @@ local function footstep(pos: Vector3)
 	if r then
 		groundRing(pos, r.color, r.radius, r.time)
 	end
+	if profile.stepIce and math.random() < 0.35 then
+		iceSpikes(Vector3.new(pos.X, groundY(), pos.Z), 2.5, profile.stepIce, 3)
+	end
+	local b = profile.stepBolt
+	if b and running > 0.5 and math.random() < b.chance then
+		local hit = Vector3.new(pos.X + math.random(-6, 6), groundY(), pos.Z + math.random(-6, 6))
+		lightning(hit + Vector3.new(math.random(-4, 4), 40, math.random(-4, 4)), hit, b.color, 0.35)
+		groundRing(hit, b.glow, 4, 0.3)
+	end
 end
 
 -- A lightning bolt from `from` down to `to`: a jagged line of Neon pieces that flashes and fades.
-local function lightning(from: Vector3, to: Vector3, color: string, width: number)
+function lightning(from: Vector3, to: Vector3, color: string, width: number)
 	local points = { from }
 	local steps = 8
 	for i = 1, steps - 1 do
@@ -365,6 +617,36 @@ local function lightning(from: Vector3, to: Vector3, color: string, width: numbe
 	end
 end
 
+-- Ice spikes that burst out of the ground in a ring and then melt away.
+function iceSpikes(center: Vector3, radius: number, count: number, height: number)
+	for i = 1, count do
+		local ang = (i / count) * 2 * math.pi + math.random() * 0.3
+		local h = height * (0.6 + math.random() * 0.6)
+		local p = Instance.new("Part")
+		p.Name = "FXIce"
+		p.Anchored = true
+		p.CanCollide = false
+		p.CanQuery = false
+		p.CanTouch = false
+		p.CastShadow = false
+		p.Material = Enum.Material.Glass
+		p.Transparency = 0.2
+		p.Color = hex(if i % 2 == 0 then "#bff3ff" else "#7fe3ff")
+		local base = Vector3.new(center.X + math.cos(ang) * radius, center.Y, center.Z + math.sin(ang) * radius)
+		local tilt = CFrame.Angles(math.rad(math.random(-25, 25)), ang, math.rad(math.random(-25, 25)))
+		p.Size = Vector3.new(1.2, 0.2, 1.2)
+		p.CFrame = CFrame.new(base) * tilt * CFrame.Angles(0, math.rad(45), 0)
+		p.Parent = workspace
+		local grown = CFrame.new(base) * tilt * CFrame.new(0, h / 2, 0) * CFrame.Angles(0, math.rad(45), 0)
+		TweenService:Create(p, TweenInfo.new(0.18, Enum.EasingStyle.Back, Enum.EasingDirection.Out),
+			{ Size = Vector3.new(1.4, h, 1.4), CFrame = grown }):Play()
+		task.delay(1.1, function()
+			TweenService:Create(p, TweenInfo.new(0.6), { Transparency = 1, Size = Vector3.new(0.3, h, 0.3) }):Play()
+		end)
+		Debris:AddItem(p, 1.8)
+	end
+end
+
 -- A short, bright flash of light at a part.
 local function flash(at: string, color: string, brightness: number, range: number, time: number)
 	local light = Instance.new("PointLight")
@@ -380,6 +662,39 @@ end
 local function jointPos(name: string): Vector3
 	local j = joints[name]
 	return if j and j.Part1 then j.Part1.Position else root.Position
+end
+
+-- One-off flat effect lying on the ground (or in the air): a shockwave, a flaring sigil.
+local function flatBurst(pos: Vector3, spec, count: number)
+	local holder = Instance.new("Part")
+	holder.Name = "FXFlat"
+	holder.Anchored = true
+	holder.CanCollide = false
+	holder.CanQuery = false
+	holder.CanTouch = false
+	holder.Transparency = 1
+	holder.Size = Vector3.new(0.2, 0.2, 0.2)
+	holder.CFrame = CFrame.new(pos)
+	holder.Parent = workspace
+	local e = makeEmitter(spec, holder)
+	e.Orientation = Enum.ParticleOrientation.VelocityPerpendicular
+	e.Speed = NumberRange.new(0.01)
+	e.SpreadAngle = Vector2.zero
+	e.Acceleration = Vector3.zero
+	e:Emit(count)
+	Debris:AddItem(holder, spec.life[2] + 0.3)
+end
+
+local FIRE3 = { "#fffbe6", "#ff8a1f", "#8f1610" }
+
+-- A beat of burning wings in flight: sparks fly off both wing tips and a ring of heat pushes down.
+local function wingbeat()
+	for _, side in { "R", "L" } do
+		burst("Beat" .. side, "Wing" .. side .. "Flame72", { tex = "flamespark", c = FIRE3, size = { 1.1, 0 },
+			life = { 0.4, 0.8 }, speed = { 6, 12 }, spread = 40, drag = 3, dir = Enum.NormalId.Bottom, spin = 300 }, 14)
+	end
+	flatBurst(part("Body").Position - Vector3.new(0, 3, 0), { tex = "shock", c = { "#ffd23a", "#ff4a10" },
+		size = { 3, 20 }, life = { 0.5, 0.5 }, transparency = 0.35, spin = 0 }, 1)
 end
 
 -- ------------------------------------------------------ idle actions --
@@ -629,22 +944,308 @@ do
 	end
 end
 
-ACTIONS.thunder = {
-	time = 2.6,
+-- Rear up around the back hooves: lift the front, keep the hind legs on the ground, kick the front legs.
+local function rearPose(p)
+	local k = ease(p, 0.05, 0.85)
+	local up = math.min(k * 1.6, 1)
+	local pivot = hindPivot
+	local tilt = R(30) * up
+	local kick = math.sin(p * 30) * R(18) * up
+	return CFrame.new(pivot) * CFrame.Angles(tilt, 0, 0) * CFrame.new(-pivot), {
+		LegFR = CFrame.Angles(-R(70) * up + kick, 0, 0),
+		LegFL = CFrame.Angles(-R(55) * up - kick, 0, 0),
+		Head = CFrame.Angles(-R(18) * up, 0, 0),
+		Tail = CFrame.Angles(R(25) * up, 0, 0),
+	}
+end
+
+local function frontHoovesLand(count: number)
+	for _, leg in { "LegFR", "LegFL" } do
+		local hoof = jointPos(leg)
+		stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
+		if stepFx then
+			stepFx:Emit(count)
+		end
+		if stepSpark then
+			stepSpark:Emit(math.floor(count / 2))
+		end
+	end
+end
+
+-- A horse rears up and whinnies, and lands with a shockwave.
+ACTIONS.rear = {
+	time = 2.4,
+	pose = rearPose,
+	moments = { [0.3] = function()
+		if profile.rearBurst then
+			burst("Rear", "Head", profile.rearBurst, 45)
+		end
+	end, [0.8] = function()
+		frontHoovesLand(30)
+		groundRing(root.Position, profile.rearRing or "#e8d2a8", 16, 0.7)
+	end },
+}
+
+-- Lowers its head to nibble the grass, swishing its tail.
+ACTIONS.graze = {
+	time = 3.2,
 	pose = function(p)
-		local k = ease(p, 0.05, 0.85)
-		local up = math.min(k * 1.6, 1)
-		-- Rear up around the back hooves: lift the front, keep the hind legs on the ground.
-		local pivot = hindPivot
-		local tilt = R(30) * up
-		local kick = math.sin(p * 30) * R(18) * up
-		return CFrame.new(pivot) * CFrame.Angles(tilt, 0, 0) * CFrame.new(-pivot), {
-			LegFR = CFrame.Angles(-R(70) * up + kick, 0, 0),
-			LegFL = CFrame.Angles(-R(55) * up - kick, 0, 0),
-			Head = CFrame.Angles(-R(18) * up, 0, 0),
-			Tail = CFrame.Angles(R(25) * up, 0, 0),
+		local k = ease(p, 0.02, 0.98)
+		local down = math.min(k * 1.8, 1)
+		local chew = math.sin(p * 40) * R(4) * down
+		return CFrame.Angles(-R(5) * down, 0, 0), {
+			Head = CFrame.Angles(-R(65) * down + chew, 0, 0),
+			Tail = CFrame.Angles(0, math.sin(p * 14) * R(25), 0),
 		}
 	end,
+	moments = { [0.45] = function()
+		burst("Graze", "Head", { tex = "spark", c = { "#8fe05a", "#3f9a3a" }, size = { 0.4, 0 }, life = { 0.5, 0.9 },
+			speed = { 2, 4 }, spread = 120, accel = Vector3.new(0, -6, 0), light = 0 }, 10)
+	end },
+}
+
+-- Paws at the ground with a front hoof, twice, kicking up dust.
+ACTIONS.paw = {
+	time = 2.2,
+	pose = function(p)
+		local k = ease(p, 0.05, 0.95)
+		local scrape = 0.6 + 0.4 * math.sin(p * 4 * math.pi * 2)
+		return CFrame.identity, {
+			LegFR = CFrame.Angles(-R(45) * k * scrape, 0, 0),
+			Head = CFrame.Angles(-R(12) * k, 0, 0),
+		}
+	end,
+	moments = { [0.35] = function()
+		local hoof = jointPos("LegFR")
+		stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
+		if stepFx then
+			stepFx:Emit(14)
+		end
+	end, [0.7] = function()
+		local hoof = jointPos("LegFR")
+		stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
+		if stepFx then
+			stepFx:Emit(14)
+		end
+	end },
+}
+
+-- Tosses its head and mane from side to side.
+ACTIONS.toss = {
+	time = 1.8,
+	pose = function(p)
+		local k = ease(p, 0.05, 0.95)
+		return CFrame.identity, {
+			Head = CFrame.Angles(R(10) * k, math.sin(p * 3 * 2 * math.pi) * R(25) * k, math.sin(p * 3 * 2 * math.pi) * R(10) * k),
+			Tail = CFrame.Angles(0, math.sin(p * 18) * R(20) * k, 0),
+		}
+	end,
+	moments = { [0.5] = function()
+		local c = profile.tossColor or { "#ffffff", "#ffffff" }
+		burst("Toss", "Head", { tex = "spark", c = c, size = { 0.6, 0 }, life = { 0.5, 1 }, speed = { 4, 8 },
+			spread = 180, drag = 2 }, 24)
+	end },
+}
+
+-- Rears up with its wings spread wide and calls a ring of lightning down around it.
+ACTIONS.storm = {
+	time = 3.2,
+	flapBoost = 2,
+	pose = function(p)
+		local rootPose, legs = rearPose(p)
+		local k = ease(p, 0.05, 0.9)
+		local open = math.min(k * 1.5, 1)
+		legs.WingR = CFrame.Angles(0, 0, R(55) * open)
+		legs.WingL = CFrame.Angles(0, 0, -R(55) * open)
+		return rootPose, legs
+	end,
+	moments = {
+		[0.25] = function()
+			local tip = part("HornTip")
+			lightning(tip.Position + Vector3.new(0, 50, 0), tip.Position, "#e9fdff", 0.7)
+			flash("HornTip", "#bff7ff", 14, 50, 0.7)
+			burst("Storm", "HornTip", { tex = "spark", c = { "#ffffff", "#4fe3ff" }, size = { 1.4, 0 },
+				life = { 0.6, 1.2 }, speed = { 12, 24 }, spread = 180, drag = 3 }, 70)
+		end,
+		[0.4] = function()
+			for i = 1, 6 do
+				local ang = i / 6 * 2 * math.pi + math.random() * 0.4
+				local hit = Vector3.new(root.Position.X + math.cos(ang) * 14, groundY(), root.Position.Z + math.sin(ang) * 14)
+				task.delay(i * 0.07, function()
+					lightning(hit + Vector3.new(math.random(-5, 5), 45, math.random(-5, 5)), hit,
+						if i % 2 == 0 then "#e9fdff" else "#ffe14d", 0.45)
+					groundRing(hit, "#4fe3ff", 6, 0.4)
+				end)
+			end
+		end,
+		[0.82] = function()
+			frontHoovesLand(45)
+			groundRing(root.Position, "#4fe3ff", 28, 0.9)
+			groundRing(root.Position, "#e9fdff", 18, 0.7)
+			groundRing(root.Position, "#ffe14d", 10, 0.5)
+			flash("Body", "#4fe3ff", 8, 40, 0.6)
+		end,
+	},
+}
+
+-- Lowers its head and charges a step forward: a head-butt with a shockwave.
+ACTIONS.headbutt = {
+	time = 1.6,
+	pose = function(p)
+		local lower = ease(p, 0.05, 0.9)
+		local lunge = ease(p, 0.35, 0.75)
+		return CFrame.new(0, 0, -1.4 * lunge), { Head = CFrame.Angles(-R(28) * lower, 0, 0) }
+	end,
+	moments = { [0.55] = function()
+		local head = part("Head")
+		ring(head.CFrame * CFrame.new(0, 0, -3) * CFrame.Angles(R(90), 0, 0), profile.impactColor or "#ffffff", 7, 0.4)
+		burst("Butt", "Head", { tex = "smoke", c = { "#e8a070", "#b85532" }, size = { 1.5, 3 }, life = { 0.5, 0.9 },
+			speed = { 4, 8 }, spread = 60, dir = Enum.NormalId.Front, light = 0, transparency = 0.4 }, 16)
+		groundRing(root.Position, profile.impactColor or "#ffffff", 9, 0.5)
+	end },
+}
+
+-- Throws its head up and howls, with a cold breath and a ring of frost.
+ACTIONS.howl = {
+	time = 2.2,
+	pose = function(p)
+		local up = ease(p, 0.05, 0.95)
+		return CFrame.new(0, -0.2 * up, 0), { Head = CFrame.Angles(R(40) * up, 0, 0),
+			Tail = CFrame.Angles(R(15) * up, 0, 0) }
+	end,
+	moments = { [0.35] = function()
+		local c = profile.howlColor or { "#ffffff", "#ffffff" }
+		local head = part("Head")
+		burst("Howl", "Head", { tex = "smoke", c = c, size = { 1, 4 }, life = { 0.8, 1.4 }, speed = { 4, 8 },
+			spread = 25, dir = Enum.NormalId.Top, light = 0.5, transparency = 0.4 }, 18)
+		burst("HowlSpark", "Head", { tex = "spark", c = c, size = { 0.8, 0 }, life = { 0.8, 1.4 }, speed = { 4, 10 },
+			spread = 180 }, 30)
+		ring(head.CFrame * CFrame.new(0, 2, 0), c[2], 8, 0.6)
+		groundRing(root.Position, c[2], 14, 0.8)
+	end },
+}
+
+-- Winds up and throws a snowball, which bursts in a puff of snow.
+ACTIONS.snowball = {
+	time = 1.8,
+	pose = function(p)
+		local wind = ease(p, 0.05, 0.5)
+		local throw = ease(p, 0.4, 0.9)
+		return CFrame.Angles(R(6) * wind - R(10) * throw, 0, 0), {
+			ArmR = CFrame.Angles(-R(70) * wind + R(130) * throw, 0, 0),
+			Head = CFrame.Angles(R(10) * wind, 0, 0),
+		}
+	end,
+	moments = { [0.62] = function()
+		local ball = part("Snowball")
+		local target = root.Position + root.CFrame.LookVector * 14
+		burst("Snow", "Snowball", { tex = "smoke", c = { "#ffffff", "#d6e6f5" }, size = { 1.5, 3.5 },
+			life = { 0.6, 1.0 }, speed = { 3, 6 }, spread = 40, dir = Enum.NormalId.Front, light = 0,
+			transparency = 0.3 }, 20)
+		groundRing(target, "#bfe6ff", 6, 0.5)
+		stepPoint.WorldPosition = Vector3.new(target.X, groundY() + 0.3, target.Z)
+		if stepFx then
+			stepFx:Emit(30)
+		end
+		ring(CFrame.new(ball.Position), "#ffffff", 4, 0.3)
+	end },
+}
+
+-- Rears up with its wings spread and lets out a cry: feathers, wind rings and a golden flash.
+ACTIONS.skyroar = {
+	time = 3.0,
+	flapBoost = 2.5,
+	pose = function(p)
+		local rootPose, legs = rearPose(p)
+		local open = math.min(ease(p, 0.05, 0.9) * 1.5, 1)
+		legs.WingR = CFrame.Angles(0, 0, R(60) * open)
+		legs.WingL = CFrame.Angles(0, 0, -R(60) * open)
+		legs.Head = (legs.Head or CFrame.identity) * CFrame.Angles(R(25) * open, 0, 0)
+		return rootPose, legs
+	end,
+	moments = {
+		[0.3] = function()
+			flash("Head", "#ffe08a", 10, 40, 0.7)
+			burst("Feathers", "Body", { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 1.2, 0 },
+				life = { 1.2, 2.2 }, speed = { 10, 22 }, spread = 180, drag = 2, accel = Vector3.new(0, -3, 0) }, 80)
+			local body = part("Body")
+			for i = 0, 2 do
+				task.delay(i * 0.15, function()
+					ring(CFrame.new(body.Position + Vector3.new(0, 3 + i * 3, 0)), if i == 1 then "#ffffff" else "#ffc93c",
+						14 + i * 6, 0.6)
+				end)
+			end
+		end,
+		[0.8] = function()
+			frontHoovesLand(40)
+			groundRing(root.Position, "#ffc93c", 26, 0.9)
+			groundRing(root.Position, "#ffffff", 16, 0.6)
+		end,
+	},
+}
+
+-- Rears up and stomps: the ground freezes and ice spikes burst up in rings around it.
+ACTIONS.glacierstomp = {
+	time = 2.6,
+	pose = function(p)
+		local rootPose, legs = rearPose(p)
+		legs.Head = (legs.Head or CFrame.identity) * CFrame.Angles(R(20) * ease(p, 0.05, 0.75), 0, 0)
+		return rootPose, legs
+	end,
+	moments = {
+		[0.3] = function()
+			burst("Trumpet", "Head", { tex = "spark", c = { "#ffffff", "#7fe3ff" }, size = { 1, 0 }, life = { 0.8, 1.4 },
+				speed = { 8, 16 }, spread = 40, dir = Enum.NormalId.Top }, 40)
+			flash("Head", "#bff3ff", 8, 30, 0.5)
+		end,
+		[0.82] = function()
+			frontHoovesLand(45)
+			local c = Vector3.new(root.Position.X, groundY(), root.Position.Z)
+			iceSpikes(c, 10, 12, 7)
+			task.delay(0.15, function()
+				iceSpikes(c, 16, 16, 5)
+			end)
+			groundRing(root.Position, "#7fe3ff", 30, 0.9)
+			groundRing(root.Position, "#ffffff", 18, 0.6)
+			flash("Body", "#7fe3ff", 8, 40, 0.6)
+		end,
+	},
+}
+
+-- Rises, coils, and bursts into the northern lights: rings of every aurora colour, stars and a flash.
+ACTIONS.aurora = {
+	time = 3.4,
+	pose = function(p)
+		local k = ease(p, 0.05, 0.95)
+		return CFrame.new(0, 3 * k, 0) * CFrame.Angles(R(18) * k, 0, 0), { Head = CFrame.Angles(R(35) * k, 0, 0) }
+	end,
+	moments = {
+		[0.35] = function()
+			local head = part("Head")
+			flash("Head", "#e9fff6", 14, 60, 0.9)
+			burst("Stars", "Head", { tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 1.4, 0 },
+				life = { 1.2, 2.4 }, speed = { 10, 24 }, spread = 180, drag = 2 }, 90)
+			local colors = { "#5effb0", "#3fd6ff", "#8a7bff", "#ff6bd6" }
+			for i, c in colors do
+				task.delay(i * 0.12, function()
+					ring(CFrame.new(head.Position) * CFrame.Angles(R(90 * (i % 2)), R(45 * i), 0), c, 12 + i * 5, 0.8)
+				end)
+			end
+		end,
+		[0.6] = function()
+			local colors = { "#5effb0", "#3fd6ff", "#b45cff" }
+			for i, c in colors do
+				task.delay(i * 0.1, function()
+					groundRing(root.Position, c, 16 + i * 8, 0.9)
+				end)
+			end
+		end,
+	},
+}
+
+ACTIONS.thunder = {
+	time = 2.6,
+	pose = rearPose,
 	moments = { [0.32] = function()
 		local tip = part("HornTip")
 		lightning(tip.Position + Vector3.new(math.random(-6, 6), 45, math.random(-6, 6)), tip.Position, "#fff7c2", 0.6)
@@ -654,20 +1255,758 @@ ACTIONS.thunder = {
 			life = { 0.5, 1 }, speed = { 10, 20 }, spread = 180, drag = 3 }, 60)
 		ring(tip.CFrame * CFrame.Angles(R(90), 0, 0), "#fff7c2", 8, 0.5)
 	end, [0.8] = function()
-		for _, leg in { "LegFR", "LegFL" } do
-			local hoof = jointPos(leg)
-			stepPoint.WorldPosition = Vector3.new(hoof.X, groundY() + 0.3, hoof.Z)
-			if stepFx then
-				stepFx:Emit(40)
-			end
-		end
+		frontHoovesLand(40)
 		groundRing(root.Position, "#4fd6ff", 22, 0.8)
 		groundRing(root.Position, "#fff7c2", 14, 0.6)
 		flash("Body", "#4fd6ff", 6, 30, 0.5)
 	end },
 }
 
+-- Shadow step (Umbra Panther): it crouches and the darkness is sucked into it, then it lunges forward in a burst
+-- of void with a shockwave and slides back to where it stood.
+ACTIONS.shadowstep = {
+	time = 2.6,
+	pose = function(p)
+		local crouch = ease(p, 0, 0.45)
+		local lunge = ease(p, 0.35, 0.9)
+		return CFrame.new(0, -0.6 * crouch, -4.5 * lunge) * CFrame.Angles(-R(8) * lunge, 0, 0), {
+			LegFR = CFrame.Angles(-R(35) * lunge, 0, 0),
+			LegFL = CFrame.Angles(-R(35) * lunge, 0, 0),
+			LegBR = CFrame.Angles(R(30) * lunge, 0, 0),
+			LegBL = CFrame.Angles(R(30) * lunge, 0, 0),
+			Head = CFrame.Angles(-R(15) * crouch + R(10) * lunge, 0, 0),
+			Tail = CFrame.Angles(R(25) * lunge, 0, 0),
+		}
+	end,
+	moments = {
+		[0.12] = function()
+			burst("VoidPull", "Body", { tex = "implode", c = { "#e3b8ff", "#3a1466" }, size = { 12, 1 },
+				life = { 0.7, 0.7 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+		end,
+		[0.45] = function()
+			flash("Body", "#b861ff", 8, 36, 0.6)
+			burst("VoidSmoke", "Body", { tex = "smoke", c = { "#2a1640", "#000000" }, size = { 3, 6 }, life = { 0.8, 1.4 },
+				speed = { 6, 12 }, spread = 180, drag = 3, light = 0, transparency = 0.25 }, 30)
+			burst("VoidSparks", "Body", { tex = "flamespark", c = { "#ffffff", "#b861ff", "#3a1466" }, size = { 1.1, 0 },
+				life = { 0.5, 1 }, speed = { 10, 20 }, spread = 180, drag = 3, spin = 400 }, 60)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#e3b8ff", "#3a1466" }, size = { 4, 36 }, life = { 0.7, 0.7 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#e3b8ff", "#b861ff", "#1d1a26" }, size = { 22, 16 },
+				life = { 1.2, 1.2 }, transparency = 0.3, spin = -160 }, 1)
+			groundRing(root.Position, "#b861ff", 14, 0.6)
+		end,
+	},
+}
+
+-- Bloom (Mossking Elk): it raises its head, its antlers flare, and a wave of blooming light rolls out over the
+-- ground with leaves and fireflies swirling up around it.
+ACTIONS.bloom = {
+	time = 3.0,
+	pose = function(p)
+		local up = ease(p, 0, 1)
+		return CFrame.new(0, 0.4 * up, 0) * CFrame.Angles(R(6) * up, 0, 0), {
+			Head = CFrame.Angles(R(28) * up, 0, 0),
+			LegFR = CFrame.Angles(-R(20) * ease(p, 0.1, 0.5), 0, 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			flash("Head", "#bdfbff", 8, 40, 1.0)
+			stream("BloomLeaves", "Body", { tex = "spark", c = { "#b8ff6a", "#58a84a" }, size = { 0.7, 0.4 },
+				life = { 1.5, 2.5 }, speed = { 4, 9 }, spread = 60, rate = 50, accel = Vector3.new(0, 2, 0), drag = 1,
+				squash = 1.4, spin = 200 }, 1.2)
+			burst("BloomFlies", "Body", { tex = "spark", c = { "#fff27a", "#b8ff6a" }, size = { 0.5, 0 },
+				life = { 2, 3 }, speed = { 3, 7 }, spread = 180, drag = 1.5 }, 50)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#bdfbff", "#3fa86a" }, size = { 6, 50 }, life = { 1.0, 1.0 },
+				transparency = 0.25, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#ffffff", "#5ef0ff", "#58a84a" }, size = { 30, 24 },
+				life = { 1.6, 1.6 }, transparency = 0.3, spin = 120 }, 1)
+			for i, c in { "#5ef0ff", "#b8ff6a", "#ff9ec4" } do
+				task.delay(i * 0.15, function()
+					groundRing(root.Position, c, 14 + i * 8, 0.9)
+				end)
+			end
+		end,
+	},
+}
+
+-- Soul storm (Nightshade Drake): it rears up with its wings spread, souls are drawn into it, then it unleashes a
+-- spinning storm of ghost fire with a shockwave and a necro sigil flaring on the ground.
+ACTIONS.soulstorm = {
+	time = 3.4,
+	flapBoost = 2,
+	pose = function(p)
+		local rootPose, legs = rearPose(p)
+		local open = math.min(ease(p, 0.05, 0.95) * 1.4, 1)
+		legs.WingR = CFrame.Angles(0, 0, R(45) * open)
+		legs.WingL = CFrame.Angles(0, 0, -R(45) * open)
+		legs.Head = (legs.Head or CFrame.identity) * CFrame.Angles(R(30) * open, 0, 0)
+		return rootPose, legs
+	end,
+	moments = {
+		[0.15] = function()
+			burst("SoulPull", "Heart", { tex = "implode", c = { "#e6fff6", "#1f8a6a" }, size = { 14, 1 },
+				life = { 0.8, 0.8 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+			stream("SoulsIn", "Body", { tex = "spark", c = { "#ffffff", "#7dffc4" }, size = { 0.8, 0 }, life = { 0.6, 1 },
+				speed = { 1, 3 }, spread = 180, rate = 40 }, 1.0)
+		end,
+		[0.45] = function()
+			flash("Heart", "#7dffc4", 12, 55, 1.0)
+			stream("SoulStorm", "Body", { tex = "fire", c = { "#e6fff6", "#7dffc4", "#0c3a2a" }, size = { 4, 0 },
+				life = { 0.6, 1.1 }, speed = { 14, 26 }, spread = 70, rate = 120, accel = Vector3.new(0, 8, 0),
+				spin = 300 }, 1.2)
+			burst("SoulSparks", "Body", { tex = "flamespark", c = { "#ffffff", "#7dffc4", "#0c3a2a" }, size = { 1.3, 0 },
+				life = { 1, 2 }, speed = { 12, 26 }, spread = 180, drag = 2, spin = 400 }, 100)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#7dffc4", "#0c3a2a" }, size = { 8, 64 }, life = { 0.9, 0.9 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#e6fff6", "#5ef0b0", "#0c3a2a" }, size = { 34, 26 },
+				life = { 1.8, 1.8 }, transparency = 0.25, spin = -150 }, 1)
+			local body = part("Body")
+			for i = 0, 2 do
+				task.delay(i * 0.14, function()
+					ring(CFrame.new(body.Position + Vector3.new(0, 3 + i * 4, 0)), if i == 1 then "#e6fff6" else "#5ef0b0",
+						14 + i * 6, 0.7)
+				end)
+			end
+			groundRing(root.Position, "#5ef0b0", 28, 0.9)
+		end,
+		[0.8] = function()
+			frontHoovesLand(40)
+		end,
+	},
+}
+
+-- The Aurora Dragon's star breath: it rears its head back, light gathers in its mouth, then it breathes a long
+-- stream of aurora fire full of stars, with rings of light rolling along the breath.
+local AURORA3 = { "#ffffff", "#3fd6ff", "#b45cff" }
+ACTIONS.starbreath = {
+	time = 3.2,
+	pose = function(p)
+		local back = ease(p, 0, 0.4)
+		local blow = ease(p, 0.3, 0.95)
+		local joints = { Head = CFrame.Angles(R(30) * back - R(12) * blow, math.sin(p * 9) * R(10) * blow, 0) }
+		for i = 1, 6 do
+			joints["SegJoint" .. i] = CFrame.Angles(R(6) * back - R(3) * blow, 0, 0)
+		end
+		return CFrame.new(0, 1.2 * back, 0), joints
+	end,
+	moments = {
+		[0.12] = function()
+			burst("BreathGather", "Snout", { tex = "implode", c = { "#ffffff", "#3fd6ff" }, size = { 8, 1 },
+				life = { 0.6, 0.6 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+			flash("Snout", "#bff6ff", 4, 18, 0.6)
+		end,
+		[0.36] = function()
+			flash("Head", "#e9fff6", 10, 50, 1.2)
+			stream("StarBreath", "Snout", { tex = "fire", c = AURORA3, size = { 3.5, 0 }, life = { 0.5, 0.9 },
+				speed = { 30, 46 }, spread = 10, rate = 120, dir = Enum.NormalId.Front }, 1.4)
+			stream("BreathStars", "Snout", { tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 1.2, 0 },
+				life = { 0.8, 1.4 }, speed = { 24, 40 }, spread = 16, rate = 60, dir = Enum.NormalId.Front }, 1.4)
+			local snout = part("Snout")
+			for i = 0, 3 do
+				task.delay(i * 0.18, function()
+					ring(snout.CFrame * CFrame.new(0, 0, -6 - i * 7) * CFrame.Angles(R(90), 0, 0),
+						if i % 2 == 0 then "#3fd6ff" else "#b45cff", 4 + i * 1.5, 0.5)
+				end)
+			end
+		end,
+	},
+}
+
+-- Constellation: it coils up tight around itself and rises, the stars gather, then it uncoils in a burst of
+-- starlight: a flash, stars from all along its body, a spinning sigil and a shockwave across the ground.
+ACTIONS.constellation = {
+	time = 4.2,
+	pose = function(p)
+		local coil = ease(p, 0, 0.75)
+		local rise = ease(p, 0.05, 0.95)
+		local joints = { Head = CFrame.Angles(R(25) * coil, 0, 0) }
+		for i = 1, 16 do
+			joints["SegJoint" .. i] = CFrame.Angles(math.sin(p * 6 + i) * R(4) * coil, R(14) * coil, 0)
+		end
+		return CFrame.new(0, 4 * rise, 0) * CFrame.Angles(0, R(140) * coil, 0), joints
+	end,
+	moments = {
+		[0.15] = function()
+			stream("StarGather", "Seg8", { tex = "spark", c = { "#ffffff", "#8a7bff" }, size = { 0.9, 0 },
+				life = { 0.8, 1.2 }, speed = { 1, 3 }, spread = 180, rate = 40 }, 1.6)
+		end,
+		[0.55] = function()
+			flash("Seg4", "#ffffff", 14, 70, 1.2)
+			for _, seg in { "Seg2", "Seg6", "Seg10", "Seg14" } do
+				burst("Burst" .. seg, seg, { tex = "spark", c = { "#ffffff", "#5effb0" }, size = { 1.4, 0 },
+					life = { 1.4, 2.6 }, speed = { 10, 24 }, spread = 180, drag = 2 }, 40)
+			end
+			burst("ConstellationCore", "Seg8", { tex = "core", c = { "#ffffff", "#3fd6ff", "#b45cff" },
+				size = { 6, 30 }, life = { 0.8, 1.0 }, speed = { 0, 0 }, transparency = 0.15, spin = 60 }, 3)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#5effb0", "#b45cff" }, size = { 8, 80 }, life = { 1.0, 1.0 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#ffffff", "#3fd6ff", "#ff6bd6" }, size = { 44, 34 },
+				life = { 2.0, 2.0 }, transparency = 0.25, spin = 140 }, 1)
+			local colors = { "#5effb0", "#3fd6ff", "#8a7bff", "#ff6bd6" }
+			local body = part("Seg8")
+			for i, c in colors do
+				task.delay(i * 0.1, function()
+					ring(CFrame.new(body.Position) * CFrame.Angles(R(90 * (i % 2)), R(45 * i), 0), c, 14 + i * 6, 0.8)
+					groundRing(root.Position, c, 18 + i * 8, 0.9)
+				end)
+			end
+		end,
+	},
+}
+
+-- The Phoenix's idle actions. They use the wing tip, crest and tail tip joints when the model has them.
+
+-- Rebirth: it wraps itself in its burning wings, the fire is sucked into it and it glows white-hot, then it bursts
+-- open in a storm of fire: a fireball, a pillar of flame, a shockwave across the ground and a flaring sigil, ash,
+-- and glowing feathers drifting down.
+ACTIONS.rebirth = {
+	time = 4.0,
+	pose = function(p)
+		local wrap = if p < 0.35 then math.sin(p / 0.35 * math.pi / 2) elseif p < 0.45 then 1
+			else math.max(0, 1 - (p - 0.45) / 0.07)
+		local settle = if p < 0.75 then 1 else math.cos((p - 0.75) / 0.25 * math.pi / 2)
+		local open = if p < 0.45 then 0 else math.min(1, (p - 0.45) / 0.07) * settle
+		local tremble = if p > 0.2 and p < 0.45 then math.sin(p * 140) * R(2.5) * wrap else 0
+		return CFrame.new(0, -1.0 * wrap + 1.6 * open, 0), {
+			WingR = CFrame.Angles(0, R(100) * wrap, -R(25) * wrap + R(70) * open + tremble),
+			WingL = CFrame.Angles(0, -R(100) * wrap, R(25) * wrap - R(70) * open - tremble),
+			WingTipR = CFrame.Angles(0, R(60) * wrap, -R(10) * wrap + R(25) * open),
+			WingTipL = CFrame.Angles(0, -R(60) * wrap, R(10) * wrap - R(25) * open),
+			Head = CFrame.Angles(-R(30) * wrap + R(35) * open, 0, 0),
+			Tail = CFrame.Angles(-R(10) * wrap + R(20) * open, 0, 0),
+			Crest = CFrame.Angles(-R(25) * wrap + R(20) * open, 0, 0),
+		}
+	end,
+	moments = {
+		[0.08] = function()
+			stream("RebirthIn", "Body", { tex = "implode", c = { "#fff2a8", "#ff6a14" }, size = { 12, 1 },
+				life = { 0.7, 0.7 }, speed = { 0, 0 }, rate = 3, transparency = 0.2, spin = 60 }, 1.4)
+			stream("RebirthGlow", "Body", { tex = "fire", c = FIRE3, size = { 2.4, 0 }, life = { 0.4, 0.8 },
+				speed = { 1, 3 }, spread = 180, rate = 60, accel = Vector3.new(0, 6, 0) }, 1.3)
+			flash("Body", "#ff6a14", 3, 20, 1.4)
+		end,
+		[0.3] = function()
+			flash("Body", "#fffbe6", 5, 24, 0.5)
+			burst("RebirthCharge", "SunGem", { tex = "glow", c = { "#ffffff", "#ffd23a" }, size = { 2, 10 },
+				life = { 0.5, 0.5 }, speed = { 0, 0 }, transparency = 0.3 }, 2)
+		end,
+		[0.45] = function()
+			flash("Body", "#fff2a8", 14, 60, 1.0)
+			burst("RebirthCore", "Body", { tex = "core", c = { "#fffbe6", "#ffb52e", "#ff4a10" }, size = { 6, 26 },
+				life = { 0.7, 0.9 }, speed = { 0, 0 }, transparency = 0.1, spin = 40 }, 3)
+			burst("RebirthFire", "Body", { tex = "fire", c = FIRE3, size = { 5, 0 }, life = { 0.6, 1.2 },
+				speed = { 16, 30 }, spread = 180, drag = 3 }, 120)
+			burst("RebirthEmbers", "Body", { tex = "flamespark", c = FIRE3, size = { 1.2, 0 }, life = { 1.2, 2.4 },
+				speed = { 12, 26 }, spread = 180, drag = 2, accel = Vector3.new(0, 2, 0), spin = 400 }, 160)
+			stream("RebirthPillar", "SigilCore", { tex = "fire", c = FIRE3, size = { 4, 0 }, life = { 0.5, 0.9 },
+				speed = { 35, 50 }, spread = 6, rate = 140, accel = Vector3.new(0, 10, 0) }, 0.8)
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 6, 70 }, life = { 0.9, 0.9 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#fff2a8", "#ff4a10" }, size = { 36, 30 }, life = { 1.8, 1.8 },
+				transparency = 0.25, spin = 160 }, 1)
+			local body = part("Body")
+			for i = 0, 2 do
+				task.delay(i * 0.12, function()
+					ring(CFrame.new(body.Position + Vector3.new(0, 2 + i * 4, 0)), if i == 1 then "#fff2a8" else "#ff6a14",
+						14 + i * 7, 0.6)
+				end)
+			end
+			groundRing(root.Position, "#ff6a14", 30, 0.9)
+			groundRing(root.Position, "#fff2a8", 18, 0.6)
+		end,
+		[0.62] = function()
+			burst("RebirthAsh", "Body", { tex = "smoke", c = { "#5a2a1a", "#1a0a05" }, size = { 3, 7 }, life = { 1.2, 2 },
+				speed = { 4, 8 }, spread = 180, light = 0, transparency = 0.45, accel = Vector3.new(0, 3, 0) }, 30)
+			burst("RebirthFeathers", "Body", { tex = "flamespark", c = FIRE3, size = { 0.9, 0.5 }, life = { 2.5, 3.5 },
+				speed = { 6, 12 }, spread = 180, drag = 2.5, accel = Vector3.new(0, -3, 0), squash = 1.6, spin = 120 }, 40)
+		end,
+	},
+}
+
+-- Flame cry: throws its head back, raises its wings and screams a pillar of fire into the sky.
+ACTIONS.flamecry = {
+	time = 2.8,
+	flapBoost = 1.5,
+	pose = function(p)
+		local up = ease(p, 0, 1)
+		local cry = ease(p, 0.3, 0.85)
+		return CFrame.new(0, up * 0.8, 0) * CFrame.Angles(R(8) * up, 0, 0), {
+			WingR = CFrame.Angles(0, 0, R(55) * up + math.sin(p * 30) * R(6) * cry),
+			WingL = CFrame.Angles(0, 0, -R(55) * up - math.sin(p * 30) * R(6) * cry),
+			WingTipR = CFrame.Angles(0, 0, R(25) * up),
+			WingTipL = CFrame.Angles(0, 0, -R(25) * up),
+			Head = CFrame.Angles(R(40) * up + math.sin(p * 50) * R(3) * cry, 0, 0),
+			Crest = CFrame.Angles(R(15) * cry, 0, 0),
+			Tail = CFrame.Angles(R(18) * up, 0, 0),
+		}
+	end,
+	moments = {
+		[0.32] = function()
+			flash("Head", "#ffd23a", 8, 40, 1.2)
+			stream("CryFire", "Head", { tex = "fire", c = FIRE3, size = { 3.2, 0 }, life = { 0.5, 0.9 },
+				speed = { 28, 42 }, spread = 9, rate = 110, accel = Vector3.new(0, 8, 0) }, 1.3)
+			stream("CrySparks", "Head", { tex = "flamespark", c = FIRE3, size = { 1, 0 }, life = { 0.8, 1.4 },
+				speed = { 20, 34 }, spread = 20, rate = 60, drag = 1, spin = 300 }, 1.3)
+			local head = part("Head")
+			for i = 0, 3 do
+				task.delay(i * 0.18, function()
+					ring(CFrame.new(head.Position + Vector3.new(0, 6 + i * 6, 0)),
+						if i % 2 == 0 then "#ffd23a" else "#ff6a14", 6 + i * 3, 0.5)
+				end)
+			end
+			groundRing(root.Position, "#ff6a14", 18, 0.8)
+		end,
+	},
+}
+
+-- Wing stretch: stretches one burning wing out low and wide, shakes the sparks off it, then the other one.
+ACTIONS.wingstretch = {
+	time = 3.6,
+	pose = function(p)
+		local r = ease(p, 0.02, 0.5)
+		local l = ease(p, 0.5, 0.98)
+		local shakeR = math.sin(p * 90) * R(4) * ease(p, 0.2, 0.4)
+		local shakeL = math.sin(p * 90) * R(4) * ease(p, 0.7, 0.9)
+		return CFrame.Angles(0, 0, R(6) * (l - r)), {
+			WingR = CFrame.Angles(0, -R(20) * r, R(10) * r + shakeR),
+			WingTipR = CFrame.Angles(0, -R(15) * r, -R(18) * r),
+			WingL = CFrame.Angles(0, R(20) * l, -R(10) * l - shakeL),
+			WingTipL = CFrame.Angles(0, R(15) * l, R(18) * l),
+			Head = CFrame.Angles(-R(10) * (r + l), R(35) * r - R(35) * l, 0),
+			Tail = CFrame.Angles(0, R(12) * (r - l), 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			burst("ShakeR", "WingRFlame42", { tex = "flamespark", c = FIRE3, size = { 0.9, 0 }, life = { 0.6, 1.2 },
+				speed = { 5, 10 }, spread = 90, drag = 2, accel = Vector3.new(0, -4, 0), spin = 300 }, 30)
+		end,
+		[0.8] = function()
+			burst("ShakeL", "WingLFlame42", { tex = "flamespark", c = FIRE3, size = { 0.9, 0 }, life = { 0.6, 1.2 },
+				speed = { 5, 10 }, spread = 90, drag = 2, accel = Vector3.new(0, -4, 0), spin = 300 }, 30)
+		end,
+	},
+}
+
+-- Ascend: crouches, leaps up with a blast of fire and hovers on beating wings, turns once round in a spiral of
+-- flame, then drops back down and lands with a shockwave.
+ACTIONS.ascend = {
+	time = 4.4,
+	pose = function(p)
+		local crouch = ease(p, 0, 0.2)
+		local up = if p < 0.15 then 0 elseif p < 0.28 then math.sin((p - 0.15) / 0.13 * math.pi / 2)
+			elseif p < 0.78 then 1 elseif p < 0.9 then math.cos((p - 0.78) / 0.12 * math.pi / 2) else 0
+		local spin = if p < 0.32 then 0 elseif p < 0.72 then (1 - math.cos((p - 0.32) / 0.4 * math.pi)) / 2 else 1
+		local land = ease(p, 0.88, 1)
+		local flap = math.sin(p * 70) * up
+		local tip = math.sin(p * 70 - 1.1) * up
+		return CFrame.new(0, -0.8 * crouch + 6.5 * up + math.sin(p * 35) * 0.4 * up - 0.6 * land, 0)
+			* CFrame.Angles(0, spin * 2 * math.pi, 0), {
+			WingR = CFrame.Angles(0, 0, R(40) * flap + R(15) * up + R(20) * crouch),
+			WingL = CFrame.Angles(0, 0, -R(40) * flap - R(15) * up - R(20) * crouch),
+			WingTipR = CFrame.Angles(0, 0, R(30) * tip),
+			WingTipL = CFrame.Angles(0, 0, -R(30) * tip),
+			LegL = CFrame.Angles(-R(60) * up, 0, 0),
+			LegR = CFrame.Angles(-R(60) * up, 0, 0),
+			Head = CFrame.Angles(R(12) * up - R(15) * crouch, 0, 0),
+			Tail = CFrame.Angles(R(15) * up, 0, 0),
+		}
+	end,
+	moments = {
+		[0.16] = function()
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 4, 34 }, life = { 0.6, 0.6 },
+				transparency = 0.25, spin = 0 }, 1)
+			groundRing(root.Position, "#ff6a14", 14, 0.6)
+			burst("LaunchFire", "SigilCore", { tex = "fire", c = FIRE3, size = { 3, 0 }, life = { 0.4, 0.8 },
+				speed = { 8, 16 }, spread = 70, drag = 2, accel = Vector3.new(0, 6, 0) }, 60)
+		end,
+		[0.32] = function()
+			for _, side in { "R", "L" } do
+				stream("Spiral" .. side, "Wing" .. side .. "Flame72", { tex = "fire", c = FIRE3, size = { 2.2, 0 },
+					life = { 0.5, 0.9 }, speed = { 0.5, 2 }, spread = 30, rate = 70, accel = Vector3.new(0, 3, 0) }, 1.7)
+			end
+		end,
+		[0.88] = function()
+			local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+			flash("Body", "#ffd23a", 8, 40, 0.6)
+			flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 6, 55 }, life = { 0.8, 0.8 },
+				transparency = 0.2, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#fff2a8", "#ff4a10" }, size = { 28, 22 }, life = { 1.4, 1.4 },
+				transparency = 0.3, spin = 140 }, 1)
+			groundRing(root.Position, "#ff6a14", 24, 0.8)
+			groundRing(root.Position, "#fffbe6", 14, 0.6)
+			burst("LandSparks", "SigilCore", { tex = "flamespark", c = FIRE3, size = { 1.2, 0 }, life = { 0.6, 1.2 },
+				speed = { 14, 24 }, spread = 85, drag = 3, spin = 400 }, 70)
+		end,
+	},
+}
+
+local function smooth(x: number): number
+	x = math.clamp(x, 0, 1)
+	return x * x * (3 - 2 * x)
+end
+
+local VOID3 = { "#ffffff", "#ff8ce6", "#3a1466" }
+local GOLD3 = { "#fffbe6", "#ffc93c", "#a8740f" }
+
+local function groundAt(): Vector3
+	return Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+end
+
+-- Void dive (Voidwhisker): it crouches, a void portal opens under it and it sinks through, then it bursts back out
+-- of a second portal, spinning, in a storm of pink sparks.
+ACTIONS.voiddive = {
+	time = 3.0,
+	pose = function(p)
+		local crouch = ease(p, 0, 0.36)
+		local sink = smooth((p - 0.3) / 0.14) * (1 - smooth((p - 0.6) / 0.16))
+		local spin = smooth((p - 0.6) / 0.22)
+		local hop = ease(p, 0.68, 0.9)
+		return CFrame.new(0, -0.6 * crouch - 15 * sink + 1.2 * hop, 0) * CFrame.Angles(0, 2 * math.pi * spin, 0), {
+			LegFR = CFrame.Angles(R(20) * crouch - R(25) * hop, 0, 0),
+			LegFL = CFrame.Angles(R(20) * crouch - R(25) * hop, 0, 0),
+			LegBR = CFrame.Angles(-R(15) * crouch + R(20) * hop, 0, 0),
+			LegBL = CFrame.Angles(-R(15) * crouch + R(20) * hop, 0, 0),
+			Head = CFrame.Angles(-R(20) * crouch + R(20) * hop, 0, 0),
+			Tail = CFrame.Angles(-R(20) * hop, 0, 0),
+		}
+	end,
+	moments = {
+		[0.08] = function()
+			burst("DivePull", "Body", { tex = "implode", c = { "#ffd6ff", "#3a1466" }, size = { 12, 1 },
+				life = { 0.7, 0.7 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+		end,
+		[0.26] = function()
+			local ground = groundAt()
+			flatBurst(ground, { tex = "vortex", c = { "#ff8ce6", "#b14dff", "#0d0618" }, size = { 4, 18 },
+				life = { 2.4, 2.4 }, transparency = 0.15, spin = -220 }, 1)
+			flatBurst(ground, { tex = "glow", c = { "#ff4fd8", "#3a1466" }, size = { 16, 16 }, life = { 2.4, 2.4 },
+				transparency = 0.4, spin = 0 }, 1)
+			groundRing(root.Position, "#ff4fd8", 9, 0.5)
+		end,
+		[0.4] = function()
+			flash("Root", "#b14dff", 6, 30, 0.6)
+			burst("DiveSplash", "Root", { tex = "flamespark", c = VOID3, size = { 1.1, 0 }, life = { 0.5, 1 },
+				speed = { 8, 16 }, spread = 40, drag = 3, spin = 400 }, 40)
+		end,
+		[0.62] = function()
+			burst("RisePull", "Root", { tex = "implode", c = { "#ffd6ff", "#3a1466" }, size = { 14, 1 },
+				life = { 0.5, 0.5 }, speed = { 0, 0 }, transparency = 0.2, spin = -90 }, 2)
+		end,
+		[0.7] = function()
+			local ground = groundAt()
+			flash("Body", "#ff8ce6", 9, 40, 0.8)
+			burst("RiseSparks", "Body", { tex = "flamespark", c = VOID3, size = { 1.3, 0 }, life = { 0.6, 1.2 },
+				speed = { 10, 22 }, spread = 180, drag = 3, spin = 400 }, 70)
+			burst("RiseStars", "Body", { tex = "spark", c = { "#ffffff", "#ff8ce6" }, size = { 0.8, 0 }, life = { 1, 2 },
+				speed = { 4, 10 }, spread = 180, drag = 2 }, 50)
+			burst("RiseSmoke", "Body", { tex = "smoke", c = { "#3a1f5c", "#0d0618" }, size = { 3, 6 }, life = { 0.8, 1.4 },
+				speed = { 6, 12 }, spread = 180, drag = 3, light = 0, transparency = 0.3 }, 25)
+			flatBurst(ground, { tex = "shock", c = { "#ff8ce6", "#3a1466" }, size = { 4, 40 }, life = { 0.7, 0.7 },
+				transparency = 0.2, spin = 0 }, 1)
+			groundRing(root.Position, "#ff4fd8", 14, 0.6)
+			task.delay(0.15, function()
+				groundRing(root.Position, "#b14dff", 22, 0.7)
+			end)
+		end,
+	},
+}
+
+-- Star stretch (Voidwhisker): a long cat stretch, front paws far forward; the stars in its fur rise up out of its
+-- back and a constellation sigil flares on the ground.
+ACTIONS.starstretch = {
+	time = 3.2,
+	pose = function(p)
+		local k = ease(p, 0.02, 0.98)
+		local s = math.min(k * 1.5, 1)
+		return CFrame.new(0, -0.7 * s, 0) * CFrame.Angles(-R(14) * s, 0, 0), {
+			LegFR = CFrame.Angles(R(55) * s, 0, 0),
+			LegFL = CFrame.Angles(R(55) * s, 0, 0),
+			LegBR = CFrame.Angles(-R(8) * s, 0, 0),
+			LegBL = CFrame.Angles(-R(8) * s, 0, 0),
+			Head = CFrame.Angles(R(30) * s + math.sin(p * 9) * R(4) * s, 0, 0),
+			Tail = CFrame.Angles(-R(25) * s, 0, 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			stream("StretchStars", "Body", { tex = "spark", c = { "#ffffff", "#e3b8ff" }, size = { 0.7, 0 },
+				life = { 1.5, 2.5 }, speed = { 3, 6 }, spread = 35, rate = 40, drag = 0.8 }, 1.4)
+		end,
+		[0.5] = function()
+			local ground = groundAt()
+			flash("Body", "#e3b8ff", 6, 30, 1.0)
+			flatBurst(ground, { tex = "vortex", c = { "#ffffff", "#e3b8ff", "#b14dff" }, size = { 26, 20 },
+				life = { 1.6, 1.6 }, transparency = 0.3, spin = 90 }, 1)
+			flatBurst(ground, { tex = "shock", c = { "#ffffff", "#b14dff" }, size = { 4, 34 }, life = { 0.8, 0.8 },
+				transparency = 0.3, spin = 0 }, 1)
+			burst("StretchBurst", "Body", { tex = "spark", c = { "#ffffff", "#ff8ce6" }, size = { 0.9, 0 },
+				life = { 1, 1.8 }, speed = { 6, 12 }, spread = 60, drag = 2 }, 40)
+			groundRing(root.Position, "#e3b8ff", 16, 0.8)
+		end,
+	},
+}
+
+-- Gem storm (Voidwhisker): the floating diamonds whirl round it faster and faster, flaring with pink light, until
+-- the collar gem bursts with a ring of light and a shockwave.
+ACTIONS.gemstorm = {
+	time = 3.0,
+	orbitBoost = 7,
+	pose = function(p)
+		local up = ease(p, 0, 1)
+		return CFrame.new(0, 0.3 * up, 0), {
+			Head = CFrame.Angles(R(22) * up, 0, 0),
+			Tail = CFrame.Angles(-R(20) * up, 0, 0),
+		}
+	end,
+	moments = {
+		[0.12] = function()
+			burst("StormPull", "CollarGemUp", { tex = "implode", c = { "#ffd6ff", "#b14dff" }, size = { 8, 1 },
+				life = { 0.6, 0.6 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+		end,
+		[0.25] = function()
+			for _, side in { "R", "L" } do
+				stream("GemStorm" .. side, "FloatGem" .. side .. "Up", { tex = "spark", c = { "#ffffff", "#ff8ce6" },
+					size = { 0.8, 0 }, life = { 0.6, 1.1 }, speed = { 1, 3 }, spread = 180, rate = 60 }, 1.6)
+			end
+			stream("TailStorm", "TailCrystalUp", { tex = "glow", c = { "#e3b8ff", "#b14dff" }, size = { 3, 0 },
+				life = { 0.4, 0.6 }, speed = { 0, 0 }, rate = 10 }, 1.6)
+		end,
+		[0.66] = function()
+			local gem = part("CollarGemUp")
+			flash("CollarGemUp", "#ff8ce6", 10, 40, 0.8)
+			burst("StormBurst", "CollarGemUp", { tex = "flamespark", c = VOID3, size = { 1.2, 0 }, life = { 0.6, 1.2 },
+				speed = { 10, 20 }, spread = 180, drag = 3, spin = 400 }, 60)
+			ring(CFrame.new(gem.Position), "#ff4fd8", 10, 0.6)
+			ring(CFrame.new(gem.Position + Vector3.new(0, 2, 0)), "#e3b8ff", 7, 0.5)
+			flatBurst(groundAt(), { tex = "shock", c = { "#ff8ce6", "#3a1466" }, size = { 4, 36 }, life = { 0.7, 0.7 },
+				transparency = 0.2, spin = 0 }, 1)
+			groundRing(root.Position, "#b14dff", 18, 0.7)
+		end,
+	},
+}
+
+-- Chest beat (Gorilla King): it rears up on its hind legs and pounds its chest, left, right, left, right, every
+-- blow a flash of gold and a ring of light off its medallion, then it roars and drops back on its fists.
+local function rearUp(angle: number): CFrame
+	return CFrame.new(hindPivot) * CFrame.Angles(angle, 0, 0) * CFrame.new(-hindPivot)
+end
+
+local function beatFx()
+	local medal = part("MedallionDiamondCore")
+	flash("MedallionDiamondCore", "#fff1a8", 6, 24, 0.3)
+	ring(medal.CFrame * CFrame.new(0, 0, -1) * CFrame.Angles(R(90), 0, 0), "#ffc93c", 6, 0.4)
+	burst("BeatSparks", "MedallionDiamondCore", { tex = "flamespark", c = GOLD3, size = { 0.9, 0 }, life = { 0.4, 0.8 },
+		speed = { 8, 14 }, spread = 60, drag = 3, spin = 300, dir = Enum.NormalId.Front }, 25)
+end
+
+ACTIONS.chestbeat = {
+	time = 3.6,
+	pose = function(p)
+		local up = math.min(ease(p, 0.02, 0.98) * 1.6, 1)
+		local b = (p - 0.28) / 0.48 * 4
+		local hitR, hitL = 0, 0
+		if b >= 0 and b < 4 then
+			local hit = math.sin((b % 1) * math.pi)
+			if math.floor(b) % 2 == 0 then
+				hitR = hit
+			else
+				hitL = hit
+			end
+		end
+		local roar = ease(p, 0.74, 0.96)
+		return rearUp(R(50) * up), {
+			LegFR = CFrame.Angles(R(30) * up - R(12) * hitR, 0, -R(28) * up),
+			LegFL = CFrame.Angles(R(30) * up - R(12) * hitL, 0, R(28) * up),
+			ForearmR = CFrame.Angles(R(62) * up + R(18) * hitR, 0, 0),
+			ForearmL = CFrame.Angles(R(62) * up + R(18) * hitL, 0, 0),
+			LegBR = CFrame.Angles(-R(50) * up, 0, 0),
+			LegBL = CFrame.Angles(-R(50) * up, 0, 0),
+			Head = CFrame.Angles(-R(40) * up + R(18) * roar, 0, 0),
+		}
+	end,
+	moments = {
+		[0.34] = beatFx,
+		[0.46] = beatFx,
+		[0.58] = beatFx,
+		[0.7] = beatFx,
+		[0.8] = function()
+			local mouth = part("Mouth")
+			flash("Body", "#ffc93c", 8, 40, 0.8)
+			burst("RoarGold", "Mouth", { tex = "spark", c = { "#fff1a8", "#ffc93c" }, size = { 0.8, 0 }, life = { 0.5, 1 },
+				speed = { 10, 18 }, spread = 35, dir = Enum.NormalId.Front }, 40)
+			ring(mouth.CFrame * CFrame.new(0, 0, -2) * CFrame.Angles(R(90), 0, 0), "#ffc93c", 8, 0.5)
+			groundRing(root.Position, "#ffc93c", 18, 0.7)
+		end,
+		[0.94] = function()
+			frontHoovesLand(30)
+			groundRing(root.Position, "#fff1a8", 12, 0.5)
+		end,
+	},
+}
+
+-- King slam (Gorilla King): it rears up with both fists high over its head and hammers them into the ground: a
+-- golden shockwave, a fountain of gold coins and dust, and rings of gold rolling out over the ground.
+ACTIONS.kingslam = {
+	time = 2.8,
+	pose = function(p)
+		local r = if p < 0.48 then smooth(p / 0.4) else 1 - smooth((p - 0.48) / 0.07)
+		local impact = if p < 0.48 then 0 else smooth((p - 0.48) / 0.07) * (1 - smooth((p - 0.75) / 0.25))
+		return CFrame.new(0, -0.3 * impact, 0) * rearUp(R(30) * r - R(4) * impact), {
+			LegFR = CFrame.Angles(R(150) * r + R(12) * impact, 0, -R(10) * r),
+			LegFL = CFrame.Angles(R(150) * r + R(12) * impact, 0, R(10) * r),
+			ForearmR = CFrame.Angles(R(20) * r, 0, 0),
+			ForearmL = CFrame.Angles(R(20) * r, 0, 0),
+			LegBR = CFrame.Angles(-R(30) * r, 0, 0),
+			LegBL = CFrame.Angles(-R(30) * r, 0, 0),
+			Head = CFrame.Angles(-R(20) * r - R(10) * impact, 0, 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			burst("SlamCharge", "CrownOrb", { tex = "implode", c = { "#fffbe6", "#ffc93c" }, size = { 8, 1 },
+				life = { 0.5, 0.5 }, speed = { 0, 0 }, transparency = 0.2, spin = 90 }, 2)
+		end,
+		[0.55] = function()
+			local ground = groundAt() + root.CFrame.LookVector * 4
+			flash("Body", "#ffc93c", 12, 55, 0.9)
+			frontHoovesLand(45)
+			flatBurst(ground, { tex = "shock", c = { "#fff1a8", "#a8740f" }, size = { 6, 70 }, life = { 0.9, 0.9 },
+				transparency = 0.15, spin = 0 }, 1)
+			flatBurst(ground, { tex = "vortex", c = { "#fffbe6", "#ffc93c", "#a8740f" }, size = { 34, 26 },
+				life = { 1.6, 1.6 }, transparency = 0.3, spin = 140 }, 1)
+			burst("SlamCoins", "SigilCore", { tex = "flamespark", c = GOLD3, size = { 1.2, 0.6 }, life = { 1.2, 1.8 },
+				speed = { 16, 28 }, spread = 35, accel = Vector3.new(0, -35, 0), spin = 500, squash = 0.5 }, 70)
+			burst("SlamGlints", "SigilCore", { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 1, 0 },
+				life = { 1, 1.6 }, speed = { 10, 20 }, spread = 50, accel = Vector3.new(0, -20, 0) }, 40)
+			for i, c in { "#fffbe6", "#ffc93c", "#e0a01f" } do
+				task.delay((i - 1) * 0.12, function()
+					groundRing(ground, c, 12 + i * 8, 0.8)
+				end)
+			end
+		end,
+	},
+}
+
+-- Crown flash (Gorilla King): it lifts its head, its crown rises off its head and spins in a blaze of gold, a
+-- pillar of light shoots up and coins rain down around it.
+ACTIONS.crownflash = {
+	time = 2.8,
+	pose = function(p)
+		local up = ease(p, 0, 1)
+		local lift = smooth((p - 0.12) / 0.2) * (1 - smooth((p - 0.75) / 0.15))
+		local spin = smooth((p - 0.28) / 0.45)
+		return rearUp(R(8) * up), {
+			Head = CFrame.Angles(R(25) * up, 0, 0),
+			Crown = CFrame.new(0, 1.8 * lift, 0) * CFrame.Angles(0, 2 * math.pi * spin, 0),
+		}
+	end,
+	moments = {
+		[0.3] = function()
+			local crown = part("CrownOrb")
+			flash("CrownOrb", "#fff1a8", 10, 40, 1.0)
+			stream("CrownBlaze", "CrownOrb", { tex = "spark", c = { "#ffffff", "#ffc93c" }, size = { 0.7, 0 },
+				life = { 0.6, 1.2 }, speed = { 3, 8 }, spread = 180, rate = 80, drag = 2 }, 1.2)
+			ring(CFrame.new(crown.Position), "#ffc93c", 7, 0.6)
+		end,
+		[0.48] = function()
+			stream("CrownPillar", "CrownOrb", { tex = "glow", c = { "#fffbe6", "#ffc93c" }, size = { 3, 1 },
+				life = { 0.6, 0.9 }, speed = { 30, 40 }, spread = 2, rate = 60 }, 0.8)
+			burst("CoinRain", "CrownOrb", { tex = "flamespark", c = GOLD3, size = { 1.1, 0.6 }, life = { 1.4, 2 },
+				speed = { 10, 18 }, spread = 60, accel = Vector3.new(0, -25, 0), spin = 500, squash = 0.5 }, 50)
+		end,
+		[0.6] = function()
+			flatBurst(groundAt(), { tex = "vortex", c = { "#fffbe6", "#ffc93c", "#a8740f" }, size = { 30, 24 },
+				life = { 1.6, 1.6 }, transparency = 0.3, spin = -120 }, 1)
+			groundRing(root.Position, "#ffc93c", 20, 0.8)
+		end,
+	},
+}
+
 -- ------------------------------------------------------------- update --
+
+-- Flight effects (flyRun animals): a comet trail of fire behind the body, afterburn flames, more ember feathers,
+-- a blast on takeoff and a shockwave on landing, and the fire ring on the ground hidden while it flies.
+local flight = nil
+if profile.flyRun then
+	local body = part("Body")
+	local half = body.Size.Y / 2
+	local top = attachmentOn(body, "FXFlightTop")
+	top.Position = Vector3.new(0, half, 0)
+	local bottom = attachmentOn(body, "FXFlightBottom")
+	bottom.Position = Vector3.new(0, -half, 0)
+	local trail = Instance.new("Trail")
+	trail.Name = "FlightTrail"
+	trail.Attachment0 = top
+	trail.Attachment1 = bottom
+	trail.Texture = TEX.fire
+	trail.TextureMode = Enum.TextureMode.Stretch
+	trail.Lifetime = 0.9
+	trail.LightEmission = 1
+	trail.LightInfluence = 0
+	trail.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, hex("#fffbe6")),
+		ColorSequenceKeypoint.new(0.3, hex("#ffb52e")), ColorSequenceKeypoint.new(1, hex("#8f1610")) })
+	trail.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+	trail.WidthScale = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1), NumberSequenceKeypoint.new(1, 0.2) })
+	trail.Enabled = false
+	trail.Parent = body
+	local back = attachmentOn(body, "FXAfterburn")
+	back.Position = Vector3.new(0, 0, body.Size.Z / 2)
+	local burn = makeEmitter({ tex = "fire", c = FIRE3, size = { 3, 0 }, life = { 0.3, 0.6 }, speed = { 3, 7 },
+		spread = 25, dir = Enum.NormalId.Back, rate = 0 }, back)
+	burn.Enabled = true
+	local ground, embers = {}, {}
+	for _, d in model:GetDescendants() do
+		if d:IsA("BasePart") and (d.Name:sub(1, 8) == "FireRing" or d.Name == "SigilCore") then
+			table.insert(ground, { part = d, t = d.Transparency })
+		elseif d:IsA("ParticleEmitter") and d.Name == "EmberFeathers" then
+			table.insert(embers, { e = d, rate = d.Rate })
+		end
+	end
+	flight = { trail = trail, burn = burn, ground = ground, embers = embers, up = false }
+end
+
+local function setFlying(up: boolean)
+	flight.up = up
+	flight.trail.Enabled = up
+	for _, g in flight.ground do
+		g.part.Transparency = if up then 1 else g.t
+		for _, e in g.part:GetChildren() do
+			if e:IsA("ParticleEmitter") then
+				e.Enabled = not up
+			end
+		end
+	end
+	if not fxOn then
+		return
+	end
+	local ground = Vector3.new(root.Position.X, groundY() + 0.3, root.Position.Z)
+	if up then
+		-- takeoff: a blast of fire pushes off the ground
+		flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 4, 40 }, life = { 0.6, 0.6 },
+			transparency = 0.25, spin = 0 }, 1)
+		groundRing(root.Position, "#ff6a14", 16, 0.6)
+		burst("Takeoff", "Body", { tex = "fire", c = FIRE3, size = { 3.5, 0 }, life = { 0.4, 0.8 }, speed = { 10, 18 },
+			spread = 50, drag = 2, dir = Enum.NormalId.Bottom }, 50)
+	else
+		-- landing: a shockwave and the sigil flares up again
+		flatBurst(ground, { tex = "shock", c = { "#ffd23a", "#ff4a10" }, size = { 6, 50 }, life = { 0.8, 0.8 },
+			transparency = 0.2, spin = 0 }, 1)
+		flatBurst(ground, { tex = "vortex", c = { "#fff2a8", "#ff4a10" }, size = { 26, 20 }, life = { 1.4, 1.4 },
+			transparency = 0.3, spin = 140 }, 1)
+		groundRing(root.Position, "#ff6a14", 22, 0.8)
+		groundRing(root.Position, "#fffbe6", 12, 0.5)
+		burst("Landing", "SigilCore", { tex = "flamespark", c = FIRE3, size = { 1.2, 0 }, life = { 0.6, 1.2 },
+			speed = { 14, 24 }, spread = 85, drag = 3, spin = 400 }, 60)
+	end
+end
 
 local rng = Random.new()
 local start = os.clock()
@@ -681,6 +2020,8 @@ local nextAction = os.clock() + rng:NextNumber(2, 5)
 local action, actionStart = nil, 0
 local fired: { [number]: boolean } = {}
 local posed = false
+local air, lastFlap = 0, 0 -- flight (0 = on the ground, 1 = flying) and the last wing beat, for flyRun animals
+local flightClock, flightPhase = 0, 0
 
 local function identityAll()
 	for _, j in joints do
@@ -738,6 +2079,28 @@ RunService.PreSimulation:Connect(function(dt)
 	local target = math.clamp(effSpeed / (walkSpeed * 0.35), 0, 1)
 	walk += (target - walk) * math.min(1, dt * 5)
 	local run = math.clamp((effSpeed / walkSpeed - 1) / 0.8, 0, 1)
+	running = run
+	-- Animals with flyRun take off when they move fast (or when the game sets State = "Fly").
+	local airTarget = if profile.flyRun and (run > 0.25 or state == "Fly") then 1 else 0
+	air += (airTarget - air) * math.min(1, dt * 2.5)
+	-- Flight rhythm: a few strong wing beats, then a glide on spread wings, then beats again.
+	flightClock = if air > 0.01 then flightClock + dt else 0
+	local flightCyc = flightClock % 4.2
+	local flapAmt = if flightCyc < 2.4 then 1 elseif flightCyc < 2.8 then 1 - (flightCyc - 2.4) / 0.4
+		elseif flightCyc < 3.9 then 0 else (flightCyc - 3.9) / 0.3
+	flapAmt = flapAmt * flapAmt * (3 - 2 * flapAmt)
+	flightPhase += dt * 7.5 * (0.3 + 0.7 * flapAmt)
+	if flight then
+		if not flight.up and air > 0.35 then
+			setFlying(true)
+		elseif flight.up and air < 0.25 then
+			setFlying(false)
+		end
+		flight.burn.Rate = if fxOn then 45 * air * (0.4 + 0.6 * flapAmt) else 0
+		for _, em in flight.embers do
+			em.e.Rate = em.rate * (1 + 3 * air)
+		end
+	end
 
 	local cycles = math.max(effSpeed, walk * walkSpeed * 0.3) / profile.stride
 	if profile.maxCycles then
@@ -748,7 +2111,11 @@ RunService.PreSimulation:Connect(function(dt)
 
 	-- Idle actions only when standing still.
 	if not action and walk < 0.1 and attribute("IdleActions", true) and now > nextAction then
-		local a = ACTIONS[profile.idle]
+		local idle = profile.idle
+		if type(idle) == "table" then
+			idle = idle[rng:NextInteger(1, #idle)]
+		end
+		local a = ACTIONS[idle]
 		if a then
 			action, actionStart, fired = a, now, {}
 		end
@@ -787,7 +2154,7 @@ RunService.PreSimulation:Connect(function(dt)
 				local lift = math.max(0, math.cos(gaitPhase + offset * 2 * math.pi)) * 0.25 * walk
 				pose[leg] = CFrame.new(0, lift, 0) * CFrame.Angles(s * swing, 0, 0)
 				local prev = lastSin[leg] or s
-				if prev > 0 and s <= 0 and walk > 0.4 then
+				if prev > 0 and s <= 0 and walk > 0.4 and air < 0.5 then
 					footstep(jointPos(leg))
 				end
 				lastSin[leg] = s
@@ -816,6 +2183,19 @@ RunService.PreSimulation:Connect(function(dt)
 			footstep(root.Position)
 		end
 		lastSin.hop = air
+	elseif gait == "serpent" then
+		-- A long body that ripples like a ribbon: every joint along it swings a little behind the one before.
+		local speedUp = 1 + walk * (1 + run)
+		local i = 1
+		while joints["SegJoint" .. i] do
+			local w = t * 1.8 * speedUp - i * 0.6
+			pose["SegJoint" .. i] = CFrame.Angles(math.sin(w) * R(profile.waveP or 5),
+				math.sin(w * 0.75 + 1) * R(profile.waveY or 7) * (1 + walk * 0.5), 0)
+			i += 1
+		end
+		for _, leg in { "LegFR", "LegFL", "LegBR", "LegBL" } do
+			pose[leg] = CFrame.Angles(math.sin(t * 2 + #leg) * R(15), 0, 0)
+		end
 	elseif gait == "slither" then
 		local s = math.sin(gaitPhase)
 		bounce = (s * 0.5 + 0.5) * profile.bounce * walk
@@ -834,7 +2214,13 @@ RunService.PreSimulation:Connect(function(dt)
 	local hover = attribute("Hover", 0)
 	local hoverY = if hover > 0 then math.sin(t * attribute("HoverSpeed", 2)) * hover else 0
 	if joints.Root then
-		joints.Root.Transform = CFrame.new(0, hoverY + bounce + breathe, 0) * CFrame.Angles(-lean, 0, roll) * actionRoot
+		-- In flight: lifted up, tipped forward so it lies flat in the air, rising with each beat, swaying in the
+		-- glide, and banking into turns.
+		local flyLift = air * (profile.flyHeight or 4) + math.sin(flightPhase - 0.6) * 0.5 * air * flapAmt
+			+ math.sin(t * 1.1) * 0.4 * air * (1 - flapAmt)
+		local bank = -math.clamp(turn * 0.35, -0.6, 0.6) * air + math.sin(t * 0.9) * R(4) * air * (1 - flapAmt)
+		joints.Root.Transform = CFrame.new(0, hoverY + bounce * (1 - air) + breathe + flyLift, 0)
+			* CFrame.Angles(-lean * (1 - air) - R(profile.flyPitch or 0) * air, 0, roll * (1 - air) + bank) * actionRoot
 	end
 
 	-- Head: looks around when idle, bobs when walking.
@@ -861,6 +2247,7 @@ RunService.PreSimulation:Connect(function(dt)
 	if flapSpeed > 0 then
 		local boost = 1 + walk * (profile.flapBoost or 0) + flapBoost
 		local angle = math.sin(t * flapSpeed * boost) * R(attribute("FlapAngle", 30))
+			+ R(profile.wingRun or 0) * run
 		for name, _ in joints do
 			if name:sub(1, 4) == "Wing" then
 				local side = if name:sub(-1) == "L" then -1 else 1
@@ -871,6 +2258,58 @@ RunService.PreSimulation:Connect(function(dt)
 		-- a walking bird holds its wings a little open for balance
 		pose.WingR = CFrame.Angles(0, 0, R(12) * walk)
 		pose.WingL = CFrame.Angles(0, 0, -R(12) * walk)
+	end
+
+	-- Secondary motion (Phoenix): the wing tips trail behind every beat, the far half of the tail ripples like
+	-- a flame, the crest flickers and the halo turns. In flight the wings beat hard and the legs tuck in.
+	if joints.WingTipR or joints.TailTip or joints.Crest or joints.Halo then
+		local boost = 1 + walk * (profile.flapBoost or 0) + flapBoost
+		local flapAngle = R(attribute("FlapAngle", 30))
+		local beat = t * flapSpeed * boost
+		local wingAngle = math.sin(beat) * flapAngle + R(8) * walk
+		local tipAngle = math.sin(beat - 0.9) * flapAngle * 0.9 - R(6) * walk
+		if air > 0.01 then
+			local f = flightPhase
+			local flap = math.sin(f)
+			-- beating: big strokes with the tips whipping behind; gliding: wings spread flat, tips curled up a little
+			-- (the wings rest raised; in the air they come down level with the body)
+			local glideWing = -R(34) + math.sin(t * 1.3) * R(3)
+			local flyWing = (flap * R(48) - R(16)) * flapAmt + glideWing * (1 - flapAmt)
+			local flyTip = (math.sin(f - 1.1) * R(35) - R(4)) * flapAmt + R(12) * (1 - flapAmt)
+			wingAngle = wingAngle * (1 - air) + flyWing * air
+			tipAngle = tipAngle * (1 - air) + flyTip * air
+			if lastFlap > 0 and flap <= 0 and air > 0.6 and flapAmt > 0.5 and fxOn then
+				wingbeat()
+			end
+			lastFlap = flap
+			for _, leg in { "LegL", "LegR" } do
+				if joints[leg] then
+					pose[leg] = (pose[leg] or CFrame.identity):Lerp(CFrame.new(0, 0.6, 0.3) * CFrame.Angles(-R(65), 0, 0), air)
+				end
+			end
+			pose.Tail = (pose.Tail or CFrame.identity) * CFrame.Angles(R(profile.flyTail or 12) * air, 0, 0)
+			pose.Head = (pose.Head or CFrame.identity) * CFrame.Angles(R(profile.flyHead or 8) * air, 0, 0)
+		end
+		for _, side in { "R", "L" } do
+			local sgn = if side == "L" then -1 else 1
+			if joints["Wing" .. side] then
+				pose["Wing" .. side] = CFrame.Angles(0, 0, (wingAngle + R(profile.wingRun or 0) * run * (1 - air)) * sgn)
+			end
+			if joints["WingTip" .. side] then
+				pose["WingTip" .. side] = CFrame.Angles(0, 0, tipAngle * sgn)
+			end
+		end
+		if joints.TailTip then
+			pose.TailTip = CFrame.Angles(math.sin(t * 2.2 - 0.9) * R(7) * (1 + air) + R(15) * air,
+				math.sin(t * (1.6 + walk * 3) - 1.0) * R(14) * (1 + walk * 0.5), 0)
+		end
+		if joints.Crest then
+			pose.Crest = CFrame.Angles(math.noise(t * 3, 2.7) * R(10) - R(8) * walk - R(20) * air,
+				math.noise(t * 2.5, 5.3) * R(8), 0)
+		end
+		if joints.Halo then
+			pose.Halo = CFrame.Angles(0, 0, t * 0.9)
+		end
 	end
 
 	local orbit = attribute("OrbitSpeed", 0)

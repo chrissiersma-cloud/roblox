@@ -14,6 +14,7 @@ and the "Pulse" attribute (seconds) on Neon parts and lights, which makes them g
 """
 
 import math
+from contextlib import contextmanager
 
 from lib import EYE, FIRE_TEXTURE, SIDES, SMOKE_TEXTURE, SPARKLE_TEXTURE, WHITE, Animal, add, aim, angles, apply, \
     cframe, compose, cross, hex_color as C, inverse, matmul, scale, sub, unit, IDENTITY
@@ -21,6 +22,33 @@ from lib import EYE, FIRE_TEXTURE, SIDES, SMOKE_TEXTURE, SPARKLE_TEXTURE, WHITE,
 from animals import DETAIL, MOUTH, NEON, PINK, TONGUE, _canine, _deer, at, find, fx, pixel_star
 
 GLOW = dict(material="Neon", role="Glow", shadow=False, studs=False)
+GLOW_T = dict(GLOW, transparency=0.25)
+GLOW_TEXTURE = "rbxasset://textures/particles/forcefield_glow_main.dds"
+VORTEX_TEXTURE = "rbxasset://textures/particles/forcefield_vortex_main.dds"
+SHOCK_TEXTURE = "rbxasset://textures/particles/explosion01_shockwave_main.dds"
+FLAMESPARK_TEXTURE = "rbxasset://textures/particles/fire_sparks_main.dds"
+
+
+@contextmanager
+def in_bone(a, name):
+    """Adds parts to a joint that already exists."""
+    prev, a.current_bone = a.current_bone, name
+    try:
+        yield
+    finally:
+        a.current_bone = prev
+
+
+def grad(e, *stops):
+    """Gives an emitter a colour gradient with several stops: (t, colour), ..."""
+    e["props"]["Color"] = [[t, *c] for t, c in stops]
+    return e
+
+
+def flat(e):
+    """Particles that lie flat (a sigil or a shockwave on the ground)."""
+    e["props"]["Orientation"] = "VelocityPerpendicular"
+    return e
 
 
 # ------------------------------------------------------------- helpers ---
@@ -702,6 +730,101 @@ def umbra_panther():
         for i, ang in enumerate((0, math.pi)):
             pos = (math.cos(ang) * 4.4, 7.4, 0.6 + math.sin(ang) * 4.4)
             a.box(f"ShadowOrb{i}", (0.8, 0.8, 0.8), pos, void, rot=(45, 45, 0), **GLOW)
+    # -- showpiece detail (Mythic, about 500 parts) ------------------------------------------------------
+    with in_bone(a, "Body"):
+        # A mane of shadow running down the spine, each tuft tipped with void light.
+        for j in range(12):
+            z = -2.4 + j * 0.58
+            for sx in (-1, 1):
+                if (j + (sx > 0)) % 2:
+                    continue
+                p0 = (0.35 * sx, 6.35, z)
+                plate(a, f"Mane{j}{'R' if sx > 0 else 'L'}", p0, add(p0, (0.45 * sx, 1.0 - 0.03 * j, 0.7)), 0.5, 0.12,
+                      fur if j % 3 else soft, up=(sx, 0, 0), role="Secondary", shadow=False)
+            a.box(f"ManeTip{j}", (0.22, 0.22, 0.22), (0, 7.3 - 0.03 * j, z + 0.65), void, **GLOW)
+        for s, S in SIDES:
+            # Long strokes of darker fur between the rosettes.
+            for r, y in enumerate((5.8, 4.9, 4.0)):
+                for j, z in enumerate((-2.2, -0.65, 0.55, 1.7, 2.85, 3.9)):
+                    p0 = (2.16 * s, y, z)
+                    plate(a, f"FurStroke{S}{r}_{j}", p0, add(p0, (0.04 * s, -0.55, 0.7)), 0.2, 0.08, dark,
+                          up=(s, 0, 0), role="Secondary", shadow=False)
+            # Void crystals breaking out of the shoulders.
+            for j in range(3):
+                a.shard(f"ShoulderCrystal{S}{j}", (1.7 * s, 6.1, -1.9 + j * 0.55), 0.45, 1.1 - 0.2 * j, void,
+                        R=angles(-15, 0, -25 * s), **GLOW)
+        # A glowing ring round each rosette.
+        for i in range(10):
+            ro = find(a, f"Rosette{i}")
+            cx, cy, cz = ro["p"]
+            s = 1 if cx > 0 else -1
+            r = ro["size"][1] * 0.75
+            for q in range(4):
+                ang = q * math.pi / 2
+                a.box(f"RosetteRing{i}_{q}", (0.1, 0.12 + r * abs(math.cos(ang)) * 1.3, 0.12 + r * abs(math.sin(ang)) * 1.3),
+                      (cx + 0.03 * s, cy + r * math.sin(ang), cz + r * math.cos(ang)), violet, **GLOW)
+        # A void gem on the chest and a fringe of shadow fur under the belly.
+        a.box("ChestGemFrame", (0.9, 0.9, 0.2), (0, 4.9, -3.86), dark, rot=(0, 0, 45), role="Accent")
+        a.box("ChestGem", (0.6, 0.6, 0.25), (0, 4.9, -3.92), violet, rot=(0, 0, 45), **GLOW)
+        for s, S in SIDES:
+            for j in range(4):
+                a.wedge(f"BellyFringe{S}{j}", (0.3, 0.7, 0.8), (1.6 * s, 2.75, -1.4 + j * 1.3), dark, rot=(0, 0, 180),
+                        role="Secondary")
+        # Runes of void light on the back.
+        for j in range(10):
+            a.box(f"BackRune{j}", (0.18, 0.06, 0.5), ((-1 if j % 2 else 1) * 0.9, 6.47, -0.8 + j * 0.45), void,
+                  rot=(0, 30 * (1 if j % 2 else -1), 0), **GLOW)
+    with in_bone(a, "Head"):
+        # A collar of void crystals round the neck and a floating crown of shards above the head.
+        for j in range(8):
+            ang = 2 * math.pi * j / 8
+            c, s_ = math.cos(ang), math.sin(ang)
+            a.shard(f"Collar{j}", (c * 1.55, 5.6, -2.7 + s_ * 1.3), 0.4, 0.9, void, R=angles(s_ * 25, 0, -c * 25),
+                    **GLOW)
+        for j in range(7):
+            x = (j - 3) * 0.55
+            a.shard(f"CrownShard{j}", (x, 10.6 + 0.25 * (3 - abs(j - 3)), -3.6), 0.35, 1.0 + 0.2 * (3 - abs(j - 3)),
+                    void, R=angles(0, 0, -x * 10), **GLOW)
+        for s, S in SIDES:
+            for j in range(3):
+                a.rod(f"Whisker{S}{j}", (1.0 * s, 6.3 - 0.15 * j, -5.9), (2.6 * s, 6.5 - 0.35 * j, -5.4 + 0.2 * j), 0.08,
+                      violet, material="Neon", role="Glow", shadow=False)
+            a.box(f"BrowGlow{S}", (0.9, 0.1, 0.1), (0.9 * s, 8.05, -5.72), void, rot=(0, 0, -18 * s), **GLOW)
+            for j in range(2):
+                a.wedge(f"EarFluff{S}{j}", (0.25, 0.7, 0.5), (2.1 * s, 9.3 + 0.4 * j, -3.4), soft, rot=(0, 0, 20 * s),
+                        role="Secondary")
+    for F, z in (("F", -2.3), ("B", 3.15)):
+        for s, S in SIDES:
+            with in_bone(a, f"Leg{F}{S}"):
+                for j, dx in enumerate((-0.5, -0.17, 0.17, 0.5)):
+                    a.wedge(f"Claw{F}{S}{j}", (0.18, 0.28, 0.4), (1.35 * s + dx, 0.12, z - 1.05),
+                            violet, **GLOW)
+                for q in range(4):
+                    ang = q * math.pi / 2 + math.pi / 4
+                    a.box(f"Anklet{F}{S}{q}", (0.5, 0.18, 0.18), (1.35 * s + math.cos(ang) * 0.72, 1.1,
+                                                                 z + math.sin(ang) * 0.72), void,
+                          rot=(0, -math.degrees(ang) + 90, 0), **GLOW)
+                for j in range(2):
+                    a.wedge(f"LegWisp{F}{S}{j}", (0.2, 0.9, 0.6), (1.35 * s + (0.5 if j else -0.5) * s, 2.6, z + 0.6),
+                            soft, rot=(0, 0, 180), role="Secondary")
+    with in_bone(a, "Tail"):
+        tail_pts = [(0, 5.4, 4.1), (0, 5.0, 6.2), (0, 5.6, 8.0), (0, 7.2, 9.0), (0, 8.6, 8.6)]
+        for j in range(1, 5):
+            for sx in (-1, 1):
+                p0 = tail_pts[j]
+                plate(a, f"TailFlame{j}{'R' if sx > 0 else 'L'}", p0, add(p0, (0.6 * sx, 0.7, 0.5)), 0.4, 0.1,
+                      void if j > 2 else violet, up=(sx, 0, 0), **GLOW_T)
+        for j in range(3):
+            a.shard(f"TailCrystal{j}", (0, 9.2, 8.3), 0.4, 1.3 - 0.2 * j, void, R=angles(20 - 20 * j, 0, (j - 1) * 30),
+                    **GLOW)
+    with in_bone(a, "Orbit"):
+        for i in range(4):
+            ang = 2 * math.pi * i / 4 + math.pi / 4
+            pos = (math.cos(ang) * 5.6, 8.2 + 0.6 * math.sin(ang * 2), 0.6 + math.sin(ang) * 5.6)
+            a.box(f"ShadowOrbHigh{i}", (0.6, 0.6, 0.6), pos, violet, rot=(45, 45, 0), **GLOW)
+            for j in range(2):
+                a.box(f"ShadowOrbRing{i}_{j}", (1.2, 0.08, 0.08), pos, void, rot=(0, 90 * j + 30, 45), **GLOW)
+        a.box("SigilCore", (0.4, 0.2, 0.4), (0, 0.2, 0.6), void, transparency=1, **DETAIL)
     scale_animal(a, k)
 
     fx(a, "Body",
@@ -721,6 +844,31 @@ def umbra_panther():
         fx(a, f"PawF{S}", emitter("ShadowStep", C("#2a1640"), rate=3, lifetime=(0.5, 0.9), speed=(0.2, 0.6),
                                   sizes=((0, 1.0), (1, 2.0)), transparency=((0, 0.5), (1, 1)), light=0, emit="Bottom"))
     trail(a, "TailTip", *near(a, "TailTip", 0.4), void, name="TailTrail", lifetime=0.6, color2=C("#3a1466"))
+    # Void effects: a halo of darkness, shadow fire rising off its back, a void sigil turning under it with
+    # ripples running out, sparks off its crown, and trails behind the orbs.
+    fx(a, "Body",
+       grad(emitter("VoidAura", void, texture=GLOW_TEXTURE, rate=1.4, lifetime=(1.4, 1.6), speed=(0, 0),
+                    sizes=((0, 9), (0.5, 12), (1, 9)), transparency=((0, 1), (0.5, 0.7), (1, 1)), lock=True),
+            (0, violet), (1, C("#3a1466"))),
+       grad(emitter("ShadowFire", void, texture=FIRE_TEXTURE, rate=10, lifetime=(0.5, 0.9), speed=(1, 2.5), spread=40,
+                    sizes=((0, 1.4), (0.4, 2.4), (1, 0)), transparency=((0, 0.3), (1, 1)), accel=(0, 4, 0), light=0.4),
+            (0, violet), (0.4, void), (1, C("#0d0a14"))))
+    fx(a, "SigilCore",
+       flat(grad(emitter("VoidSigil", void, texture=VORTEX_TEXTURE, rate=0.6, lifetime=(3, 3), speed=(0.01, 0.01),
+                         spread=0, sizes=((0, 16), (1, 16)), transparency=((0, 1), (0.25, 0.4), (0.75, 0.4), (1, 1)),
+                         lock=True, rot_speed=(-35, -35)), (0, violet), (1, void))),
+       flat(grad(emitter("VoidRipple", void, texture=SHOCK_TEXTURE, rate=0.6, lifetime=(1.8, 1.8), speed=(0.01, 0.01),
+                         spread=0, sizes=((0, 4), (1, 20)), transparency=((0, 0.4), (1, 1)), lock=True),
+                 (0, violet), (1, void))))
+    fx(a, "CrownShard3",
+       grad(emitter("CrownSparks", violet, texture=FLAMESPARK_TEXTURE, rate=10, lifetime=(0.5, 0.9), speed=(2, 4),
+                    sizes=((0, 0.6), (1, 0)), spread=60, drag=2, rot_speed=(-300, 300)),
+            (0, C("#ffffff")), (0.4, violet), (1, void)),
+       light("CrownLight", void, brightness=1.2, range_=10, pulse=0.9))
+    fx(a, "ChestGem", light("GemLight", violet, brightness=0.8, range_=8, pulse=0.7))
+    for i in range(4):
+        trail(a, f"ShadowOrbHigh{i}", *near(a, f"ShadowOrbHigh{i}", 0.35), violet, name=f"OrbHighTrail{i}",
+              lifetime=0.7, color2=void)
     unfight(a, "Belly", "Saddle", "FaceMask", "Chest")
     extras(a, attrs={"OrbitSpeed": 0.8, "TailSway": 20}, highlight=(void, void, 1.0, 0.15))
     return a
@@ -776,6 +924,117 @@ def mossking_elk():
             a.box(f"Bloom{i}", (0.45, 0.2, 0.45), pos, flower if i % 2 else glow2, rot=(0, 45, 0), **GLOW)
             a.box(f"BloomLeaf{i}", (0.8, 0.08, 0.3), add(pos, (0, -0.08, 0)), moss2, rot=(0, -math.degrees(ang), 0),
                   **DETAIL)
+    # -- showpiece detail (Mythic, about 500 parts) ------------------------------------------------------
+    bark, rune = C("#4a3020"), C("#5ef0ff")
+    with in_bone(a, "Head"):
+        for s, S in SIDES:
+            p1, p2, p5 = (2.0 * s, 12.8, -2.4), (3.6 * s, 14.2, -1.6), (4.9 * s, 14.4, -0.4)
+            # Two more tines, each with a glowing mushroom.
+            for i, (u, v) in enumerate(((p2, (3.0 * s, 16.4, -0.8)), (p1, (1.2 * s, 14.0, -1.6)))):
+                a.rod(f"Tine{i}{S}", u, v, 0.3, wood, role="Accent")
+                a.box(f"TineShroom{i}{S}", (0.7, 0.3, 0.7), add(v, (0, 0.1, 0)), glow, **GLOW)
+                a.box(f"TineShroomTop{i}{S}", (0.4, 0.2, 0.4), add(v, (0, 0.32, 0)), glow2, **GLOW)
+            # Moss vines hanging from the antlers.
+            for i, top in enumerate((p2, p5)):
+                mid = add(top, (0.2 * s, -1.1, 0.2))
+                low = add(top, (0.1 * s, -2.2, 0.5))
+                a.rod(f"Vine{i}{S}a", top, mid, 0.16, moss, role="Secondary")
+                a.rod(f"Vine{i}{S}b", mid, low, 0.13, moss2, role="Secondary")
+                a.box(f"VineLeaf{i}{S}", (0.4, 0.1, 0.25), low, moss2, rot=(0, 30 * s, 25), **DETAIL)
+            # Leaves and little flowers growing on the antlers, and glowing seeds hanging from them.
+            for i, pt in enumerate(((2.8 * s, 13.5, -2.0), (3.8 * s, 15.1, -2.0), (4.3 * s, 14.3, -1.0),
+                                    (1.6 * s, 13.4, -2.0))):
+                a.box(f"AntlerLeafB{i}{S}", (0.7, 0.15, 0.4), add(pt, (0.25 * s, 0.1, 0)), moss2, rot=(0, 40 * i, 25 * s),
+                      role="Secondary")
+            for i, pt in enumerate(((2.6 * s, 13.4, -2.3), (3.3 * s, 14.8, -1.9), (4.4 * s, 14.5, -0.8))):
+                a.box(f"AntlerFlower{i}{S}", (0.4, 0.15, 0.4), add(pt, (0, 0.2, 0)), flower, rot=(0, 45, 0), **GLOW)
+                a.box(f"AntlerFlowerCore{i}{S}", (0.18, 0.18, 0.18), add(pt, (0, 0.3, 0)), C("#fff27a"), **GLOW)
+            for i, pt in enumerate(((3.6 * s, 14.2, -1.6), (4.9 * s, 14.4, -0.4), (2.0 * s, 12.8, -2.4))):
+                a.rod(f"SeedString{i}{S}", pt, add(pt, (0, -0.9 - 0.3 * i, 0)), 0.05, C("#c9e6c0"), **DETAIL)
+                a.ball(f"GlowSeed{i}{S}", 0.4, add(pt, (0, -1.1 - 0.3 * i, 0)), glow2 if i % 2 else glow, **GLOW)
+            # Flowers behind the ears.
+            a.box(f"EarFlower{S}", (0.5, 0.18, 0.5), (2.0 * s, 11.1, -2.4), flower, rot=(0, 45, 0), **GLOW)
+            a.box(f"EarFlowerCore{S}", (0.2, 0.2, 0.2), (2.0 * s, 11.22, -2.4), C("#fff27a"), **GLOW)
+        # A crown of leaves round the antler bases, a glowing rune on the brow and a garland round the neck.
+        for j in range(6):
+            ang = 2 * math.pi * j / 6
+            c, s_ = math.cos(ang), math.sin(ang)
+            p0 = (c * 1.0, 11.25, -2.9 + s_ * 0.8)
+            plate(a, f"LeafCrown{j}", p0, add(p0, (c * 0.7, 0.35, s_ * 0.6)), 0.4, 0.1, moss2 if j % 2 else moss,
+                  up=(0, 1, 0), role="Secondary", shadow=False)
+        for j in range(3):
+            a.box(f"BrowRune{j}", (0.12, 0.6, 0.1), (0, 10.55, -4.72), rune, rot=(0, 0, 60 * j), **GLOW)
+        a.box("NoseGlow", (0.3, 0.2, 0.1), (0, 9.5, -6.12), glow, **GLOW)
+        for j in range(10):
+            ang = 2 * math.pi * j / 10
+            c, s_ = math.cos(ang), math.sin(ang)
+            p0 = (c * 1.05, 7.4, -2.9 + s_ * 1.1)
+            plate(a, f"Garland{j}", p0, add(p0, (c * 0.5, -0.5, s_ * 0.5)), 0.45, 0.1, moss2 if j % 2 else moss,
+                  up=(c, 0.5, s_), role="Secondary", shadow=False)
+            if j % 2 == 0:
+                a.box(f"GarlandFlower{j}", (0.3, 0.15, 0.3), add(p0, (c * 0.3, -0.05, s_ * 0.3)),
+                      flower if j % 4 == 0 else glow2, rot=(0, 45, 0), **GLOW)
+    with in_bone(a, "Body"):
+        # More moss, flowers, mushrooms and ferns on its back.
+        for j, (x, z) in enumerate(((-1.2, -2.3), (1.2, -1.2), (-0.2, -0.9), (1.0, 1.3), (-1.1, 0.6), (0.3, 1.9))):
+            a.box(f"MossTuftB{j}", (0.9, 0.4, 0.9), (x, 8.0, z), moss2 if j % 2 else moss, rot=(0, 25 * j, 0),
+                  role="Secondary")
+        for j, (x, z) in enumerate(((-0.6, -1.9), (0.9, -2.0), (1.3, 0.2), (-1.4, -0.4), (-0.6, 1.5), (0.6, 0.8))):
+            a.box(f"BackFlower{j}", (0.45, 0.15, 0.45), (x, 8.32, z), flower if j % 2 else C("#fff27a"), rot=(0, 45, 0),
+                  **GLOW)
+            a.box(f"BackFlowerLeaf{j}", (0.7, 0.08, 0.25), (x, 8.24, z), moss2, rot=(0, 30 * j, 0), **DETAIL)
+        for j, (x, z, h) in enumerate(((-0.9, 1.6, 0.6), (-1.3, -1.6, 0.5), (1.4, -1.0, 0.45))):
+            a.post(f"BackShroomStemB{j}", (0.28, h, 0.28), (x, 8.0 + h / 2, z), C("#e8f7f5"), b=0.08, role="Accent")
+            a.box(f"BackShroomB{j}", (0.8, 0.28, 0.8), (x, 8.05 + h, z), glow, **GLOW)
+            a.box(f"BackShroomTopB{j}", (0.45, 0.2, 0.45), (x, 8.25 + h, z), glow2, **GLOW)
+        for j in range(4):
+            p0 = ((-1 if j % 2 else 1) * 0.6, 7.95, -2.6 + j * 1.5)
+            plate(a, f"Fern{j}", p0, add(p0, (0.4 * (-1 if j % 2 else 1), 0.9, 0.8)), 0.45, 0.08, moss2, up=(1, 0, 0),
+                  role="Secondary", shadow=False)
+        for s, S in SIDES:
+            # Bark plates on the shoulders and hips with glowing runes.
+            for j, z in enumerate((-1.9, 2.4)):
+                a.bevel(f"BarkPlate{S}{j}", (0.3, 1.2, 1.4), (1.88 * s, 6.2, z), bark, b=0.12, role="Accent")
+                a.box(f"BarkRune{S}{j}", (0.32, 0.7, 0.15), (1.9 * s, 6.2, z), rune, **GLOW)
+            # Strokes of fur and a fringe under the belly.
+            for r, y in enumerate((5.4, 4.7)):
+                for j, z in enumerate((-2.3, -1.0, 0.3, 1.5, 2.8)):
+                    p0 = (1.83 * s, y, z)
+                    plate(a, f"ElkFur{S}{r}_{j}", p0, add(p0, (0.03 * s, -0.5, 0.6)), 0.2, 0.08, light_c,
+                          up=(s, 0, 0), role="Secondary", shadow=False)
+            for j in range(6):
+                a.wedge(f"BellyFringe{S}{j}", (0.3, 0.6, 0.8), (1.35 * s, 3.85, -2.2 + j * 1.0), light_c, rot=(0, 0, 180),
+                        role="Secondary")
+        # A shaggy ruff on the chest.
+        for j in range(8):
+            x = -1.3 + (j % 4) * 0.87
+            a.wedge(f"ChestRuff{j}", (0.7, 1.1, 0.35), (x, 6.4 - 0.8 * (j // 4), -2.95), light_c if j % 2 else fur,
+                    rot=(0, 90, 180), role="Secondary")
+    for F, z in (("F", -1.8), ("B", 2.6)):
+        for s, S in SIDES:
+            with in_bone(a, f"Leg{F}{S}"):
+                for q in range(4):
+                    ang = q * math.pi / 2 + math.pi / 4
+                    c, s_ = math.cos(ang), math.sin(ang)
+                    a.wedge(f"LegMoss{F}{S}{q}", (0.6, 0.6, 0.25), (1.1 * s + c * 0.62, 2.0, z + s_ * 0.62),
+                            moss if q % 2 else moss2, rot=(0, -math.degrees(ang) + 90, 180), role="Secondary")
+                    a.box(f"HoofRing{F}{S}{q}", (0.45, 0.14, 0.14), (1.1 * s + c * 0.6, 0.75, z + s_ * 0.6), glow,
+                          rot=(0, -math.degrees(ang) + 90, 0), **GLOW)
+                for j in range(2):
+                    a.rod(f"LegVine{F}{S}{j}", (1.1 * s + 0.5 * (1 if j else -1), 3.8, z), (1.1 * s - 0.5 * (1 if j else -1),
+                                                                                          1.2, z + 0.5), 0.1, moss2,
+                          role="Secondary", shadow=False)
+    with in_bone(a, "Tail"):
+        for j in range(3):
+            a.wedge(f"TailMoss{j}", (0.35, 0.6, 0.5), ((j - 1) * 0.3, 7.6, 4.3), moss2, role="Secondary")
+    with in_bone(a, "Orbit"):
+        for i in range(6):
+            ang = 2 * math.pi * (i + 0.5) / 6
+            pos = (math.cos(ang) * 6.5, 7.0 + 1.2 * math.sin(ang * 3), 0.4 + math.sin(ang) * 7.5)
+            a.box(f"Firefly{i}", (0.3, 0.3, 0.3), pos, C("#fff27a"), **GLOW)
+            plate(a, f"DriftLeaf{i}", add(pos, (0.8, -1.2, 0.3)), add(pos, (1.4, -1.0, 0.7)), 0.4, 0.08, moss2,
+                  up=(0, 1, 0), role="Secondary", shadow=False)
+        a.box("SigilCore", (0.4, 0.2, 0.4), (0, 0.2, 0.4), glow, transparency=1, **DETAIL)
     scale_animal(a, k)
 
     fx(a, "Body",
@@ -796,6 +1055,30 @@ def mossking_elk():
     beam(a, "Shroom0R", add(t0, (0, 0.8, 0)), "Shroom0L", add(t1, (0, 0.8, 0)), glow, name="LifeArc",
          width=(0.5, 0.5), curve=(4, -4), transparency=((0, 0.2), (0.5, 0.05), (1, 0.2)), segments=24,
          R0=angles(0, 0, 90), R1=angles(0, 0, 90), color2=C("#b8ff6a"), texture=SPARKLE_TEXTURE, texture_speed=1.5)
+    # Living-forest effects: a soft glow of life round it, fireflies drifting about, leaves falling from the
+    # antlers, a sigil of blooming light turning on the ground with ripples, and lights in the hanging seeds.
+    fx(a, "Body",
+       grad(emitter("LifeAura", glow, texture=GLOW_TEXTURE, rate=1.4, lifetime=(1.4, 1.6), speed=(0, 0),
+                    sizes=((0, 10), (0.5, 13), (1, 10)), transparency=((0, 1), (0.5, 0.78), (1, 1)), lock=True),
+            (0, glow2), (1, C("#3fa86a"))),
+       emitter("Fireflies", C("#fff27a"), texture=SPARKLE_TEXTURE, rate=8, lifetime=(3, 5), speed=(0.3, 1.0),
+               sizes=((0, 0.3), (0.5, 0.45), (1, 0)), transparency=((0, 0.2), (1, 1)), drag=0.6, spread=180,
+               color2=C("#b8ff6a")))
+    for s, S in SIDES:
+        leaves = grad(emitter("FallingLeaves", moss2, texture=SPARKLE_TEXTURE, rate=3, lifetime=(2.5, 3.5),
+                              speed=(0.5, 1.5), sizes=((0, 0.5), (1, 0.4)), transparency=((0, 0), (0.8, 0.2), (1, 1)),
+                              accel=(0.8, -1.6, 0), drag=1, spread=90, light=0.3, rot_speed=(-200, 200)),
+                      (0, C("#b8ff6a")), (0.5, moss2), (1, C("#e0b84a")))
+        leaves["props"]["Squash"] = [[0, 1.4], [1, 1.4]]
+        fx(a, f"Shroom1{S}", leaves)
+        fx(a, f"GlowSeed0{S}", light(f"SeedLight{S}", glow2, brightness=0.8, range_=8, pulse=1.4))
+    fx(a, "SigilCore",
+       flat(grad(emitter("BloomSigil", glow, texture=VORTEX_TEXTURE, rate=0.6, lifetime=(3, 3), speed=(0.01, 0.01),
+                         spread=0, sizes=((0, 18), (1, 18)), transparency=((0, 1), (0.25, 0.45), (0.75, 0.45), (1, 1)),
+                         lock=True, rot_speed=(20, 20)), (0, glow2), (0.5, glow), (1, C("#b8ff6a")))),
+       flat(grad(emitter("BloomRipple", glow, texture=SHOCK_TEXTURE, rate=0.5, lifetime=(2, 2), speed=(0.01, 0.01),
+                         spread=0, sizes=((0, 5), (1, 22)), transparency=((0, 0.45), (1, 1)), lock=True),
+                 (0, glow2), (1, C("#b8ff6a")))))
     unfight(a, "Belly", "Chest", "Jaw")
     # The smile from _deer sits flush with the front of the jaw; move it out a little so it doesn't flicker.
     smile = find(a, "Smile")
@@ -928,9 +1211,9 @@ def nightshade_drake():
             # Membranes: the fan between the fingers, then the part between the last finger and the body.
             pts = fingers + [root]
             for i in range(4):
-                membrane(a, f"Membrane{i}{S}", wrist, pts[i], pts[i + 1], membrane_c, **DETAIL)
-            membrane(a, f"MembraneIn{S}", elbow, wrist, root, inner, strips=2, **DETAIL)
-            membrane(a, f"MembraneBase{S}", pivot, elbow, root, inner, strips=2, **DETAIL)
+                membrane(a, f"Membrane{i}{S}", wrist, pts[i], pts[i + 1], membrane_c, strips=8, **DETAIL)
+            membrane(a, f"MembraneIn{S}", elbow, wrist, root, inner, strips=3, **DETAIL)
+            membrane(a, f"MembraneBase{S}", pivot, elbow, root, inner, strips=3, **DETAIL)
             # Glowing trailing edge.
             for i in range(4):
                 seg(a, f"Edge{i}{S}", pts[i], pts[i + 1], 0.12, glow, ext=1.0, **GLOW)
@@ -981,6 +1264,158 @@ def nightshade_drake():
             pos = (math.cos(ang) * 7.0, y + 0.8 + math.sin(ang * 2) * 1.2, 0.4 + math.sin(ang) * 7.0)
             a.box(f"SoulFlame{i}", (0.6, 0.6, 0.6), pos, glow2, rot=(45, 45, 0), **GLOW)
 
+    # -- showpiece detail (Secret, about 800 parts) ------------------------------------------------------
+    with in_bone(a, "Body"):
+        for s, S in SIDES:
+            # Two more rows of scales above and below, and spikes along the flanks.
+            for row, yy in enumerate((y - 1.05, y + 1.05, y - 1.7, y + 1.6)):
+                for i, z in enumerate((-1.6, -0.7, 0.2, 1.1, 2.0, 2.9)):
+                    if yy > y + 0.9 and i == 0:
+                        continue
+                    a.box(f"ScaleB{row}{i}{S}", (0.12, 0.45, 0.65), (1.9 * s - (0.15 * s if row >= 2 else 0), yy,
+                                                                     z + 0.22 * (row % 2)),
+                          plate_c if (i + row) % 2 else dark, **DETAIL)
+            for i, z in enumerate((-0.4, 0.8, 2.0, 3.2)):
+                a.wedge(f"FlankSpike{S}{i}", (0.25, 0.7, 0.6), (1.98 * s, y + 0.05, z), dark, rot=(0, 0, -90 * s),
+                        role="Accent")
+            # Glowing spectral ribs showing through the hide below the scales.
+            for i, z in enumerate((-1.2, -0.3, 0.6, 1.5, 2.4)):
+                a.box(f"Rib{S}{i}", (0.1, 0.9, 0.16), (1.97 * s, y - 0.1, z), glow, rot=(15, 0, 0), transparency=0.35,
+                      **GLOW)
+            # Spectral chains hanging from the shoulders.
+            for j in range(5):
+                a.box(f"Chain{S}{j}", (0.18, 0.4, 0.28), (2.05 * s, y + 0.9 - j * 0.42, -1.0 + 0.12 * j), C("#9ab7b4"),
+                      rot=(0, 90 * (j % 2), 0), **DETAIL)
+        # Armour plates between the back spikes, and ghost flames rising along the spine.
+        for i, z in enumerate((-2.9, -1.9, -0.9, 0.1, 1.1, 2.1, 3.1)):
+            for sx in (-1, 1):
+                a.box(f"BackPlate{i}{'R' if sx > 0 else 'L'}", (0.8, 0.2, 0.85), (0.55 * sx, y + 1.55, z), plate_c,
+                      rot=(0, 0, -12 * sx), role="Accent")
+                plate(a, f"GhostFlame{i}{'R' if sx > 0 else 'L'}", (0.35 * sx, y + 1.65, z + 0.3),
+                      (0.75 * sx, y + 2.6 - 0.05 * abs(i - 3), z + 0.9), 0.35, 0.08, glow, up=(sx, 0, 0), **GLOW_T)
+            if i < 6:
+                a.box(f"RidgeGlow{i}", (0.12, 0.12, 0.6), (0, y + 1.68, z + 0.5), glow, **GLOW)
+        # A breastplate either side of the heart.
+        for i, (x, yy) in enumerate(((-1.2, y + 0.6), (1.2, y + 0.6), (-1.0, y - 0.5), (1.0, y - 0.5), (0, y - 0.9))):
+            a.box(f"Breastplate{i}", (0.9, 0.7, 0.18), (x, yy, -3.36), plate_c, rot=(0, 0, 20 if x > 0 else -20),
+                  role="Accent")
+    with in_bone(a, "Head"):
+        neck = [(0, y + 0.7, -2.9), (0, y + 1.8, -3.9), (0, y + 2.8, -4.7), (0, y + 3.5, -5.4)]
+        for i in range(3):
+            mid = _lerp(neck[i], neck[i + 1], 0.5)
+            r = (1.9 - 0.2 * i) / 2
+            for s, S in SIDES:
+                for j in range(3):
+                    t = (j + 0.5) / 3
+                    q = _lerp(neck[i], neck[i + 1], t)
+                    a.box(f"NeckScale{i}{j}{S}", (0.12, 0.4, 0.5), (r * s, q[1] + 0.1, q[2]), plate_c if j % 2 else dark,
+                          **DETAIL)
+            for sx in (-1, 1):
+                plate(a, f"NeckMane{i}{'R' if sx > 0 else 'L'}", add(mid, (0.3 * sx, r, 0.2)),
+                      add(mid, (0.8 * sx, r + 1.0, 0.9)), 0.4, 0.08, glow, up=(sx, 0, 0), **GLOW_T)
+            for sx in (-1, 1):
+                plate(a, f"NeckManeB{i}{'R' if sx > 0 else 'L'}", add(mid, (0.15 * sx, r, -0.3)),
+                      add(mid, (0.5 * sx, r + 0.8, 0.3)), 0.3, 0.08, glow2, up=(sx, 0, 0), **GLOW_T)
+            a.wedge(f"NeckSpikeB{i}", (0.28, 0.6, 0.6), add(mid, (0, r + 0.2, 0.8)), dark, rot=(-35, 180, 0),
+                    role="Accent")
+        for s, S in SIDES:
+            # Second horns sweeping down and back, cheek frills, more teeth, jaw spikes and glowing tendrils.
+            h1 = (1.25 * s, y + 5.2, -4.6)
+            chain(a, f"HornB{S}_", [h1, (1.9 * s, y + 4.6, -3.6), (2.3 * s, y + 4.9, -2.6)], [0.3, 0.22], horn,
+                  role="Accent")
+            for j in range(2):
+                plate(a, f"CheekFrill{S}{j}", (1.3 * s, y + 3.2 - 0.4 * j, -5.6), (2.3 * s, y + 3.6 - 0.6 * j, -4.6),
+                      0.5, 0.08, membrane_c, up=(s, 0, 0), role="Secondary", shadow=False)
+            for i, z in enumerate((-7.75, -8.45)):
+                a.tooth(f"ToothB{i}{S}", (0.62 * s, y + 3.05, z), 0.2, 0.32)
+                a.tooth(f"LowToothB{i}{S}", (0.52 * s, y + 2.72, z + 0.1), 0.18, 0.26, up=True)
+            for j in range(2):
+                a.wedge(f"JawSpike{S}{j}", (0.2, 0.45, 0.4), (0.9 * s, y + 2.3, -7.4 + j * 0.8), dark, rot=(180, 0, 0),
+                        role="Accent")
+            tendril = [(0.7 * s, y + 3.0, -9.2), (1.3 * s, y + 2.4, -9.4), (1.9 * s, y + 1.6, -9.0),
+                       (2.3 * s, y + 0.9, -8.2)]
+            chain(a, f"Tendril{S}", tendril, [0.16, 0.13, 0.1], glow, material="Neon", role="Glow", shadow=False)
+            a.box(f"EyeRidge{S}", (0.9, 0.2, 0.3), (0.95 * s, y + 4.42, -7.05), dark, rot=(0, 0, 20 * s), **DETAIL)
+        for j in range(4):
+            a.wedge(f"CrownSpike{j}", (0.22, 0.5 + 0.1 * (j % 2), 0.4), ((j - 1.5) * 0.45, y + 4.85, -6.3), horn,
+                    role="Accent")
+            a.wedge(f"CrestFin{j}", (0.12, 0.55, 0.7), (0, y + 4.6 - 0.25 * j, -4.4 + 0.6 * j), membrane_c,
+                    rot=(0, 180, 0), role="Secondary")
+        for j in range(3):
+            a.box(f"SkullRune{j}", (0.14, 0.14, 0.1), ((j - 1) * 0.4, y + 4.55 + 0.15 * (j == 1), -6.85), glow,
+                  **GLOW)
+    for s, S in SIDES:
+        with in_bone(a, f"Wing{S}"):
+            fingers = [p for p in a.parts if p["name"].startswith("Finger") and p["name"].endswith(S)]
+            for i, fpart in enumerate(fingers):
+                R = fpart["R"]
+                half = fpart["size"][0] / 2
+                tip = add(fpart["p"], (R[0][0] * half, R[1][0] * half, R[2][0] * half))
+                base_mid = fpart["p"]
+                a.wedge(f"FingerClaw{i}{S}", (0.22, 0.45, 0.4), tip, horn, role="Accent")
+                if i:
+                    a.box(f"FingerGlow{i}{S}", (0.32, 0.32, 0.32), tip, glow, rot=(45, 0, 45), **GLOW)
+                a.box(f"FingerKnuckle{i}{S}", (0.42, 0.42, 0.42), base_mid, dark, rot=(45, 0, 45), role="Accent")
+            for i in range(3):
+                arm = find(a, f"UpperArm{S}") if i < 2 else find(a, f"Forearm{S}")
+                a.wedge(f"WingArmSpike{i}{S}", (0.22, 0.6, 0.5), add(arm["p"], (0.4 * (i - 0.5) * s, 0.45, 0.1)), dark,
+                        rot=(0, 180, 0), role="Accent")
+            for i in range(3):
+                mem = find(a, f"Membrane{i}{S}2o")
+                a.box(f"MembraneRune{i}{S}", (0.35, 0.14, 0.35), add(mem["p"], (0, 0.1, 0)), glow, rot=(0, 45, 0),
+                      **GLOW)
+    with in_bone(a, "Tail"):
+        tpts = [(0, y, 3.6), (0, y - 0.3, 5.8), (0, y - 1.0, 7.8), (0.3, y - 1.9, 9.6), (0.8, y - 2.9, 11.1),
+                (1.4, y - 3.8, 12.3), (1.9, y - 4.4, 13.2)]
+        for i in range(6):
+            t = 1.6 - 0.22 * i
+            mid = _lerp(tpts[i], tpts[i + 1], 0.5)
+            for sx in (-1, 1):
+                a.wedge(f"TailSideSpike{i}{'R' if sx > 0 else 'L'}", (0.2, 0.5 - 0.05 * i, 0.5),
+                        add(mid, (sx * (t / 2 + 0.15), 0, 0)), dark, rot=(0, 0, -90 * sx), role="Accent")
+            a.box(f"TailPlate{i}", (t * 0.7, 0.16, 0.8), add(mid, (0, t / 2 + 0.05, -0.3)), plate_c, role="Accent")
+            a.box(f"TailRing{i}", (t + 0.12, 0.16, t + 0.12), tpts[i + 1], glow, R=aim(sub(tpts[i + 1], tpts[i]), (0, 0, 1)),
+                  transparency=0.3, **GLOW)
+            if i >= 3:
+                plate(a, f"TailFlame{i}", add(mid, (0, t / 2, 0)), add(mid, (0.3, t / 2 + 1.0, 0.6)), 0.35, 0.08, glow,
+                      up=(1, 0, 0), **GLOW_T)
+        for s, S in SIDES:
+            a.wedge(f"BladeFinB{S}", (0.12, 1.0, 0.9), (1.9 + 0.9 * s, y - 4.7, 12.7), membrane_c, rot=(0, 180, 45 * s),
+                    role="Secondary")
+    for s, S in SIDES:
+        for F, z, thigh in (("B", 2.7, f"Thigh{S}"), ("F", -2.1, f"FrontThigh{S}")):
+            with in_bone(a, f"Leg{F}{S}"):
+                a.box(f"ThighPlate{F}{S}", (0.18, 1.2, 1.5), (1.75 * s + 0.72 * s, y - 1.0, z), plate_c, role="Accent")
+                a.wedge(f"KneeSpike{F}{S}", (0.22, 0.55, 0.5), (1.75 * s, y - 1.9, z - 0.95 if F == "B" else z + 0.35),
+                        dark, rot=(0, 0 if F == "F" else 180, 0), role="Accent")
+                a.box(f"AnkleBand{F}{S}", (0.9, 0.16, 0.9), (1.75 * s, y - 3.25, z - 0.6 if F == "B" else z - 0.4), glow,
+                      **GLOW)
+                fz = 1.1 if F == "B" else -3.7
+                for j, dx in enumerate((-0.35, 0, 0.35)):
+                    a.box(f"TalonGlow{F}{S}{j}", (0.14, 0.14, 0.14), (1.75 * s + dx, y - 3.85, fz - 0.3), glow, **GLOW)
+    with in_bone(a, "Orbit"):
+        for i in range(5):
+            ang = i * 2 * math.pi / 5 + 0.6
+            pos = (math.cos(ang) * 8.5, y + 2.4 + math.sin(ang * 2) * 1.0, 0.4 + math.sin(ang) * 8.5)
+            a.box(f"SoulFlameB{i}", (0.5, 0.5, 0.5), pos, glow, rot=(45, 45, 0), **GLOW)
+            for j in range(2):
+                a.box(f"SoulRing{i}_{j}", (1.0, 0.07, 0.07), pos, glow2, rot=(0, 90 * j + 20, 40), **GLOW)
+        # Three spectral skull lanterns floating round it.
+        for i in range(3):
+            ang = i * 2 * math.pi / 3 + 1.0
+            c = (math.cos(ang) * 6.0, y + 3.6, 0.4 + math.sin(ang) * 6.0)
+            yaw = -math.degrees(ang) - 90
+            R = angles(0, yaw, 0)
+            a.box(f"Skull{i}", (0.9, 0.8, 0.9), c, C("#d8f0ea"), R=R, transparency=0.25, role="Secondary")
+            a.box(f"SkullJaw{i}", (0.7, 0.25, 0.6), add(c, apply(R, (0, -0.5, -0.1))), C("#d8f0ea"), R=R, transparency=0.25,
+                  role="Secondary")
+            for sx in (-1, 1):
+                a.box(f"SkullEye{i}{'R' if sx > 0 else 'L'}", (0.22, 0.22, 0.1), add(c, apply(R, (0.2 * sx, 0.05, -0.46))),
+                      glow, R=R, **GLOW)
+            a.box(f"SkullCore{i}", (0.3, 0.3, 0.3), c, glow2, **GLOW)
+        ground_ring(a, "SoulRing", (0, 0.1, 0.4), 7.5, glow, n=18, size=(0.4, 0.1, 1.5), transparency=0.25)
+        ground_ring(a, "SoulRingIn", (0, 0.11, 0.4), 6.0, glow2, n=12, size=(0.3, 0.1, 1.2), transparency=0.35)
+        a.box("SigilCore", (0.4, 0.2, 0.4), (0, 0.2, 0.4), glow, transparency=1, **DETAIL)
     scale_animal(a, 1.3)
 
     # ---- effects ----
@@ -1009,6 +1444,39 @@ def nightshade_drake():
          transparency=((0, 0.1), (0.5, 0), (1, 0.1)), segments=20, R0=angles(0, 0, 90), R1=angles(0, 0, 90),
          texture=SPARKLE_TEXTURE, texture_speed=3, color2=glow)
 
+    # Ghost effects: a spectral glow, soul embers rising off its back, ghost fire on the wing fingers, sparks
+    # crackling on the horns, burning skull lanterns, trails behind its tendrils and a necro sigil turning under it.
+    ghost3 = ((0, C("#e6fff6")), (0.4, glow2), (1, C("#0c3a2a")))
+    fx(a, "Body",
+       grad(emitter("SpectralGlow", glow, texture=GLOW_TEXTURE, rate=1.4, lifetime=(1.4, 1.6), speed=(0, 0),
+                    sizes=((0, 12), (0.5, 15), (1, 12)), transparency=((0, 1), (0.5, 0.75), (1, 1)), lock=True),
+            (0, glow2), (1, C("#1f8a6a"))),
+       grad(emitter("SoulEmbers", glow2, texture=FLAMESPARK_TEXTURE, rate=12, lifetime=(1.2, 2.0), speed=(1.5, 4),
+                    sizes=((0, 0.8), (1, 0)), spread=60, accel=(0, 3, 0), drag=1.2, rot_speed=(-300, 300)), *ghost3))
+    for s, S in SIDES:
+        for i in (1, 2, 3):
+            fx(a, f"FingerGlow{i}{S}", grad(emitter(f"WingFire{i}", glow2, texture=FIRE_TEXTURE, rate=6,
+                                                    lifetime=(0.3, 0.55), speed=(0.5, 1.8), spread=30,
+                                                    sizes=((0, 0.5), (0.3, 1.2), (1, 0)),
+                                                    transparency=((0, 0.2), (1, 1)), accel=(0, 4, 0)), *ghost3))
+        fx(a, f"HornTip{S}", grad(emitter("HornSparks", glow2, texture=FLAMESPARK_TEXTURE, rate=8, lifetime=(0.4, 0.8),
+                                          speed=(2, 4), sizes=((0, 0.6), (1, 0)), spread=70, drag=2,
+                                          rot_speed=(-300, 300)), *ghost3))
+        tp = find(a, f"Tendril{S}2")["p"]
+        trail(a, f"Tendril{S}2", add(tp, (0, 0.25, 0)), add(tp, (0, -0.25, 0)), glow2, name=f"TendrilTrail{S}",
+              lifetime=0.6, color2=C("#123030"))
+    for i in range(3):
+        fx(a, f"SkullCore{i}", grad(emitter("SkullFire", glow2, texture=FIRE_TEXTURE, rate=10, lifetime=(0.3, 0.6),
+                                            speed=(0.5, 1.5), spread=20, sizes=((0, 0.7), (0.3, 1.4), (1, 0)),
+                                            transparency=((0, 0.15), (1, 1)), accel=(0, 4, 0)), *ghost3))
+    fx(a, "SkullCore0", light("SkullLight", glow2, brightness=1.0, range_=10, pulse=0.8))
+    fx(a, "SigilCore",
+       flat(grad(emitter("NecroSigil", glow, texture=VORTEX_TEXTURE, rate=0.6, lifetime=(3, 3), speed=(0.01, 0.01),
+                         spread=0, sizes=((0, 20), (1, 20)), transparency=((0, 1), (0.25, 0.4), (0.75, 0.4), (1, 1)),
+                         lock=True, rot_speed=(-30, -30)), (0, glow2), (1, C("#0c3a2a")))),
+       flat(grad(emitter("NecroRipple", glow, texture=SHOCK_TEXTURE, rate=0.6, lifetime=(1.8, 1.8), speed=(0.01, 0.01),
+                         spread=0, sizes=((0, 5), (1, 24)), transparency=((0, 0.4), (1, 1)), lock=True),
+                 (0, glow2), (1, C("#0c3a2a")))))
     a.ride_height, a.ride_z = (y + 2.2) * 1.3, 0.4 * 1.3
     extras(a, attrs={"FlapSpeed": 3.2, "FlapAngle": 22, "Hover": 1.0, "HoverSpeed": 1.3, "OrbitSpeed": 1.2,
                      "TailSway": 12},

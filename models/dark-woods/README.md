@@ -43,10 +43,22 @@ Elk dier is opgebouwd zoals je bestaande dieren: een onzichtbare **RootPart** (h
 | Moonraven | Legendary | 10 studs | een **maanlichtbundel** die van boven op hem schijnt (Beam), een pulserende maansikkel op zijn borst, **maanscherven** die om hem heen draaien met zilveren sporen, vallende veertjes, zilveren rand (Highlight) |
 | Umbra Panther | Mythic | 14 studs | pikzwart met **paars pulserende vlekken**, **schaduwrook** en paarse vonkjes, **paarse strepen achter zijn ogen** als hij rent, een **draaiende schaduwcirkel** op de grond, twee rokende schaduwbollen die om hem heen cirkelen, schaduwwolkjes bij elke stap, paarse rand (Highlight) |
 | Mossking Elk | Mythic | 27 studs | mosmantel, een takgewei met **gloeiende paddenstoelen** en lampjes, opstijgende **sporen**, een **boog van levensenergie** tussen zijn geweipunten (Beam met bewegende glinstering), een **ring van bloemetjes** die langzaam om hem heen draait, groene pluisjes bij zijn hoeven |
-| Nightshade Drake | **Secret** | zweeft, 20 studs hoog, 35 studs breed | het meest gedetailleerde dier (367 onderdelen): wenkbrauwbogen, open bek met tanden en gloeiende keel, drie paar hoorns, nekvinnen, gloeiend **hartkristal** in de borst, schubben, gloeiende buikplaten, vleugels met 4 vingers, **gloeiende aders** en een **gloeiende achterrand**, een lange stekelstaart met speerpunt. Effecten: zweeft en klappert langzaam, **groen spookvuur** uit zijn bek, een **knetterende energieboog tussen zijn hoorns**, pulserend hart met licht, sporen achter vleugels en staart, drie **zielenvlammen** die om hem heen cirkelen, schaduwrook, groene rand (Highlight) |
+| Nightshade Drake | **Secret** | zweeft, 20 studs hoog, 35 studs breed | het meest gedetailleerde dier (792 onderdelen): wenkbrauwbogen, open bek met tanden en gloeiende keel, drie paar hoorns, nekvinnen, gloeiend **hartkristal** in de borst, schubben, gloeiende buikplaten, vleugels met 4 vingers, **gloeiende aders** en een **gloeiende achterrand**, een lange stekelstaart met speerpunt. Effecten: zweeft en klappert langzaam, **groen spookvuur** uit zijn bek, een **knetterende energieboog tussen zijn hoorns**, pulserend hart met licht, sporen achter vleugels en staart, drie **zielenvlammen** die om hem heen cirkelen, schaduwrook, groene rand (Highlight) |
 
 Een speler is ongeveer 5 studs hoog. De dieren hebben dezelfde schaal als je bestaande dieren (een wolf is ongeveer
 10 studs). Wil je een dier groter of kleiner? Gebruik `model:ScaleTo(1.5)` (of een ander getal).
+
+## De topdieren (Mythic en Secret)
+
+De Mythic-dieren hebben ongeveer **500 parts**, de Secret ongeveer **800**.
+
+| Dier | Parts | Wat er bij kwam |
+|---|---|---|
+| Umbra Panther | 491 | Een schaduwmanen langs de rug met gloeiende puntjes en vachtstrepen. Gloeiende ringen om de vlekken, leegtekristallen uit de schouders, een kraag van kristallen om de nek, een zwevende kroon van scherven en gloeiende snorharen. Leegteklauwen, enkelringen, leegtevlammen en kristallen op de staart, een edelsteen op de borst, runen op de rug en vier extra schaduwbollen. **Nieuwe effecten:** een halo van duisternis, schaduwvuur dat van zijn rug opstijgt, een **draaiende leegtesigil** op de grond met rimpelringen, vonken uit de kroon en sporen achter de bollen |
+| Mossking Elk | 495 | Extra geweitakken met paddenstoelen, mosranken, blaadjes, bloemetjes en **gloeiende zaadjes** die aan het gewei hangen. Een kroon van blaadjes, een rune op het voorhoofd en een **slinger** om de nek. Meer mos, bloemen, paddenstoelen en varens op de rug, schorsplaten met runen, een kraag op de borst, mos en gloeiende ringen om de poten, en vuurvliegjes en dwarrelende blaadjes om hem heen. **Nieuwe effecten:** een zachte gloed van leven, vuurvliegjes, **vallende blaadjes** uit het gewei en een **sigil van bloeiend licht** op de grond |
+| Nightshade Drake | 792 | Vollere vleugels met klauwen, gloeiende vingertoppen, stekels en runen. Extra rijen schubben, rugpantser, **spookvlammen** langs de rug en nek, spookribben, kettingen, een borstpantser, tweede hoorns, een kroon, wangkragen, gloeiende **tentakels** en extra tanden. Stekels, platen, gloeiende ringen en vlammen op de staart, pantser en gloeiende klauwen op de poten, vijf extra zielenvlammen, **drie zwevende spookschedels** met spookvuur en een zielenring op de grond. **Nieuwe effecten:** een spookgloed, opstijgende zielenvonken, spookvuur op de vleugelvingers, knetterende hoorns, sporen achter de tentakels en een **draaiende necrosigil** |
+
+![De topdieren van de Dark Woods](../../previews/dark_woods_showpieces.png)
 
 ## Animaties: lopen, stilstaan en speciale acties
 
@@ -75,9 +87,9 @@ script **AnimalFX** in elk dier. Invoegen en klaar, het werkt 1-op-1.
 | Barkling | loopt op twee benen en zwaait met zijn armen | blaadjes en een groene schokgolf bij elke stap | **uitrekken**: armen omhoog, blaadjes en vuurvliegjes, lichtjes draaien sneller |
 | Wisp Lynx | sierlijke draf | blauwe spookvlammetjes bij elke stap, spookrook | **kattenrek**: rekt zich uit, een uitbarsting van spookvuur |
 | Moonraven | huppelt met knikkende kop, vleugels iets open | zilveren sterretjes en veertjes | **vleugels spreiden**: grote vleugelslagen, een wolk maanschilfers |
-| Umbra Panther | sluipende draf | schaduwrook, paarse vonken en schokgolven | **brullen**: kop omhoog en brul, schaduwrook en een grote paarse schokgolf |
-| Mossking Elk | statige stap (één poot tegelijk) | bloemblaadjes en groene ringen bij elke stap | **stampen**: tilt een voorpoot op en stampt, een enorme groene schokgolf |
-| Nightshade Drake | zware stap (één poot tegelijk), klappert | groen spookvuur bij elke stap | **vuur spuwen**: kop naar achteren en dan anderhalve seconde groen vuur met rook |
+| Umbra Panther | sluipende draf | schaduwrook, paarse vonken en schokgolven | **brullen**: kop omhoog en brul, schaduwrook en een grote paarse schokgolf. **Shadow step** (nieuw): duikt in elkaar terwijl de duisternis naar binnen wordt gezogen, en springt dan naar voren in een explosie van leegte, met een schokgolf en een draaiende sigil |
+| Mossking Elk | statige stap (één poot tegelijk) | bloemblaadjes en groene ringen bij elke stap | **stampen**: tilt een voorpoot op en stampt, een enorme groene schokgolf. **Bloom** (nieuw): heft zijn kop, zijn gewei licht op en een golf van bloeiend licht rolt over de grond, met dwarrelende blaadjes en vuurvliegjes |
+| Nightshade Drake | zware stap (één poot tegelijk), klappert | groen spookvuur bij elke stap | **vuur spuwen**: kop naar achteren en dan anderhalve seconde groen vuur met rook. **Soul storm** (nieuw): steigert met gespreide vleugels en zuigt zielen naar binnen. Dan barst een draaiende storm van spookvuur los, met een schokgolf en een necrosigil |
 
 ### Instellingen (attributen op het dier)
 
